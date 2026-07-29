@@ -11,7 +11,7 @@ import { useAsyncData } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
 import { expensesService } from '../services/expensesService';
-import type { Expense, Advance } from '../types';
+import type { Expense } from '../types';
 
 const categoryConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   fuel: { label: 'Xăng', icon: Fuel, color: 'text-orange-500' },
@@ -27,7 +27,7 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType; c
 export const ChiPhiPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'chiphi' | 'ungtien'>('chiphi');
   const { data: expensesData, loading: expLoading, error: expError, refetch: refetchExp } = useAsyncData(expensesService.getExpenses, []);
-  const { data: advancesData, loading: advLoading, error: advError, refetch: refetchAdv } = useAsyncData(expensesService.getAdvances, []);
+  const { data: advancesData, loading: advLoading, error: advError } = useAsyncData(expensesService.getAdvances, []);
 
   const expenses = expensesData || [];
   const advances = advancesData || [];
@@ -45,13 +45,14 @@ export const ChiPhiPage: React.FC = () => {
   });
 
   const filteredExpenses = useMemo(() => {
-    return expenses.filter((e) => {
-      if (!searchQuery) return true;
-      const q = searchQuery.toLowerCase();
+    if (!searchQuery) return expenses;
+    const q = searchQuery.toLowerCase();
+    return expenses.filter(e => {
+      const catLabel = categoryConfig[e.category]?.label.toLowerCase() || '';
       return (
-        e.date.includes(q) ||
-        (e.description || '').toLowerCase().includes(q) ||
-        (e.notes || '').toLowerCase().includes(q)
+        (e.description && e.description.toLowerCase().includes(q)) ||
+        (e.notes && e.notes.toLowerCase().includes(q)) ||
+        catLabel.includes(q)
       );
     });
   }, [expenses, searchQuery]);
@@ -61,8 +62,8 @@ export const ChiPhiPage: React.FC = () => {
   const totalBlade = expenses.filter(e => e.category === 'blade').reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
   const totalOther = expenses.filter(e => !['fuel', 'blade'].includes(e.category)).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
-  const totalUng = advances.filter(a => a.type === 'advance' || a.type === 'ung').reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
-  const totalHoan = advances.filter(a => a.type === 'settlement' || a.type === 'hoan').reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
+  const totalUng = advances.filter(a => a.type === 'advance' || (a.type as string) === 'ung').reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
+  const totalHoan = advances.filter(a => a.type === 'settlement' || (a.type as string) === 'hoan').reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
   const totalConLai = totalUng - totalHoan;
 
   const handleSaveExpense = async (e: React.FormEvent) => {
@@ -222,9 +223,9 @@ export const ChiPhiPage: React.FC = () => {
                         <td className="td-cell">
                           <span className={cn(
                             "px-2 py-0.5 rounded-full text-[11px] font-bold border",
-                            adv.type === 'ung' || adv.type === 'advance' ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-emerald-100 text-emerald-700 border-emerald-200"
+                            adv.type === 'advance' || (adv.type as string) === 'ung' ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-emerald-100 text-emerald-700 border-emerald-200"
                           )}>
-                            {adv.type === 'ung' || adv.type === 'advance' ? 'Ứng tiền' : 'Hoàn ứng'}
+                            {adv.type === 'advance' || (adv.type as string) === 'ung' ? 'Ứng tiền' : 'Hoàn ứng'}
                           </span>
                         </td>
                         <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{adv.person || adv.person_name || 'Chủ xưởng'}</td>

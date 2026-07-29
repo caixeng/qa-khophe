@@ -2,10 +2,9 @@ import * as React from 'react';
 import { useState } from 'react';
 import { 
   TrendingUp, Package, DollarSign, AlertTriangle, 
-  Search, Eye, ArrowUpRight, ArrowDownLeft, FileText, CheckCircle2
+  Eye, ArrowUpRight, FileText
 } from 'lucide-react';
-import { cn, formatTien, formatKg, formatNgay } from '../../lib/utils';
-import { KpiCard } from '../KpiCard';
+import { formatTien, formatKg, formatNgay } from '../../lib/utils';
 import { Modal } from '../Modal';
 
 interface MobileDirectorDashboardProps {

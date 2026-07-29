@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState, useMemo } from 'react';
-import { Plus, Weight, Calculator, History, PackageOpen, Layers } from 'lucide-react';
-import { cn, formatKg, formatNgay } from '../lib/utils';
+import { Plus, Calculator, History } from 'lucide-react';
+import { formatKg, formatNgay } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
 import { Modal } from '../components/Modal';
 import { NumPad } from '../components/NumPad';
@@ -60,95 +60,103 @@ export const CanPhePage: React.FC = () => {
         action={{ label: 'Phiên cân mới', icon: Plus, onClick: handleNewSession }} 
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Active Session Card */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs">
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6 pb-4 border-b border-[var(--border-color)]">
-              <div>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--primary-50)] text-[var(--primary-600)] border border-[var(--primary-500)]/20 mb-2 inline-block">
-                  Đang cân live
-                </span>
-                <h2 className="text-xl font-bold text-[var(--text-primary)]">Phiên cân phế nhựa</h2>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">{formatNgay(new Date().toISOString())} • Tấm nhựa nano</p>
-              </div>
-              <div className="text-left sm:text-right bg-[var(--bg-subtle)] p-3 rounded-xl border border-[var(--border-color)] min-w-[180px]">
-                <div className="text-3xl font-black font-mono text-[var(--primary-500)]">{formatKg(totalWeight)}</div>
-                <div className="text-xs font-bold text-[var(--text-muted)] mt-0.5">{activeBags.length} bao thành phẩm</div>
-              </div>
+      {/* Active Weighing Session Header */}
+      <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[var(--border-color)] pb-4 gap-3">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700">
+                Phiên cân đang mở
+              </span>
+              <span className="text-xs text-[var(--text-muted)] font-mono">{formatNgay(new Date().toISOString())}</span>
             </div>
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mt-1">Lô phế bột nhựa nano</h2>
+          </div>
 
-            {/* List of Weighed Bags */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6 max-h-[360px] overflow-y-auto p-1">
-              {activeBags.map((weight, idx) => (
-                <div key={idx} className="bg-[var(--bg-subtle)] border border-[var(--border-color)] rounded-xl p-3 flex justify-between items-center shadow-xs transition-transform hover:scale-105">
-                  <span className="text-[10px] font-mono font-bold text-[var(--text-muted)]">#{activeBags.length - idx}</span>
-                  <span className="font-mono font-black text-sm text-[var(--text-primary)]">{weight} kg</span>
-                </div>
-              ))}
-            </div>
+          <button
+            onClick={() => setIsNumPadOpen(true)}
+            className="btn-primary flex items-center space-x-2 shadow-md w-full sm:w-auto justify-center"
+          >
+            <Calculator size={18} />
+            <span>Mở bàn phím cân bao mới</span>
+          </button>
+        </div>
 
-            <button 
-              onClick={() => setIsNumPadOpen(true)}
-              className="btn-primary w-full py-3.5 text-base font-bold flex justify-center items-center gap-2 cursor-pointer shadow-md"
-            >
-              <Calculator size={20} />
-              <span>Cân bao mới (Bấm số)</span>
-            </button>
+        {/* Real-time Summary Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng số bao</p>
+            <p className="text-2xl font-mono font-black text-[var(--text-primary)] mt-1">{activeBags.length} bao</p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng khối lượng</p>
+            <p className="text-2xl font-mono font-black text-[var(--primary-500)] mt-1">{formatKg(totalWeight)}</p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] col-span-2 sm:col-span-1">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Khối lượng TB/bao</p>
+            <p className="text-2xl font-mono font-black text-[var(--text-primary)] mt-1">
+              {activeBags.length > 0 ? `${(totalWeight / activeBags.length).toFixed(1)} kg` : '0 kg'}
+            </p>
           </div>
         </div>
 
-        {/* Recent Session History */}
-        <div className="space-y-4">
-          <div className="card p-5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs">
-            <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2 border-b border-[var(--border-color)] pb-3">
-              <History size={18} className="text-[var(--primary-500)]" />
-              Lịch sử phiên cân
-            </h3>
-            
-            <div className="space-y-3">
-              {sessions.length > 0 ? (
-                sessions.map((s) => (
-                  <div key={s.id} className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center">
-                    <div>
-                      <p className="text-xs font-bold text-[var(--text-primary)]">{s.date} - {s.material_type}</p>
-                      <p className="text-[10px] text-[var(--text-muted)]">{s.total_bags} bao</p>
-                    </div>
-                    <span className="font-mono font-bold text-xs text-[var(--primary-500)]">
-                      {formatKg(s.total_weight_kg)}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <>
-                  <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center">
-                    <div>
-                      <p className="text-xs font-bold text-[var(--text-primary)]">Hôm nay, 08:30</p>
-                      <p className="text-[10px] text-[var(--text-muted)]">25 bao • Tấm nhựa nano</p>
-                    </div>
-                    <span className="font-mono font-bold text-xs text-[var(--primary-500)]">22.242 kg</span>
-                  </div>
-                  <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center">
-                    <div>
-                      <p className="text-xs font-bold text-[var(--text-primary)]">Hôm qua, 14:15</p>
-                      <p className="text-[10px] text-[var(--text-muted)]">20 bao • Tấm nhựa nano</p>
-                    </div>
-                    <span className="font-mono font-bold text-xs text-[var(--primary-500)]">18.500 kg</span>
-                  </div>
-                </>
-              )}
-            </div>
+        {/* Bag Chips Grid */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            Danh sách bao phế đã cân ({activeBags.length})
+          </h3>
+          <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
+            {activeBags.map((w, idx) => (
+              <span 
+                key={idx} 
+                className="px-3 py-1.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-primary)] shadow-xs"
+              >
+                #{activeBags.length - idx}: <span className="text-[var(--primary-500)]">{w} kg</span>
+              </span>
+            ))}
           </div>
         </div>
       </div>
 
+      {/* Sessions History List */}
+      <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl space-y-4">
+        <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center space-x-2">
+          <History size={18} className="text-[var(--primary-500)]" />
+          <span>Lịch sử các phiên cân phế</span>
+        </h3>
+
+        <div className="space-y-2">
+          {sessions.length > 0 ? (
+            sessions.map((s) => (
+              <div key={s.id} className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center">
+                <div>
+                  <p className="text-xs font-bold text-[var(--text-primary)]">{s.date} - {s.material_type}</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">{s.total_bags} bao</p>
+                </div>
+                <span className="font-mono font-bold text-xs text-[var(--primary-500)]">
+                  {formatKg(s.total_weight_kg || s.total_kg || 0)}
+                </span>
+              </div>
+            ))
+          ) : (
+            <>
+              <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center">
+                <div>
+                  <p className="text-xs font-bold text-[var(--text-primary)]">Hôm nay, 08:30</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">25 bao • Tấm nhựa nano</p>
+                </div>
+                <span className="font-mono font-bold text-xs text-[var(--primary-500)]">22.242 kg</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       {/* NumPad Modal */}
-      <Modal isOpen={isNumPadOpen} onClose={() => setIsNumPadOpen(false)} title="Nhập khối lượng bao (kg)">
-        <NumPad 
-          value="" 
-          onChange={() => {}} 
-          onSubmit={handleAddBag} 
-        />
+      <Modal isOpen={isNumPadOpen} onClose={() => setIsNumPadOpen(false)} title="Nhập khối lượng bao phế">
+        <NumPad onSubmit={handleAddBag} />
       </Modal>
     </div>
   );

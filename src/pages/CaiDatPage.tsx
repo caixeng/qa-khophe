@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { useTheme, PRIMARY_COLORS, type PrimaryColor, type Theme, type Density } from '../contexts/ThemeContext';
+import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Palette, Moon, Sun, Leaf, Check, Layers, Monitor, Sliders } from 'lucide-react';
+import { User, Palette, Moon, Sun, Leaf, Check, Monitor, Sliders } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 export const CaiDatPage = () => {

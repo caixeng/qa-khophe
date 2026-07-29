@@ -2,13 +2,10 @@ import * as React from 'react';
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Package, Cog, Truck, Warehouse, Activity, Bell, Clock, ArrowRight,
-  ShieldCheck, Eye, Edit3, DollarSign, AlertTriangle, CheckCircle2
+  Package, Cog, Truck, Warehouse, Activity, Bell, ArrowRight,
+  ShieldCheck, Eye, Edit3, DollarSign
 } from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
-} from 'recharts';
-import { cn, formatTien, formatKg } from '../lib/utils';
+import { cn, formatKg } from '../lib/utils';
 import { KpiCard } from '../components/KpiCard';
 import { PageHeader } from '../components/PageHeader';
 import { MobileDirectorDashboard } from '../components/mobile/MobileDirectorDashboard';
@@ -25,10 +22,6 @@ const recentActivities = [
   { id: 3, type: 'grind', text: 'Xay 18 bao (tích lũy 26 bao)', time: 'Thợ Hoa', amount: '18 bao' },
   { id: 4, type: 'export', text: 'Xuất 18 bao cho Cty Nhựa Việt', time: '28/07/2026', amount: '-16.200 kg' },
   { id: 5, type: 'expense', text: 'Chi thắp hương', time: '28/07/2026', amount: '-85.000đ' },
-];
-
-const chartData = [
-  { name: '28/07', 'Nhập (kg)': 9241, 'Xuất (kg)': 16200 },
 ];
 
 export const DashboardPage: React.FC = () => {
@@ -49,7 +42,7 @@ export const DashboardPage: React.FC = () => {
     const totalImportKg = imports.reduce((sum, i) => sum + (Number(i.quantity_kg) || 0), 0);
     const totalImportCost = imports.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
 
-    const totalExportKg = exports.reduce((sum, e) => sum + (Number(e.total_quantity_kg) || 0), 0);
+    const totalExportKg = exports.reduce((sum, e) => sum + (Number(e.total_quantity_kg || e.total_kg) || 0), 0);
     const totalRevenue = exports.reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
 
     const totalOperatingCost = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
@@ -58,7 +51,7 @@ export const DashboardPage: React.FC = () => {
     const receivables = exports.filter(e => e.payment_status === 'unpaid').reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
     const payables = imports.filter(i => i.payment_status === 'unpaid').reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
 
-    const totalGround = grinding.reduce((sum, g) => sum + (Number(g.output_quantity_kg) || 0), 0);
+    const totalGround = grinding.reduce((sum, g) => sum + (Number(g.output_quantity_kg || g.output_qty_kg) || 0), 0);
     const inventoryKg = Math.max(0, totalGround - totalExportKg);
     const inventoryBags = Math.round(inventoryKg / 900);
 

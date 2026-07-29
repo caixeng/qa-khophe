@@ -30,7 +30,7 @@ export const XayPhePage: React.FC = () => {
       input_quantity_kg: 0,
       output_quantity_kg: 0,
       bags_count: 0,
-      operator_name: 'Hoàn',
+      operator_name: 'Hoa',
     }
   });
 
@@ -38,9 +38,10 @@ export const XayPhePage: React.FC = () => {
     return grindingList.filter((item) => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
+      const opName = item.operator_name || item.worker || '';
       return (
         item.date.includes(q) ||
-        (item.operator_name || '').toLowerCase().includes(q) ||
+        opName.toLowerCase().includes(q) ||
         (item.notes || '').toLowerCase().includes(q) ||
         (item.import_id || '').toLowerCase().includes(q)
       );
@@ -49,20 +50,20 @@ export const XayPhePage: React.FC = () => {
 
   // Statistics
   const stats = useMemo(() => {
-    const totalInput = grindingList.reduce((sum, item) => sum + (Number(item.input_quantity_kg) || 0), 0);
-    const totalOutput = grindingList.reduce((sum, item) => sum + (Number(item.output_quantity_kg) || 0), 0);
+    const totalInput = grindingList.reduce((sum, item) => sum + (Number(item.input_quantity_kg || item.input_qty_kg) || 0), 0);
+    const totalOutput = grindingList.reduce((sum, item) => sum + (Number(item.output_quantity_kg || item.output_qty_kg) || 0), 0);
     const totalLossKg = totalInput - totalOutput;
     const avgLossPct = totalInput > 0 ? (totalLossKg / totalInput) * 100 : 0;
-    const completedLots = grindingList.filter(g => (g.output_quantity_kg || 0) > 0).length;
+    const completedLots = grindingList.filter(g => (Number(g.output_quantity_kg || g.output_qty_kg) || 0) > 0).length;
 
     return { totalInput, totalOutput, totalLossKg, avgLossPct, completedLots };
   }, [grindingList]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const data = formState.data;
-    const inputKg = Number(data.input_quantity_kg) || 0;
-    const outputKg = Number(data.output_quantity_kg) || 0;
+    const data = formState.data as any;
+    const inputKg = Number(data.input_quantity_kg || data.input_qty_kg) || 0;
+    const outputKg = Number(data.output_quantity_kg || data.output_qty_kg) || 0;
 
     if (inputKg <= 0) {
       alert('Khối lượng đầu vào phải lớn hơn 0 kg');
@@ -79,7 +80,7 @@ export const XayPhePage: React.FC = () => {
           input_quantity_kg: inputKg,
           output_quantity_kg: outputKg,
           bags_count: Number(data.bags_count) || Math.round(outputKg / 25),
-          operator_name: data.operator_name || 'Hoàn',
+          operator_name: data.operator_name || data.worker || 'Hoa',
           notes: data.notes,
         });
       }
@@ -102,10 +103,10 @@ export const XayPhePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
+    <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Xay Phế Liệu"
-        subtitle="Quản lý công đoạn xay nghiền và theo dõi tỷ lệ hao hụt phế"
+        subtitle="Quản lý các mẻ phế liệu đưa vào máy xay và theo dõi tỷ lệ hao hụt"
         action={{
           label: 'Ghi phiếu xay',
           icon: Plus,
@@ -114,58 +115,61 @@ export const XayPhePage: React.FC = () => {
       />
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="card p-4 flex items-center space-x-4 bg-[var(--bg-surface)]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-200">
-            <Factory size={22} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl flex items-center space-x-4">
+          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500">
+            <Scissors size={24} />
           </div>
           <div>
-            <p className="text-xs text-[var(--text-muted)] font-semibold uppercase">Tổng phế đã xay</p>
-            <p className="text-xl font-bold font-mono text-[var(--text-primary)]">{formatKg(stats.totalOutput)}</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng xay tháng</p>
+            <p className="text-xl font-mono font-black text-[var(--text-primary)]">{formatKg(stats.totalInput)}</p>
           </div>
         </div>
 
-        <div className="card p-4 flex items-center space-x-4 bg-[var(--bg-surface)]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200">
-            <Scissors size={22} />
+        <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl flex items-center space-x-4">
+          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
+            <Factory size={24} />
           </div>
           <div>
-            <p className="text-xs text-[var(--text-muted)] font-semibold uppercase">Số lô hoàn thành</p>
-            <p className="text-xl font-bold font-mono text-[var(--text-primary)]">
-              {stats.completedLots} / {grindingList.length} lô
-            </p>
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Đầu ra thành phẩm</p>
+            <p className="text-xl font-mono font-black text-emerald-600">{formatKg(stats.totalOutput)}</p>
           </div>
         </div>
 
-        <div className="card p-4 flex items-center space-x-4 bg-[var(--bg-surface)]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-200">
-            <TrendingDown size={22} />
+        <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl flex items-center space-x-4">
+          <div className="p-3 rounded-xl bg-rose-500/10 text-rose-500">
+            <TrendingDown size={24} />
           </div>
           <div>
-            <p className="text-xs text-[var(--text-muted)] font-semibold uppercase">Hao hụt trung bình</p>
-            <p className={cn(
-              "text-xl font-bold font-mono",
-              stats.avgLossPct > 5 ? "text-rose-600" : "text-emerald-600"
-            )}>
-              {formatPhanTram(stats.avgLossPct)} ({formatKg(stats.totalLossKg)})
-            </p>
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng hao hụt</p>
+            <p className="text-xl font-mono font-black text-rose-600">{formatKg(stats.totalLossKg)}</p>
+          </div>
+        </div>
+
+        <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl flex items-center space-x-4">
+          <div className="p-3 rounded-xl bg-[var(--primary-500)]/10 text-[var(--primary-500)]">
+            <Scissors size={24} />
+          </div>
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">% Hao hụt trung bình</p>
+            <p className="text-xl font-mono font-black text-[var(--primary-500)]">{formatPhanTram(stats.avgLossPct)}</p>
           </div>
         </div>
       </div>
 
-      {/* Toolbar */}
+      {/* Table Toolbar */}
       <TableToolbar
-        searchQuery={searchQuery}
+        placeholder="Tìm theo thợ xay, ghi chú hoặc lô nhập..."
+        searchValue={searchQuery}
         onSearchChange={setSearchQuery}
-        placeholder="Tìm phiếu xay (ngày, người xay, mã lô)..."
         totalCount={filteredData.length}
       />
 
-      <DataState loading={loading} error={error} isEmpty={filteredData.length === 0} emptyTitle="Chưa có thông tin phiếu xay">
-        {/* Table */}
-        <div className="erp-table-container">
+      {/* Main Data Table */}
+      <DataState loading={loading} error={error} isEmpty={filteredData.length === 0}>
+        <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full">
               <thead>
                 <tr>
                   <th className="th-cell">Ngày xay</th>
@@ -175,16 +179,16 @@ export const XayPhePage: React.FC = () => {
                   <th className="th-cell text-right">Hao hụt (kg)</th>
                   <th className="th-cell text-right">% Hao hụt</th>
                   <th className="th-cell text-right">Số bao</th>
-                  <th className="th-cell">Người xay</th>
+                  <th className="th-cell">Thợ xay</th>
                   <th className="th-cell text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredData.map((item) => {
-                  const inputKg = Number(item.input_quantity_kg) || 0;
-                  const outputKg = Number(item.output_quantity_kg) || 0;
+                  const inputKg = Number(item.input_quantity_kg || item.input_qty_kg) || 0;
+                  const outputKg = Number(item.output_quantity_kg || item.output_qty_kg) || 0;
                   const lossKg = item.loss_kg !== undefined ? item.loss_kg : (inputKg - outputKg);
-                  const lossPct = item.loss_percentage !== undefined ? item.loss_percentage : (inputKg > 0 ? (lossKg / inputKg) * 100 : 0);
+                  const lossPct = (item.loss_percentage !== undefined ? item.loss_percentage : item.loss_pct) ?? (inputKg > 0 ? (lossKg / inputKg) * 100 : 0);
 
                   return (
                     <tr key={item.id} className="tr-hover">
@@ -215,7 +219,7 @@ export const XayPhePage: React.FC = () => {
                         {item.bags_count ? `${item.bags_count} bao` : '—'}
                       </td>
                       <td className="td-cell font-medium text-xs text-[var(--text-primary)]">
-                        {item.operator_name || 'Hoàn'}
+                        {item.operator_name || item.worker || 'Hoa'}
                       </td>
                       <td className="td-cell text-right">
                         <div className="flex items-center justify-end space-x-2">
@@ -228,7 +232,7 @@ export const XayPhePage: React.FC = () => {
                           </button>
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 transition-colors cursor-pointer"
                             title="Xóa"
                           >
                             <Trash2 size={16} />
@@ -244,14 +248,14 @@ export const XayPhePage: React.FC = () => {
         </div>
       </DataState>
 
-      {/* Modal Add/Edit */}
+      {/* Form Modal */}
       <Modal
         isOpen={formState.isOpen}
         onClose={closeModal}
-        title={formState.data?.id ? 'Sửa thông tin phiếu xay' : 'Ghi phiếu xay phế mới'}
+        title={formState.data?.id ? 'Chỉnh sửa phiếu xay phế' : 'Ghi phiếu xay phế mới'}
       >
         <form onSubmit={handleSave} className="space-y-4">
-          <FormField label="Ngày xay" required>
+          <FormField label="Ngày xay phế" required>
             <input
               type="date"
               required
@@ -261,7 +265,7 @@ export const XayPhePage: React.FC = () => {
             />
           </FormField>
 
-          <FormField label="Liên kết lô phế nhập">
+          <FormField label="Chọn lô phế nhập">
             <select
               className="input-field"
               value={formState.data?.import_id || ''}
@@ -270,7 +274,7 @@ export const XayPhePage: React.FC = () => {
                 const imp = importsList.find(i => i.id === impId);
                 handleChange('import_id', impId);
                 if (imp && imp.quantity_kg) {
-                  handleChange('input_quantity_kg', imp.quantity_kg);
+                  handleChange('input_quantity_kg' as any, imp.quantity_kg);
                 }
               }}
             >
@@ -292,8 +296,8 @@ export const XayPhePage: React.FC = () => {
                 step="any"
                 className="input-field font-mono font-bold"
                 placeholder="0"
-                value={formState.data?.input_quantity_kg || ''}
-                onChange={(e) => handleChange('input_quantity_kg', Number(e.target.value))}
+                value={(formState.data as any)?.input_quantity_kg || (formState.data as any)?.input_qty_kg || ''}
+                onChange={(e) => handleChange('input_quantity_kg' as any, Number(e.target.value))}
               />
             </FormField>
 
@@ -305,10 +309,10 @@ export const XayPhePage: React.FC = () => {
                 step="any"
                 className="input-field font-mono font-bold text-emerald-600"
                 placeholder="0"
-                value={formState.data?.output_quantity_kg || ''}
+                value={(formState.data as any)?.output_quantity_kg || (formState.data as any)?.output_qty_kg || ''}
                 onChange={(e) => {
                   const outKg = Number(e.target.value);
-                  handleChange('output_quantity_kg', outKg);
+                  handleChange('output_quantity_kg' as any, outKg);
                   handleChange('bags_count', Math.round(outKg / 25));
                 }}
               />
@@ -331,18 +335,17 @@ export const XayPhePage: React.FC = () => {
               <input
                 type="text"
                 className="input-field"
-                placeholder="Ví dụ: Hoàn, Nga..."
-                value={formState.data?.operator_name || 'Hoàn'}
-                onChange={(e) => handleChange('operator_name', e.target.value)}
+                placeholder="Ví dụ: Hoa, Hoàn..."
+                value={(formState.data as any)?.operator_name || (formState.data as any)?.worker || 'Hoa'}
+                onChange={(e) => handleChange('operator_name' as any, e.target.value)}
               />
             </FormField>
           </div>
 
-          <FormField label="Ghi chú">
+          <FormField label="Ghi chú mẻ xay">
             <textarea
-              className="input-field"
-              rows={2}
-              placeholder="Ghi chú thêm..."
+              className="input-field min-h-20"
+              placeholder="Nhập ghi chú thêm nếu có..."
               value={formState.data?.notes || ''}
               onChange={(e) => handleChange('notes', e.target.value)}
             />
@@ -353,7 +356,7 @@ export const XayPhePage: React.FC = () => {
               Hủy
             </button>
             <button type="submit" className="btn-primary">
-              Lưu phiếu xay
+              {formState.data?.id ? 'Cập nhật' : 'Tạo phiếu xay'}
             </button>
           </div>
         </form>

@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -12,7 +13,7 @@ import { TonKhoPage } from './pages/TonKhoPage';
 import { BaoCaoPage } from './pages/BaoCaoPage';
 import { CaiDatPage } from './pages/CaiDatPage';
 
-const RequireAuth = ({ children }: { children: JSX.Element }) => {
+const RequireAuth = ({ children }: { children: React.ReactElement }) => {
   const { user } = useAuth();
   const location = useLocation();
 

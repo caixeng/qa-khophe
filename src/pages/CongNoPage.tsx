@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useMemo } from 'react';
-import { DollarSign, ArrowUpRight, ArrowDownLeft, Users, CheckCircle2 } from 'lucide-react';
+import { DollarSign, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { cn, formatTien, formatNgay } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
 import { KpiCard } from '../components/KpiCard';
@@ -114,7 +114,7 @@ export const CongNoPage: React.FC = () => {
                       <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(item.date)}</td>
                       <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{item.contact_name || 'Khách mua'}</td>
                       <td className="td-cell text-right font-mono text-xs text-[var(--text-secondary)]">
-                        {item.total_quantity_kg} kg
+                        {(item as any).total_quantity_kg || (item as any).total_kg || 0} kg
                       </td>
                       <td className="td-cell text-right font-mono font-bold text-xs text-[var(--text-primary)]">
                         {formatTien(item.total_amount)}

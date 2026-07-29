@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useMemo } from 'react';
 import { Plus, Edit, Trash2, TrendingUp, Package, Clock, DollarSign } from 'lucide-react';
-import { cn, formatTien, formatNgay, formatKg } from '../lib/utils';
+import { formatTien, formatNgay, formatKg } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
 import { Modal, FormField } from '../components/Modal';
 import { StatusBadge } from '../components/StatusBadge';
@@ -90,7 +90,7 @@ export const NhapPhePage: React.FC = () => {
       } else {
         await importsService.create({
           date: data.date || new Date().toISOString().split('T')[0],
-          contact_id: data.contact_id || null,
+          contact_id: data.contact_id || undefined,
           contact_name: contactName,
           material_type: data.material_type || 'Tấm nhựa nano',
           quantity_kg: qty,

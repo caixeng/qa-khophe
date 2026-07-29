@@ -5,6 +5,7 @@ import { cn } from '../lib/utils';
 export interface TableToolbarProps {
   searchTerm?: string;
   searchQuery?: string;
+  searchValue?: string;
   onSearchChange?: (value: string) => void;
   setSearchQuery?: (value: string) => void;
   placeholder?: string;
@@ -16,6 +17,7 @@ export interface TableToolbarProps {
 export const TableToolbar: React.FC<TableToolbarProps> = ({
   searchTerm,
   searchQuery,
+  searchValue,
   onSearchChange,
   setSearchQuery,
   placeholder = 'Tìm kiếm...',
@@ -23,7 +25,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   totalCount,
   className
 }) => {
-  const value = searchQuery !== undefined ? searchQuery : (searchTerm !== undefined ? searchTerm : '');
+  const value = searchValue !== undefined ? searchValue : (searchQuery !== undefined ? searchQuery : (searchTerm !== undefined ? searchTerm : ''));
   const handleChange = (val: string) => {
     if (onSearchChange) onSearchChange(val);
     if (setSearchQuery) setSearchQuery(val);

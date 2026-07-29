@@ -4,7 +4,7 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Home, Users, Package, BarChart3, Settings, 
   Menu, ChevronLeft, ChevronRight, LogOut, Recycle, Wallet,
-  ChevronDown, Sun, Leaf, Moon, Check, Sliders
+  ChevronDown, Sun, Leaf, Moon, Check
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
@@ -94,7 +94,7 @@ export const AppLayout = () => {
               key={item.path}
               to={item.path}
               title={collapsed ? item.label : undefined}
-              className={({ isActive }) => {
+              className={() => {
                 const isCurrent = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
                 return cn(
                   "flex items-center px-3.5 py-3 rounded-xl transition-all font-bold text-xs group relative",

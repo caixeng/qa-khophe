@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowDownToLine, Settings2, ArrowUpFromLine, Scale } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { NhapPhePage } from './NhapPhePage';
