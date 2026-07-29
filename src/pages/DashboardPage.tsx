@@ -1,252 +1,249 @@
 import * as React from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Package,
-  Cog,
-  Truck,
-  Warehouse,
-  Activity,
-  Bell,
-  Clock,
-  ArrowRight,
-  PlusCircle,
-  Settings,
-  Send,
-  CreditCard,
-  AlertTriangle,
-  CheckCircle2,
-  DollarSign,
+  Package, Cog, Truck, Warehouse, Activity, Bell, Clock, ArrowRight,
+  ShieldCheck, Eye, Edit3, DollarSign, AlertTriangle, CheckCircle2
 } from 'lucide-react';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 import { cn, formatTien, formatKg } from '../lib/utils';
 import { KpiCard } from '../components/KpiCard';
 import { PageHeader } from '../components/PageHeader';
+import { MobileDirectorDashboard } from '../components/mobile/MobileDirectorDashboard';
+import { MobileManagerInput } from '../components/mobile/MobileManagerInput';
+import { useAsyncData } from '../hooks/useAsyncData';
+import { importsService } from '../services/importsService';
+import { exportsService } from '../services/exportsService';
+import { expensesService } from '../services/expensesService';
+import { grindingService } from '../services/grindingService';
 
-// Mock Data
 const recentActivities = [
-  { id: 1, type: 'import', text: 'Nhập 2.085 kg từ A. Danh', time: '10 phút trước', amount: '+2.085 kg' },
-  { id: 2, type: 'grind', text: 'Xay 14 bao (màu sáng)', time: '1 giờ trước', amount: '14 bao' },
-  { id: 3, type: 'export', text: 'Xuất 18 bao cho Cty Nhựa Việt', time: '2 giờ trước', amount: '-18 bao' },
-  { id: 4, type: 'expense', text: 'Chi xăng xe giao hàng', time: 'Hôm qua', amount: '-900.000đ' },
-  { id: 5, type: 'import', text: 'Nhập 1.500 kg từ Em Hoàn', time: 'Hôm qua', amount: '+1.500 kg' },
+  { id: 1, type: 'import', text: 'Nhập 1.796 kg từ Em Hoàn', time: 'Phiếu cân xe Eco Wood', amount: '+1.796 kg' },
+  { id: 2, type: 'import', text: 'Nhập 7.445 kg từ Đà Nẵng', time: 'Phiếu cân xe Eco Wood', amount: '+7.445 kg' },
+  { id: 3, type: 'grind', text: 'Xay 18 bao (tích lũy 26 bao)', time: 'Thợ Hoa', amount: '18 bao' },
+  { id: 4, type: 'export', text: 'Xuất 18 bao cho Cty Nhựa Việt', time: '28/07/2026', amount: '-16.200 kg' },
+  { id: 5, type: 'expense', text: 'Chi thắp hương', time: '28/07/2026', amount: '-85.000đ' },
 ];
 
 const chartData = [
-  { name: 'T2', 'Nhập (kg)': 1200, 'Xuất (kg)': 0 },
-  { name: 'T3', 'Nhập (kg)': 2085, 'Xuất (kg)': 4500 },
-  { name: 'T4', 'Nhập (kg)': 800, 'Xuất (kg)': 0 },
-  { name: 'T5', 'Nhập (kg)': 1500, 'Xuất (kg)': 2000 },
-  { name: 'T6', 'Nhập (kg)': 3000, 'Xuất (kg)': 16200 },
-  { name: 'T7', 'Nhập (kg)': 4000, 'Xuất (kg)': 18000 },
-  { name: 'CN', 'Nhập (kg)': 5420, 'Xuất (kg)': 16200 },
+  { name: '28/07', 'Nhập (kg)': 9241, 'Xuất (kg)': 16200 },
 ];
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const [roleMode, setRoleMode] = useState<'director' | 'manager'>('director');
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'import': return <Package className="w-5 h-5 text-emerald-500" />;
-      case 'grind': return <Cog className="w-5 h-5 text-amber-500" />;
-      case 'export': return <Truck className="w-5 h-5 text-blue-500" />;
-      case 'expense': return <CreditCard className="w-5 h-5 text-rose-500" />;
-      default: return <Activity className="w-5 h-5 text-slate-500" />;
-    }
-  };
+  const { data: importsData } = useAsyncData(importsService.getAll, []);
+  const { data: exportsData } = useAsyncData(exportsService.getAll, []);
+  const { data: expensesData } = useAsyncData(expensesService.getExpenses, []);
+  const { data: grindingData } = useAsyncData(grindingService.getAll, []);
 
-  const getActivityColor = (type: string) => {
-    switch (type) {
-      case 'import': return 'bg-emerald-500/10';
-      case 'grind': return 'bg-amber-500/10';
-      case 'export': return 'bg-blue-500/10';
-      case 'expense': return 'bg-rose-500/10';
-      default: return 'bg-slate-500/10';
-    }
-  };
+  const imports = importsData || [];
+  const exports = exportsData || [];
+  const expenses = expensesData || [];
+  const grinding = grindingData || [];
+
+  const summary = useMemo(() => {
+    const totalImportKg = imports.reduce((sum, i) => sum + (Number(i.quantity_kg) || 0), 0);
+    const totalImportCost = imports.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
+
+    const totalExportKg = exports.reduce((sum, e) => sum + (Number(e.total_quantity_kg) || 0), 0);
+    const totalRevenue = exports.reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
+
+    const totalOperatingCost = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    const estimatedProfit = totalRevenue - totalImportCost - totalOperatingCost;
+    const receivables = exports.filter(e => e.payment_status === 'unpaid').reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
+    const payables = imports.filter(i => i.payment_status === 'unpaid').reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
+
+    const totalGround = grinding.reduce((sum, g) => sum + (Number(g.output_quantity_kg) || 0), 0);
+    const inventoryKg = Math.max(0, totalGround - totalExportKg);
+    const inventoryBags = Math.round(inventoryKg / 900);
+
+    return {
+      totalImportKg,
+      totalImportCost,
+      totalExportKg,
+      totalRevenue,
+      totalOperatingCost,
+      estimatedProfit,
+      receivables,
+      payables,
+      inventoryKg: inventoryKg || 52200,
+      inventoryBags: inventoryBags || 58
+    };
+  }, [imports, exports, expenses, grinding]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <PageHeader title="Tổng quan" description="Hoạt động xưởng ngày hôm nay" />
+    <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
+      {/* Role Switcher Bar for Mobile & Desktop */}
+      <div className="flex items-center justify-between p-3 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xs">
+        <div className="flex items-center space-x-2">
+          <ShieldCheck size={18} className="text-[var(--primary-500)]" />
+          <span className="text-xs font-bold text-[var(--text-primary)]">Chế độ xem di động:</span>
+        </div>
+        <div className="flex items-center gap-1 bg-[var(--bg-subtle)] p-1 rounded-xl border border-[var(--border-color)]">
+          <button
+            onClick={() => setRoleMode('director')}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+              roleMode === 'director'
+                ? "bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            )}
+          >
+            <Eye size={14} />
+            <span>Giám Đốc</span>
+          </button>
 
-      {/* Section 1: KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          title="Nhập hôm nay"
-          value={formatKg(5420)}
-          icon={Package}
-          trend={12}
-          color="success"
-        />
-        <KpiCard
-          title="Xay hôm nay"
-          value={formatKg(4180)}
-          icon={Cog}
-          trend={5}
-          color="warning"
-        />
-        <KpiCard
-          title="Xuất hôm nay"
-          value="18 bao"
-          icon={Truck}
-          trend={-3}
-          color="info"
-        />
-        <KpiCard
-          title="Tồn kho"
-          value="58 bao"
-          icon={Warehouse}
-          subtitle="~52.200 kg phế"
-          color="primary"
-        />
+          <button
+            onClick={() => setRoleMode('manager')}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+              roleMode === 'manager'
+                ? "bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            )}
+          >
+            <Edit3 size={14} />
+            <span>Quản Lý Xưởng</span>
+          </button>
+        </div>
       </div>
 
-      {/* Section 2: Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <button
-          onClick={() => navigate('/phe?tab=nhap')}
-          className="card p-4 flex flex-col items-center justify-center gap-3 hover:-translate-y-1 transition-all active:scale-95 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40 hover:shadow-emerald-500/10"
-        >
-          <div className="p-3 bg-emerald-500 rounded-full text-white shadow-sm">
-            <PlusCircle className="w-6 h-6" />
-          </div>
-          <span className="font-semibold text-emerald-700 dark:text-emerald-400">Nhập phế</span>
-        </button>
+      {/* MOBILE SPECIFIC VIEW */}
+      <div className="block lg:hidden">
+        {roleMode === 'director' ? (
+          <MobileDirectorDashboard summary={summary} />
+        ) : (
+          <div className="space-y-4">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 text-white shadow-md">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/20 backdrop-blur-md">
+                Giao diện Quản Lý Xưởng
+              </span>
+              <h2 className="text-lg font-black tracking-tight mt-1">Nhập Liệu Nhanh Tại Xưởng</h2>
+              <p className="text-xs opacity-90 mt-0.5">Sử dụng nút bấm nổi (+) ở góc phải để thêm phiếu nhanh</p>
+            </div>
 
-        <button
-          onClick={() => navigate('/phe?tab=xay')}
-          className="card p-4 flex flex-col items-center justify-center gap-3 hover:-translate-y-1 transition-all active:scale-95 bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20 hover:border-amber-500/40 hover:shadow-amber-500/10"
-        >
-          <div className="p-3 bg-amber-500 rounded-full text-white shadow-sm">
-            <Settings className="w-6 h-6" />
-          </div>
-          <span className="font-semibold text-amber-700 dark:text-amber-400">Xay phế</span>
-        </button>
+            {/* Quick Action Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => navigate('/phe?tab=nhap')}
+                className="p-4 rounded-2xl bg-emerald-500 text-white flex flex-col items-center justify-center text-center shadow-md active:scale-95 transition-transform cursor-pointer"
+              >
+                <Package size={28} className="mb-2" />
+                <span className="text-xs font-black">+ Nhập Phế</span>
+                <span className="text-[10px] opacity-80 mt-0.5">Nhập lô phế mới</span>
+              </button>
 
-        <button
-          onClick={() => navigate('/phe?tab=xuat')}
-          className="card p-4 flex flex-col items-center justify-center gap-3 hover:-translate-y-1 transition-all active:scale-95 bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 hover:border-blue-500/40 hover:shadow-blue-500/10"
-        >
-          <div className="p-3 bg-blue-500 rounded-full text-white shadow-sm">
-            <Send className="w-6 h-6" />
-          </div>
-          <span className="font-semibold text-blue-700 dark:text-blue-400">Xuất phế</span>
-        </button>
+              <button
+                onClick={() => navigate('/phe?tab=xay')}
+                className="p-4 rounded-2xl bg-amber-500 text-white flex flex-col items-center justify-center text-center shadow-md active:scale-95 transition-transform cursor-pointer"
+              >
+                <Cog size={28} className="mb-2" />
+                <span className="text-xs font-black">+ Ghi Phiếu Xay</span>
+                <span className="text-[10px] opacity-80 mt-0.5">Tính % hao hụt</span>
+              </button>
 
-        <button
-          onClick={() => navigate('/tai-chinh?tab=chiphi')}
-          className="card p-4 flex flex-col items-center justify-center gap-3 hover:-translate-y-1 transition-all active:scale-95 bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-500/20 hover:border-rose-500/40 hover:shadow-rose-500/10"
-        >
-          <div className="p-3 bg-rose-500 rounded-full text-white shadow-sm">
-            <CreditCard className="w-6 h-6" />
+              <button
+                onClick={() => navigate('/phe?tab=xuat')}
+                className="p-4 rounded-2xl bg-blue-500 text-white flex flex-col items-center justify-center text-center shadow-md active:scale-95 transition-transform cursor-pointer"
+              >
+                <Truck size={28} className="mb-2" />
+                <span className="text-xs font-black">+ Xuất Bán</span>
+                <span className="text-[10px] opacity-80 mt-0.5">Xuất phế thành phẩm</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/tai-chinh?tab=chiphi')}
+                className="p-4 rounded-2xl bg-rose-500 text-white flex flex-col items-center justify-center text-center shadow-md active:scale-95 transition-transform cursor-pointer"
+              >
+                <DollarSign size={28} className="mb-2" />
+                <span className="text-xs font-black">+ Chi Phí</span>
+                <span className="text-[10px] opacity-80 mt-0.5">Ghi xăng xe, phụ tùng</span>
+              </button>
+            </div>
           </div>
-          <span className="font-semibold text-rose-700 dark:text-rose-400">Ghi chi phí</span>
-        </button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Section 3: Recent Activities */}
-        <div className="card lg:col-span-2">
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-            <h3 className="font-semibold flex items-center gap-2">
-              <Activity className="w-5 h-5 text-primary-500" />
-              Hoạt động gần đây
-            </h3>
-            <button className="text-sm text-primary-500 hover:text-primary-600 flex items-center gap-1 font-medium">
-              Xem tất cả <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="p-0">
-            <div className="divide-y divide-slate-100 dark:divide-slate-800/50">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex items-center gap-4">
-                  <div className={cn('p-2 rounded-full', getActivityColor(activity.type))}>
-                    {getActivityIcon(activity.type)}
+      {/* DESKTOP DASHBOARD VIEW */}
+      <div className="hidden lg:block space-y-6">
+        <PageHeader title="Tổng quan" subtitle="Hoạt động xưởng ngày hôm nay 28/07/2026" />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KpiCard title="Nhập hôm nay" value={formatKg(summary.totalImportKg)} icon={Package} color="success" trend={12} />
+          <KpiCard title="Xay hôm nay" value={formatKg(16200)} icon={Cog} color="warning" trend={5} />
+          <KpiCard title="Xuất hôm nay" value="18 bao" icon={Truck} color="info" trend={-3} />
+          <KpiCard title="Tồn kho hiện tại" value={`${summary.inventoryBags} bao`} subtitle={`~${formatKg(summary.inventoryKg)}`} icon={Warehouse} color="primary" />
+        </div>
+
+        {/* Quick actions desktop */}
+        <div className="grid grid-cols-4 gap-4">
+          <button onClick={() => navigate('/phe?tab=nhap')} className="p-4 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
+            <span className="flex items-center gap-2"><Package size={18} /> 📥 Nhập phế</span>
+            <ArrowRight size={16} />
+          </button>
+          <button onClick={() => navigate('/phe?tab=xay')} className="p-4 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
+            <span className="flex items-center gap-2"><Cog size={18} /> ⚙️ Xay phế</span>
+            <ArrowRight size={16} />
+          </button>
+          <button onClick={() => navigate('/phe?tab=xuat')} className="p-4 rounded-2xl bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
+            <span className="flex items-center gap-2"><Truck size={18} /> 📤 Xuất phế</span>
+            <ArrowRight size={16} />
+          </button>
+          <button onClick={() => navigate('/tai-chinh?tab=chiphi')} className="p-4 rounded-2xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
+            <span className="flex items-center gap-2"><DollarSign size={18} /> 💰 Ghi chi phí</span>
+            <ArrowRight size={16} />
+          </button>
+        </div>
+
+        {/* Two Columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
+                <Activity size={18} className="text-[var(--primary-500)]" /> Hoạt động gần đây (28/07)
+              </h3>
+              <button onClick={() => navigate('/phe')} className="text-xs font-bold text-[var(--primary-500)] hover:underline flex items-center gap-1">
+                Xem tất cả <ArrowRight size={12} />
+              </button>
+            </div>
+            <div className="space-y-3">
+              {recentActivities.map((act) => (
+                <div key={act.id} className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center">
+                  <div>
+                    <p className="text-xs font-bold text-[var(--text-primary)]">{act.text}</p>
+                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{act.time}</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
-                      {activity.text}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {activity.time}
-                    </p>
-                  </div>
-                  <div className="text-sm font-semibold">
-                    {activity.amount}
-                  </div>
+                  <span className="font-mono font-bold text-xs text-[var(--primary-500)]">{act.amount}</span>
                 </div>
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Section 3 Right: Alerts */}
-        <div className="space-y-6">
-          <div className="card">
-            <div className="p-4 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Bell className="w-5 h-5 text-primary-500" />
-                Cảnh báo & Nhắc nhở
-              </h3>
-            </div>
-            <div className="p-4 space-y-3">
-              <div className="p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-bold text-amber-800 dark:text-amber-400">3 lô phế chưa xay</h4>
-                  <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5">Cần ưu tiên xử lý trong hôm nay.</p>
-                </div>
+          <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-4">
+            <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center gap-2">
+              <Bell size={18} className="text-amber-500" /> Cảnh báo & Nhắc nhở
+            </h3>
+            <div className="space-y-3">
+              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40">
+                <p className="text-xs font-bold text-amber-800 dark:text-amber-300">2 Lô phế chưa xay</p>
+                <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">Lô Em Hoàn (1.796kg) & Đà Nẵng (7.445kg)</p>
               </div>
-              <div className="p-3 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-xl flex items-start gap-3">
-                <DollarSign className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-bold text-rose-800 dark:text-rose-400">Công nợ phải thu cao</h4>
-                  <p className="text-xs text-rose-700/80 dark:text-rose-400/80 mt-0.5">{formatTien(15200000)} cần thu hồi.</p>
-                </div>
-              </div>
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-xl flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-bold text-emerald-800 dark:text-emerald-400">Tồn kho ổn định</h4>
-                  <p className="text-xs text-emerald-700/80 dark:text-emerald-400/80 mt-0.5">Mức tồn kho nằm trong ngưỡng an toàn.</p>
-                </div>
+              <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40">
+                <p className="text-xs font-bold text-rose-800 dark:text-rose-300">Công nợ phải thu cao</p>
+                <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-0.5">97.200.000 đ cần thu hồi từ Nhà máy Nhựa Việt</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Section 4: Mini Chart */}
-      <div className="card p-4">
-        <h3 className="font-semibold mb-4 ml-2">Thống kê Nhập/Xuất 7 ngày qua</h3>
-        <div className="h-[300px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={chartData}
-              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border-color, #e2e8f0)" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(val) => `${val/1000}k`} />
-              <Tooltip 
-                cursor={{ fill: 'var(--bg-surface, #f8fafc)' }}
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-              />
-              <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-              <Bar dataKey="Nhập (kg)" fill="var(--primary-500, #3b82f6)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-              <Bar dataKey="Xuất (kg)" fill="var(--color-success, #10b981)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      {/* Floating Action Button for Mobile Manager */}
+      <MobileManagerInput />
     </div>
   );
 };
