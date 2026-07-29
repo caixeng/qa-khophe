@@ -4,7 +4,7 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Home, Users, Package, BarChart3, Settings, 
   Menu, ChevronLeft, ChevronRight, LogOut, Recycle, Wallet,
-  ChevronDown, Sun, Leaf, Moon, Check
+  ChevronDown, Sun, Leaf, Moon, Check, UserCheck
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,6 +15,7 @@ const MENU_ITEMS = [
   { id: 'phe', path: '/phe', label: 'Quản lý Phế', icon: Recycle },
   { id: 'inventory', path: '/ton-kho', label: 'Tồn kho', icon: Package },
   { id: 'finance', path: '/tai-chinh', label: 'Tài chính', icon: Wallet },
+  { id: 'employees', path: '/nhan-vien', label: 'Quản lý Nhân sự', icon: UserCheck },
   { id: 'contacts', path: '/danh-ba', label: 'Danh bạ đối tác', icon: Users },
   { id: 'reports', path: '/bao-cao', label: 'Báo cáo', icon: BarChart3 },
   { id: 'settings', path: '/cai-dat', label: 'Cài đặt', icon: Settings },

@@ -10,6 +10,7 @@ import { DanhBaPage } from './pages/DanhBaPage';
 import { QuanLyPhePage } from './pages/QuanLyPhePage';
 import { TaiChinhPage } from './pages/TaiChinhPage';
 import { TonKhoPage } from './pages/TonKhoPage';
+import { NhanVienPage } from './pages/NhanVienPage';
 import { BaoCaoPage } from './pages/BaoCaoPage';
 import { CaiDatPage } from './pages/CaiDatPage';
 
@@ -50,6 +51,7 @@ function App() {
                 <Route path="tai-chinh" element={<TaiChinhPage />} />
                 
                 <Route path="ton-kho" element={<TonKhoPage />} />
+                <Route path="nhan-vien" element={<NhanVienPage />} />
                 <Route path="danh-ba" element={<DanhBaPage />} />
                 <Route path="bao-cao" element={<BaoCaoPage />} />
                 <Route path="cai-dat" element={<CaiDatPage />} />

@@ -11,6 +11,7 @@ export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 export type ProcessingStatus = 'pending' | 'grinding' | 'done';
 export type ExpenseCategory = 'fuel' | 'blade' | 'oil' | 'labor' | 'parts' | 'transport' | 'maintenance' | 'other';
 export type AdvanceType = 'advance' | 'settlement' | 'ung' | 'hoan';
+export type EmployeeRole = 'grinder' | 'weigher' | 'driver' | 'manager' | 'staff';
 
 // --- Data Models ---
 
@@ -130,5 +131,33 @@ export interface Advance {
   type: AdvanceType;
   notes?: string;
   created_by?: string;
+  created_at?: string;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  role: EmployeeRole;
+  daily_salary: number;
+  phone?: string;
+  address?: string;
+  join_date?: string;
+  status: 'active' | 'inactive';
+  notes?: string;
+  created_at?: string;
+}
+
+export interface Attendance {
+  id: string;
+  date: string;
+  employee_id?: string;
+  employee_name: string;
+  work_shift: number; // 1 = 1 công, 0.5 = 1/2 công, 1.5 = 1.5 công
+  overtime_hours?: number;
+  daily_pay: number;
+  advance_pay?: number;
+  net_pay: number;
+  payment_status: PaymentStatus;
+  notes?: string;
   created_at?: string;
 }
