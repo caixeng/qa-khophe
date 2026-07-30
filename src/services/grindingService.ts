@@ -1,18 +1,13 @@
 import { supabase } from '../lib/supabase';
 import type { Grinding } from '../types';
 
-const INITIAL_2807_GRINDING: Grinding[] = [
-  {
-    id: 'grd-2807-1',
-    date: '2026-07-28',
-    input_quantity_kg: 16200,
-    output_quantity_kg: 16200,
-    loss_kg: 0,
-    loss_percentage: 0,
-    bags_count: 18,
-    operator_name: 'Hoa',
-    notes: 'Xay phế 18 bao (đau tay nghỉ cả ngày 27/07, xay tích lũy 26 bao trong kho)'
-  }
+export const ALL_NOTEBOOK_GRINDING: Grinding[] = [
+  { id: 'grd-1', date: '2026-06-29', input_quantity_kg: 1395, output_quantity_kg: 1412, loss_kg: -17, loss_percentage: -1.2, bags_count: 56, operator_name: 'Hoa', notes: 'R Hoàn (Xay ra 1.412kg, dôi +17kg)' },
+  { id: 'grd-2', date: '2026-06-29', input_quantity_kg: 2280, output_quantity_kg: 2248, loss_kg: 32, loss_percentage: 1.4, bags_count: 90, operator_name: 'Hoa', notes: 'R Nga (Xay 29-30/06: 2.248kg)' },
+  { id: 'grd-3', date: '2026-06-30', input_quantity_kg: 2505, output_quantity_kg: 2496, loss_kg: 9, loss_percentage: 0.4, bags_count: 100, operator_name: 'Hoa', notes: 'R Hoàn (Xay 30/06: 2.496kg)' },
+  { id: 'grd-4', date: '2026-06-30', input_quantity_kg: 1655, output_quantity_kg: 1521, loss_kg: 134, loss_percentage: 8.1, bags_count: 61, operator_name: 'Hoa', notes: 'R CHoan (Xay 30/06: 1.521kg)' },
+  { id: 'grd-5', date: '2026-07-17', input_quantity_kg: 865, output_quantity_kg: 855, loss_kg: 10, loss_percentage: 1.1, bags_count: 34, operator_name: 'Hoa', notes: 'chưa R Ph.Tuấn (Xay 17/07: 855kg)' },
+  { id: 'grd-6', date: '2026-07-28', input_quantity_kg: 16200, output_quantity_kg: 16200, loss_kg: 0, loss_percentage: 0, bags_count: 18, operator_name: 'Hoa', notes: 'Xay phế 18 bao (tăng ca 1 bao, tích lũy 26 bao trong kho)' }
 ];
 
 export const grindingService = {
@@ -24,7 +19,7 @@ export const grindingService = {
         .order('date', { ascending: false });
 
       if (error || !data || data.length === 0) {
-        return INITIAL_2807_GRINDING;
+        return ALL_NOTEBOOK_GRINDING;
       }
       return data.map(item => ({
         id: item.id,
@@ -40,7 +35,7 @@ export const grindingService = {
         created_at: item.created_at,
       }));
     } catch {
-      return INITIAL_2807_GRINDING;
+      return ALL_NOTEBOOK_GRINDING;
     }
   },
 

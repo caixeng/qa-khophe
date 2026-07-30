@@ -1,13 +1,21 @@
 import { supabase } from '../lib/supabase';
 import type { Expense, Advance } from '../types';
 
-const INITIAL_2807_EXPENSES: Expense[] = [
+export const INITIAL_NOTEBOOK_EXPENSES: Expense[] = [
   {
     id: 'exp-2807-1',
     date: '2026-07-28',
+    category: 'fuel',
+    amount: 800000,
+    description: 'Xăng 800.000đ',
+    notes: 'Chi tiêu kho ngày 28/07/2026 (Sổ 28/07)'
+  },
+  {
+    id: 'exp-2807-2',
+    date: '2026-07-28',
     category: 'other',
     amount: 85000,
-    description: 'Thắp hương',
+    description: 'Thắp hương 85.000đ',
     notes: 'Chi tiêu kho ngày 28/07/2026'
   }
 ];
@@ -21,7 +29,7 @@ export const expensesService = {
         .order('date', { ascending: false });
 
       if (error || !data || data.length === 0) {
-        return INITIAL_2807_EXPENSES;
+        return INITIAL_NOTEBOOK_EXPENSES;
       }
       return data.map(item => ({
         id: item.id,
@@ -33,7 +41,7 @@ export const expensesService = {
         created_at: item.created_at,
       }));
     } catch {
-      return INITIAL_2807_EXPENSES;
+      return INITIAL_NOTEBOOK_EXPENSES;
     }
   },
 

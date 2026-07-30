@@ -1,6 +1,18 @@
 import { supabase } from '../lib/supabase';
 import type { WeighingSession, WeighingBag } from '../types';
 
+const INITIAL_2907_WEIGHING: WeighingSession[] = [
+  {
+    id: 'ws-2907-1',
+    date: '2026-07-29',
+    material_type: 'Cân Phế Nam (không lết)',
+    total_bags: 24,
+    total_kg: 20947,
+    total_weight_kg: 20947,
+    notes: 'Không lết - 24 bao tổng 20.947 kg'
+  }
+];
+
 export const weighingService = {
   async getSessions(): Promise<WeighingSession[]> {
     try {
@@ -9,10 +21,10 @@ export const weighingService = {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error || !data) return [];
+      if (error || !data || data.length === 0) return INITIAL_2907_WEIGHING;
       return data;
     } catch {
-      return [];
+      return INITIAL_2907_WEIGHING;
     }
   },
 
@@ -39,7 +51,7 @@ export const weighingService = {
         date: session.date || new Date().toISOString().split('T')[0],
         material_type: session.material_type || 'Tấm nhựa nano',
         total_bags: Number(session.total_bags) || 0,
-        total_weight_kg: totalW,
+        total_kg: totalW,
         notes: session.notes || null,
       })
       .select()
@@ -48,7 +60,7 @@ export const weighingService = {
     if (error) {
       return {
         id: `ws-${Date.now()}`,
-        date: session.date || '2026-07-28',
+        date: session.date || '2026-07-29',
         material_type: session.material_type || 'Tấm nhựa nano',
         total_bags: Number(session.total_bags) || 0,
         total_kg: totalW,
@@ -90,7 +102,7 @@ export const weighingService = {
         .from('weighing_sessions')
         .update({
           total_bags: bags.length,
-          total_weight_kg: totalWeight,
+          total_kg: totalWeight,
         })
         .eq('id', sessionId);
     }
