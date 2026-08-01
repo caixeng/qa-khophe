@@ -20,12 +20,11 @@ import { Recycle } from 'lucide-react';
 
 const LoadingScreen = () => (
   <div className="flex flex-col h-screen items-center justify-center bg-[var(--bg-app)] text-[var(--primary-500)]">
-    <div className="relative flex items-center justify-center w-16 h-16 mb-4">
-      <div className="absolute inset-0 rounded-full border-4 border-[var(--primary-100)] border-t-[var(--primary-500)] animate-spin"></div>
-      <Recycle size={32} />
+    <div className="relative flex items-center justify-center w-20 h-20 mb-4 p-0.5 rounded-2xl bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] shadow-lg ring-2 ring-[var(--primary-400)]/30 overflow-hidden">
+      <img src="/vua_phe_logo2.jpg" alt="VUA PHẾ Logo" className="w-full h-full object-cover rounded-xl" />
     </div>
-    <h2 className="text-xl font-bold tracking-tight">KhoPhe ERP</h2>
-    <p className="text-sm text-[var(--text-muted)] mt-1 animate-pulse">Đang tải dữ liệu...</p>
+    <h2 className="text-xl font-black tracking-tight text-[var(--primary-500)]">VUA PHẾ</h2>
+    <p className="text-sm font-semibold text-[var(--text-muted)] mt-1 animate-pulse">Đang tải dữ liệu xưởng...</p>
   </div>
 );
 

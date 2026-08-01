@@ -25,8 +25,8 @@ const BASE_STYLE = `
 const HEADER = `
   <div class="head">
     <div class="l">
-      <div class="b">Xưởng Phế Liệu</div>
-      <div class="b u">KhoPhe ERP</div>
+      <div class="b">Tái Chế Phế Liệu</div>
+      <div class="b u">VUA PHẾ</div>
     </div>
     <div class="l">
       <div class="b">Cộng hòa xã hội chủ nghĩa Việt Nam</div>

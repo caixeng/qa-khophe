@@ -158,8 +158,8 @@ export const DanhBaPage: React.FC = () => {
       />
 
       <DataState loading={loading} error={error} isEmpty={filteredData.length === 0} emptyTitle="Chưa có liên hệ nào">
-        {/* Contacts Table */}
-        <div className="erp-table-container">
+        {/* Desktop Table */}
+        <div className="erp-table-container hidden lg:block">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <caption className="sr-only">Danh bạ đối tác</caption>
@@ -230,6 +230,70 @@ export const DanhBaPage: React.FC = () => {
             </table>
           </div>
         </div>
+
+        {/* Mobile Card List */}
+        <div className="lg:hidden space-y-3">
+          {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((contact) => (
+            <div key={contact.id} className="p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xs space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[var(--primary-50)] text-[var(--primary-600)] flex items-center justify-center font-bold shrink-0">
+                    <Users size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-[var(--text-primary)]">{contact.name}</h4>
+                    {contact.phone && (
+                      <p className="text-xs font-mono text-[var(--text-muted)] mt-0.5 flex items-center gap-1">
+                        <Phone size={12} /> {contact.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <StatusBadge status={contact.status || 'active'} />
+              </div>
+
+              {(contact.address || contact.notes) && (
+                <div className="p-2.5 rounded-xl bg-[var(--bg-subtle)] text-xs space-y-1">
+                  {contact.address && (
+                    <p className="text-[var(--text-secondary)] flex items-center gap-1.5">
+                      <MapPin size={13} className="text-[var(--text-muted)] shrink-0" />
+                      <span>{contact.address}</span>
+                    </p>
+                  )}
+                  {contact.notes && <p className="text-[var(--text-muted)] italic">{contact.notes}</p>}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-[var(--border-color)]">
+                {contact.phone ? (
+                  <a
+                    href={`tel:${contact.phone}`}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-xs active:scale-95 transition-transform"
+                  >
+                    <Phone size={14} /> Gọi điện
+                  </a>
+                ) : (
+                  <div className="flex-1" />
+                )}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => openModal(contact)}
+                    className="p-2 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Edit size={14} /> Sửa
+                  </button>
+                  <button
+                    onClick={() => handleDelete(contact.id)}
+                    className="p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
         <PaginationBar
           currentPage={currentPage}
           totalItems={filteredData.length}

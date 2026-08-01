@@ -4,7 +4,7 @@ import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, Users, Package, BarChart3, Settings,
   Menu, ChevronLeft, ChevronRight, LogOut, Recycle, Wallet,
-  ChevronDown, Sun, Leaf, Moon, Check, UserCheck, Search
+  ChevronDown, Sun, Leaf, Moon, Check, UserCheck, Search, Plus
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,6 +12,8 @@ import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/
 import { Breadcrumb } from '../components/Breadcrumb';
 import { GlobalSearch } from '../components/GlobalSearch';
 import { MobileManagerInput } from '../components/mobile/MobileManagerInput';
+import { MobileMoreMenuSheet } from '../components/mobile/MobileMoreMenuSheet';
+import { MobileQuickActionModal } from '../components/mobile/MobileQuickActionModal';
 import { Suspense } from 'react';
 import { KpiCardSkeleton, TableSkeleton } from '../components/SkeletonLoader';
 
@@ -50,6 +52,8 @@ export const AppLayout = () => {
   
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [quickActionOpen, setQuickActionOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('sidebar_collapsed', collapsed.toString());
@@ -98,16 +102,16 @@ export const AppLayout = () => {
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-[var(--border-color)]">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] flex items-center justify-center text-white shadow-md shrink-0">
-              <Recycle size={20} className="transition-transform duration-500 hover:rotate-180" />
+            <div className="w-9 h-9 rounded-xl bg-[var(--primary-500)] p-0.5 shadow-md shrink-0 overflow-hidden ring-1 ring-[var(--primary-400)]/30">
+              <img src="/vua_phe_logo2.jpg" alt="VUA PHẾ Logo" className="w-full h-full object-cover rounded-lg" />
             </div>
             {!collapsed && (
               <div className="flex flex-col min-w-0">
                 <span className="font-black text-lg tracking-tight text-[var(--primary-500)] whitespace-nowrap leading-none">
-                  KhoPhe ERP
+                  VUA PHẾ
                 </span>
-                <span className="text-[10px] font-semibold tracking-wider text-[var(--text-muted)] uppercase mt-0.5">
-                  Quản lý xưởng phế
+                <span className="text-[10px] font-extrabold tracking-wider text-[var(--text-muted)] uppercase mt-0.5">
+                  Tái chế & Quản lý Xưởng
                 </span>
               </div>
             )}
@@ -162,16 +166,13 @@ export const AppLayout = () => {
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* HEADER */}
         <header className="h-16 flex items-center justify-between px-4 lg:px-6 backdrop-blur-md bg-[var(--bg-surface)]/80 border-b border-[var(--border-color)] z-30 shadow-xs">
-          <div className="flex flex-col justify-center">
-            <h1 className="text-lg font-bold tracking-tight text-[var(--text-primary)] hidden sm:block leading-tight">
-              {currentPage.label}
-            </h1>
-            <div className="hidden sm:block mt-0.5">
+          <div className="flex items-center">
+            <div className="hidden sm:block">
               <Breadcrumb />
             </div>
             <div className="sm:hidden flex items-center gap-2">
-              <Recycle size={18} className="text-[var(--primary-500)]" />
-              <span className="font-black text-base text-[var(--primary-500)]">KhoPhe</span>
+              <img src="/vua_phe_logo2.jpg" alt="VUA PHẾ Logo" className="w-7 h-7 rounded-lg object-cover ring-1 ring-[var(--primary-400)]/30" />
+              <span className="font-black text-base text-[var(--primary-500)]">VUA PHẾ</span>
             </div>
           </div>
 
@@ -340,31 +341,63 @@ export const AppLayout = () => {
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav role="navigation" aria-label="Menu di động" className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-surface)] border-t border-[var(--border-color)] flex justify-around items-center h-16 px-2 z-20 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-        {mobileTop5.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) => cn(
-              "flex flex-col items-center justify-center w-14 h-full gap-1 transition-all",
-              isActive ? "text-[var(--primary-500)] font-bold scale-105" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-            )}
-          >
-            <item.icon size={18} />
-            <span className="text-[10px] truncate w-full text-center">{item.label}</span>
-          </NavLink>
-        ))}
+      <nav role="navigation" aria-label="Menu di động" className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-surface)]/95 backdrop-blur-md border-t border-[var(--border-color)] flex justify-between items-center h-16 px-2 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] pb-safe-area">
         <NavLink
-          to="/cai-dat"
+          to="/"
           className={({ isActive }) => cn(
-            "flex flex-col items-center justify-center w-14 h-full gap-1 transition-all",
-            isActive ? "text-[var(--primary-500)] font-bold scale-105" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95",
+            isActive ? "text-[var(--primary-600)] font-black" : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
           )}
         >
-          <Menu size={18} />
-          <span className="text-[10px] truncate w-full text-center">Thêm</span>
+          <Home size={20} />
+          <span className="text-[10px] truncate">Trang chủ</span>
         </NavLink>
+
+        <NavLink
+          to="/phe"
+          className={({ isActive }) => cn(
+            "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95",
+            isActive ? "text-[var(--primary-600)] font-black" : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
+          )}
+        >
+          <Recycle size={20} />
+          <span className="text-[10px] truncate">QL Phế</span>
+        </NavLink>
+
+        {/* Center Floating Action Button (FAB) */}
+        <div className="flex-1 flex justify-center items-center h-full relative -top-3">
+          <button
+            onClick={() => setQuickActionOpen(true)}
+            aria-label="Thao tác nhanh"
+            className="w-12 h-12 rounded-full bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] text-white flex items-center justify-center shadow-lg shadow-[var(--primary-500)]/40 border-4 border-[var(--bg-surface)] active:scale-90 transition-transform cursor-pointer"
+          >
+            <Plus size={24} strokeWidth={3} />
+          </button>
+        </div>
+
+        <NavLink
+          to="/ton-kho"
+          className={({ isActive }) => cn(
+            "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95",
+            isActive ? "text-[var(--primary-600)] font-black" : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
+          )}
+        >
+          <Package size={20} />
+          <span className="text-[10px] truncate">Tồn kho</span>
+        </NavLink>
+
+        <button
+          onClick={() => setMoreMenuOpen(true)}
+          className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium active:scale-95 cursor-pointer"
+        >
+          <Menu size={20} />
+          <span className="text-[10px] truncate">Thêm</span>
+        </button>
       </nav>
+
+      {/* MOBILE SHEETS */}
+      <MobileMoreMenuSheet isOpen={moreMenuOpen} onClose={() => setMoreMenuOpen(false)} />
+      <MobileQuickActionModal isOpen={quickActionOpen} onClose={() => setQuickActionOpen(false)} />
 
       {isManagerOrAdmin && <MobileManagerInput />}
 

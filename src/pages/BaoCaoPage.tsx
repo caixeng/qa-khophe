@@ -106,7 +106,7 @@ export const BaoCaoPage: React.FC = () => {
       const wb = XLSX.utils.book_new();
 
       const summaryData: (string | number)[][] = [
-        ['BÁO CÁO TỔNG QUAN XƯỞNG PHẾ QA KHOPHE'],
+        ['BÁO CÁO TỔNG QUAN XƯỞNG PHẾ - VUA PHẾ'],
         ['Ngày xuất báo cáo', new Date().toLocaleDateString('vi-VN')],
         [],
         ['Chỉ số', 'Giá trị'],

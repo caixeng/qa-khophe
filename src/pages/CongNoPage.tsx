@@ -7,6 +7,7 @@ import { KpiCard } from '../components/KpiCard';
 import { DataState } from '../components/DataState';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal, FormField } from '../components/Modal';
+import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -150,7 +151,8 @@ export const CongNoPage: React.FC = () => {
       {/* Receivables Tab */}
       {activeTab === 'receivables' && (
         <DataState loading={expLoading} error={expError} isEmpty={receivables.length === 0} emptyTitle="Không có công nợ phải thu">
-          <div className="erp-table-container">
+          {/* Desktop Table */}
+          <div className="erp-table-container hidden lg:block">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <caption className="sr-only">Danh sách công nợ phải thu từ khách hàng</caption>
@@ -198,13 +200,38 @@ export const CongNoPage: React.FC = () => {
               </table>
             </div>
           </div>
+
+          {/* Mobile Card List */}
+          <MobileCardList
+            items={receivables.map(({ item, remaining }) => ({
+              id: item.id,
+              title: item.contact_name || 'Khách mua phế',
+              subtitle: `Ngày xuất: ${formatNgay(item.date)}`,
+              badge: <StatusBadge status={item.payment_status} />,
+              accentColor: '#e11d48',
+              fields: [
+                { label: 'Tổng đơn hàng', value: formatTien(item.total_amount) },
+                { label: 'Đã thu', value: <span className="text-emerald-600 font-bold">{formatTien(paidByExport[item.id] || 0)}</span> },
+                { label: 'Còn nợ phải thu', value: <span className="text-rose-600 font-black text-sm">{formatTien(remaining)}</span> },
+              ],
+              actions: canRecordPayment ? (
+                <button
+                  onClick={() => openPaymentModal('export', item.id, item.contact_name || 'Khách mua', remaining)}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[var(--primary-500)] text-white text-xs font-bold shadow-xs active:scale-95 transition-transform cursor-pointer"
+                >
+                  <Wallet size={14} /> Ghi nhận khoản thu
+                </button>
+              ) : undefined
+            }))}
+          />
         </DataState>
       )}
 
       {/* Payables Tab */}
       {activeTab === 'payables' && (
         <DataState loading={impLoading} error={impError} isEmpty={payables.length === 0} emptyTitle="Không có công nợ phải trả">
-          <div className="erp-table-container">
+          {/* Desktop Table */}
+          <div className="erp-table-container hidden lg:block">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <caption className="sr-only">Danh sách công nợ phải trả cho nhà cung cấp</caption>
@@ -252,6 +279,30 @@ export const CongNoPage: React.FC = () => {
               </table>
             </div>
           </div>
+
+          {/* Mobile Card List */}
+          <MobileCardList
+            items={payables.map(({ item, remaining }) => ({
+              id: item.id,
+              title: item.contact_name || 'Nhà cung cấp phế',
+              subtitle: `Ngày nhập: ${formatNgay(item.date)}`,
+              badge: <StatusBadge status={item.payment_status} />,
+              accentColor: '#d97706',
+              fields: [
+                { label: 'Tổng phiếu nhập', value: formatTien(item.total_amount) },
+                { label: 'Đã thanh toán', value: <span className="text-emerald-600 font-bold">{formatTien(paidByImport[item.id] || 0)}</span> },
+                { label: 'Còn nợ phải trả', value: <span className="text-amber-600 font-black text-sm">{formatTien(remaining)}</span> },
+              ],
+              actions: canRecordPayment ? (
+                <button
+                  onClick={() => openPaymentModal('import', item.id, item.contact_name || 'Khách vãng lai', remaining)}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-600 text-white text-xs font-bold shadow-xs active:scale-95 transition-transform cursor-pointer"
+                >
+                  <Wallet size={14} /> Ghi nhận khoản trả
+                </button>
+              ) : undefined
+            }))}
+          />
         </DataState>
       )}
 
