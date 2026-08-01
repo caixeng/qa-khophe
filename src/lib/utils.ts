@@ -32,3 +32,13 @@ export function formatPhanTram(pct: number): string {
 }
 
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Quản trị viên',
+  manager: 'Quản lý',
+  staff: 'Nhân viên',
+};
+
+export function formatRole(role?: string): string {
+  return ROLE_LABELS[role || ''] || 'Chưa phân quyền';
+}

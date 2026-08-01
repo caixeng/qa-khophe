@@ -147,13 +147,14 @@ export const ChiPhiPage: React.FC = () => {
             <div className="erp-table-container">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
+                  <caption className="sr-only">Danh sách khoản chi phí</caption>
                   <thead>
                     <tr>
-                      <th className="th-cell">Ngày</th>
-                      <th className="th-cell">Danh mục</th>
+                      <th scope="col" className="th-cell">Ngày</th>
+                      <th scope="col" className="th-cell">Danh mục</th>
                       <th className="th-cell text-right">Số tiền</th>
-                      <th className="th-cell">Mô tả</th>
-                      <th className="th-cell">Ghi chú</th>
+                      <th scope="col" className="th-cell">Mô tả</th>
+                      <th scope="col" className="th-cell">Ghi chú</th>
                       <th className="th-cell text-right">Thao tác</th>
                     </tr>
                   </thead>
@@ -207,13 +208,14 @@ export const ChiPhiPage: React.FC = () => {
             <div className="erp-table-container">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
+                  <caption className="sr-only">Danh sách khoản ứng tiền</caption>
                   <thead>
                     <tr>
-                      <th className="th-cell">Ngày</th>
-                      <th className="th-cell">Loại</th>
-                      <th className="th-cell">Người giao/nhận</th>
+                      <th scope="col" className="th-cell">Ngày</th>
+                      <th scope="col" className="th-cell">Loại</th>
+                      <th scope="col" className="th-cell">Người giao/nhận</th>
                       <th className="th-cell text-right">Số tiền</th>
-                      <th className="th-cell">Ghi chú</th>
+                      <th scope="col" className="th-cell">Ghi chú</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -228,7 +230,7 @@ export const ChiPhiPage: React.FC = () => {
                             {adv.type === 'advance' || (adv.type as string) === 'ung' ? 'Ứng tiền' : 'Hoàn ứng'}
                           </span>
                         </td>
-                        <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{adv.person || adv.person_name || 'Chủ xưởng'}</td>
+                        <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{adv.person || 'Chủ xưởng'}</td>
                         <td className="td-cell text-right font-mono font-bold text-xs text-[var(--primary-500)]">
                           {formatTien(adv.amount)}
                         </td>

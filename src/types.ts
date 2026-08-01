@@ -60,15 +60,11 @@ export interface Grinding {
   date: string;
   import_id?: string;
   input_qty_kg?: number;
-  input_quantity_kg?: number;
   output_qty_kg?: number;
-  output_quantity_kg?: number;
   loss_kg?: number;
   loss_pct?: number;
-  loss_percentage?: number;
   bags_count?: number;
   worker?: string;
-  operator_name?: string;
   notes?: string;
   created_by?: string;
   created_at?: string;
@@ -81,7 +77,6 @@ export interface Export {
   contact_name?: string;
   bags_count: number;
   total_kg?: number;
-  total_quantity_kg?: number;
   price_per_kg: number;
   total_amount: number;
   payment_status: PaymentStatus;
@@ -97,7 +92,6 @@ export interface WeighingSession {
   material_type: string;
   total_bags: number;
   total_kg?: number;
-  total_weight_kg?: number;
   notes?: string;
   created_by?: string;
   created_at?: string;
@@ -127,7 +121,6 @@ export interface Advance {
   date: string;
   amount: number;
   person?: string;
-  person_name?: string;
   type: AdvanceType;
   notes?: string;
   created_by?: string;

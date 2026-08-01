@@ -1,44 +1,57 @@
 import * as React from 'react';
-import { useMemo } from 'react';
-import { Plus, Edit, Trash2, Scissors, TrendingDown, Factory } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Edit, Trash2, Scissors, TrendingDown, Factory } from 'lucide-react';
 import { cn, formatNgay, formatKg, formatPhanTram } from '../lib/utils';
-import { PageHeader } from '../components/PageHeader';
 import { Modal, FormField } from '../components/Modal';
 import { TableToolbar } from '../components/TableToolbar';
 import { DataState } from '../components/DataState';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
+import { useToast } from '../contexts/ToastContext';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { PaginationBar } from '../components/PaginationBar';
 import { grindingService } from '../services/grindingService';
 import { importsService } from '../services/importsService';
 import type { Grinding } from '../types';
 
-export const XayPhePage: React.FC = () => {
+interface XayPhePageProps {
+  actionRef?: React.MutableRefObject<(() => void) | null>;
+}
+
+export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
   const { data: grindingData, loading, error, refetch } = useAsyncData(grindingService.getAll, []);
   const { data: importsData } = useAsyncData(importsService.getAll, []);
 
   const grindingList = grindingData || [];
   const importsList = importsData || [];
 
+  const { toast } = useToast();
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+
   // Table controls
-  const { searchQuery, setSearchQuery } = useTableControls();
+  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
 
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Grinding>({
     initialData: {
       date: new Date().toISOString().split('T')[0],
-      input_quantity_kg: 0,
-      output_quantity_kg: 0,
+      input_qty_kg: 0,
+      output_qty_kg: 0,
       bags_count: 0,
-      operator_name: 'Hoa',
+      worker: 'Hoa',
     }
   });
+
+  if (actionRef) {
+    actionRef.current = openModal;
+  }
 
   const filteredData = useMemo(() => {
     return grindingList.filter((item) => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
-      const opName = item.operator_name || item.worker || '';
+      const opName = item.worker || '';
       return (
         item.date.includes(q) ||
         opName.toLowerCase().includes(q) ||
@@ -50,11 +63,11 @@ export const XayPhePage: React.FC = () => {
 
   // Statistics
   const stats = useMemo(() => {
-    const totalInput = grindingList.reduce((sum, item) => sum + (Number(item.input_quantity_kg || item.input_qty_kg) || 0), 0);
-    const totalOutput = grindingList.reduce((sum, item) => sum + (Number(item.output_quantity_kg || item.output_qty_kg) || 0), 0);
+    const totalInput = grindingList.reduce((sum, item) => sum + (Number(item.input_qty_kg) || 0), 0);
+    const totalOutput = grindingList.reduce((sum, item) => sum + (Number(item.output_qty_kg) || 0), 0);
     const totalLossKg = totalInput - totalOutput;
     const avgLossPct = totalInput > 0 ? (totalLossKg / totalInput) * 100 : 0;
-    const completedLots = grindingList.filter(g => (Number(g.output_quantity_kg || g.output_qty_kg) || 0) > 0).length;
+    const completedLots = grindingList.filter(g => (Number(g.output_qty_kg) || 0) > 0).length;
 
     return { totalInput, totalOutput, totalLossKg, avgLossPct, completedLots };
   }, [grindingList]);
@@ -62,57 +75,57 @@ export const XayPhePage: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const data = formState.data as any;
-    const inputKg = Number(data.input_quantity_kg || data.input_qty_kg) || 0;
-    const outputKg = Number(data.output_quantity_kg || data.output_qty_kg) || 0;
+    const inputKg = Number(data.input_qty_kg) || 0;
+    const outputKg = Number(data.output_qty_kg) || 0;
 
     if (inputKg <= 0) {
-      alert('Khối lượng đầu vào phải lớn hơn 0 kg');
+      toast.warning('Khối lượng đầu vào phải lớn hơn 0 kg');
       return;
     }
 
     try {
       if (data.id) {
         await grindingService.update(data.id, data);
+        toast.success('Đã cập nhật phiếu xay');
       } else {
         await grindingService.create({
           date: data.date || new Date().toISOString().split('T')[0],
           import_id: data.import_id || null,
-          input_quantity_kg: inputKg,
-          output_quantity_kg: outputKg,
+          input_qty_kg: inputKg,
+          output_qty_kg: outputKg,
           bags_count: Number(data.bags_count) || Math.round(outputKg / 25),
-          operator_name: data.operator_name || data.worker || 'Hoa',
+          worker: data.worker || 'Hoa',
           notes: data.notes,
         });
+        toast.success('Đã thêm phiếu xay mới');
       }
       closeModal();
       refetch();
     } catch (err) {
+      toast.error('Lỗi khi lưu phiếu xay');
       console.error('Lỗi khi lưu phiếu xay:', err);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa phiếu xay này?')) {
-      try {
-        await grindingService.delete(id);
-        refetch();
-      } catch (err) {
-        console.error('Lỗi khi xóa phiếu xay:', err);
-      }
+    setConfirmState({ isOpen: true, id });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await grindingService.delete(confirmState.id);
+      toast.success('Đã xóa phiếu xay');
+      refetch();
+    } catch (err) {
+      toast.error('Lỗi khi xóa phiếu xay');
+      console.error('Lỗi khi xóa phiếu xay:', err);
     }
+    setConfirmState({ isOpen: false, id: '' });
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <PageHeader
-        title="Xay Phế Liệu"
-        subtitle="Quản lý các mẻ phế liệu đưa vào máy xay và theo dõi tỷ lệ hao hụt"
-        action={{
-          label: 'Ghi phiếu xay',
-          icon: Plus,
-          onClick: () => openModal(),
-        }}
-      />
+
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -170,25 +183,26 @@ export const XayPhePage: React.FC = () => {
         <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full">
+              <caption className="sr-only">Danh sách phiếu xay phế</caption>
               <thead>
                 <tr>
-                  <th className="th-cell">Ngày xay</th>
-                  <th className="th-cell">Lô phế nhập</th>
+                  <th scope="col" className="th-cell">Ngày xay</th>
+                  <th scope="col" className="th-cell">Lô phế nhập</th>
                   <th className="th-cell text-right">Đầu vào (kg)</th>
                   <th className="th-cell text-right">Đầu ra (kg)</th>
                   <th className="th-cell text-right">Hao hụt (kg)</th>
                   <th className="th-cell text-right">% Hao hụt</th>
                   <th className="th-cell text-right">Số bao</th>
-                  <th className="th-cell">Thợ xay</th>
+                  <th scope="col" className="th-cell">Thợ xay</th>
                   <th className="th-cell text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map((item) => {
-                  const inputKg = Number(item.input_quantity_kg || item.input_qty_kg) || 0;
-                  const outputKg = Number(item.output_quantity_kg || item.output_qty_kg) || 0;
+                {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item) => {
+                  const inputKg = Number(item.input_qty_kg) || 0;
+                  const outputKg = Number(item.output_qty_kg) || 0;
                   const lossKg = item.loss_kg !== undefined ? item.loss_kg : (inputKg - outputKg);
-                  const lossPct = (item.loss_percentage !== undefined ? item.loss_percentage : item.loss_pct) ?? (inputKg > 0 ? (lossKg / inputKg) * 100 : 0);
+                  const lossPct = item.loss_pct ?? (inputKg > 0 ? (lossKg / inputKg) * 100 : 0);
 
                   return (
                     <tr key={item.id} className="tr-hover">
@@ -219,7 +233,7 @@ export const XayPhePage: React.FC = () => {
                         {item.bags_count ? `${item.bags_count} bao` : '—'}
                       </td>
                       <td className="td-cell font-medium text-xs text-[var(--text-primary)]">
-                        {item.operator_name || item.worker || 'Hoa'}
+                        {item.worker || 'Hoa'}
                       </td>
                       <td className="td-cell text-right">
                         <div className="flex items-center justify-end space-x-2">
@@ -246,6 +260,13 @@ export const XayPhePage: React.FC = () => {
             </table>
           </div>
         </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalItems={filteredData.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </DataState>
 
       {/* Form Modal */}
@@ -274,7 +295,7 @@ export const XayPhePage: React.FC = () => {
                 const imp = importsList.find(i => i.id === impId);
                 handleChange('import_id', impId);
                 if (imp && imp.quantity_kg) {
-                  handleChange('input_quantity_kg' as any, imp.quantity_kg);
+                  handleChange('input_qty_kg' as any, imp.quantity_kg);
                 }
               }}
             >
@@ -296,8 +317,8 @@ export const XayPhePage: React.FC = () => {
                 step="any"
                 className="input-field font-mono font-bold"
                 placeholder="0"
-                value={(formState.data as any)?.input_quantity_kg || (formState.data as any)?.input_qty_kg || ''}
-                onChange={(e) => handleChange('input_quantity_kg' as any, Number(e.target.value))}
+                value={(formState.data as any)?.input_qty_kg || ''}
+                onChange={(e) => handleChange('input_qty_kg' as any, Number(e.target.value))}
               />
             </FormField>
 
@@ -309,10 +330,10 @@ export const XayPhePage: React.FC = () => {
                 step="any"
                 className="input-field font-mono font-bold text-emerald-600"
                 placeholder="0"
-                value={(formState.data as any)?.output_quantity_kg || (formState.data as any)?.output_qty_kg || ''}
+                value={(formState.data as any)?.output_qty_kg || ''}
                 onChange={(e) => {
                   const outKg = Number(e.target.value);
-                  handleChange('output_quantity_kg' as any, outKg);
+                  handleChange('output_qty_kg' as any, outKg);
                   handleChange('bags_count', Math.round(outKg / 25));
                 }}
               />
@@ -336,8 +357,8 @@ export const XayPhePage: React.FC = () => {
                 type="text"
                 className="input-field"
                 placeholder="Ví dụ: Hoa, Hoàn..."
-                value={(formState.data as any)?.operator_name || (formState.data as any)?.worker || 'Hoa'}
-                onChange={(e) => handleChange('operator_name' as any, e.target.value)}
+                value={(formState.data as any)?.worker || 'Hoa'}
+                onChange={(e) => handleChange('worker' as any, e.target.value)}
               />
             </FormField>
           </div>
@@ -361,6 +382,18 @@ export const XayPhePage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Confirm Delete */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState({ isOpen: false, id: '' })}
+        onConfirm={confirmDelete}
+        title="Xóa phiếu xay"
+        message="Bạn có chắc chắn muốn xóa phiếu xay này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xóa"
+        cancelText="Hủy"
+      />
     </div>
   );
 };

@@ -1,30 +1,19 @@
 import { supabase } from '../lib/supabase';
 import type { Contact } from '../types';
 
-const INITIAL_2807_CONTACTS: Contact[] = [
-  { id: 'cnt-1', name: 'Em Hoàn', type: 'supplier', phone: '0912345678', notes: 'Nhà cung cấp phế (1.796 kg ngày 28/07)', status: 'active', is_active: true },
-  { id: 'cnt-2', name: 'Đà Nẵng', type: 'supplier', notes: 'Nguồn phế Đà Nẵng (7.445 kg ngày 28/07)', status: 'active', is_active: true },
-  { id: 'cnt-3', name: 'Nhà máy Nhựa Việt', type: 'customer', address: 'KCN Sóng Thần', notes: 'Khách mua phế xuất (18 bao ngày 28/07)', status: 'active', is_active: true }
-];
-
 export const contactsService = {
   async getAll(): Promise<Contact[]> {
-    try {
-      const { data, error } = await supabase
-        .from('contacts')
-        .select('*')
-        .order('name', { ascending: true });
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('*')
+      .order('name', { ascending: true });
 
-      if (error || !data || data.length === 0) {
-        return INITIAL_2807_CONTACTS;
-      }
-      return data.map(item => ({
-        ...item,
-        status: item.is_active ? 'active' : 'inactive'
-      }));
-    } catch {
-      return INITIAL_2807_CONTACTS;
-    }
+    if (error) throw new Error(error.message);
+
+    return (data || []).map(item => ({
+      ...item,
+      status: item.is_active ? 'active' : 'inactive'
+    }));
   },
 
   async create(contact: Omit<Contact, 'id' | 'created_at' | 'updated_at'>): Promise<Contact> {
@@ -41,18 +30,7 @@ export const contactsService = {
       .select()
       .single();
 
-    if (error) {
-      return {
-        id: `cnt-${Date.now()}`,
-        name: contact.name,
-        type: contact.type,
-        phone: contact.phone,
-        address: contact.address,
-        notes: contact.notes,
-        status: 'active',
-        is_active: true,
-      };
-    }
+    if (error) throw new Error(error.message);
     return data;
   },
 
@@ -66,20 +44,17 @@ export const contactsService = {
         address: contact.address || null,
         notes: contact.notes || null,
         is_active: contact.is_active ?? true,
-        updated_at: new Date().toISOString(),
       })
       .eq('id', id)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return data;
   },
 
   async delete(id: string): Promise<void> {
-    await supabase
-      .from('contacts')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('contacts').delete().eq('id', id);
+    if (error) throw new Error(error.message);
   }
 };

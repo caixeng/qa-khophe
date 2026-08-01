@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -37,9 +37,11 @@
     --text-muted: #6d665f;
     --text-placeholder: #736b62;
 
-    --bg-hover-row: #F5EFE6;
-    --shadow-card: 0 1px 2px 0 rgba(74, 49, 16, 0.04), 0 1px 3px 0 rgba(74, 49, 16, 0.06);
-    --shadow-card-hover: 0 8px 20px -4px rgba(74, 49, 16, 0.10), 0 4px 8px -4px rgba(74, 49, 16, 0.06);
+    --bg-hover-row: #f5efe6;
+    --shadow-card: 0 1px 2px 0 rgb(74 49 16 / 0.04), 0 1px 3px 0 rgb(74 49 16 / 0.06);
+    --shadow-card-hover: 0 4px 12px 0 rgb(74 49 16 / 0.08), 0 2px 4px 0 rgb(74 49 16 / 0.04);
+    --shadow-dropdown: 0 10px 30px -5px rgb(74 49 16 / 0.12), 0 4px 6px -2px rgb(74 49 16 / 0.04);
+    --shadow-modal: 0 20px 40px -5px rgb(74 49 16 / 0.15), 0 8px 16px -4px rgb(74 49 16 / 0.06);
   }
 
   [data-theme='light'] {
@@ -68,7 +70,7 @@
     --text-muted: #64748b;
     --text-placeholder: #94a3b8;
 
-    --bg-hover-row: #f8fafc;
+    --bg-hover-row: #f1f5f9;
     --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
     --shadow-card-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
   }
@@ -111,6 +113,10 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  #root {
+    min-height: 100vh;
+  }
 }
 
 @layer components {
@@ -120,11 +126,14 @@
 
   /* Cards */
   .card {
-    background-color: var(--bg-surface);
+    background: var(--bg-surface);
     border: 1px solid var(--border-color);
-    border-radius: 1rem; /* 16px */
+    border-radius: 12px;
     box-shadow: var(--shadow-card);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card:hover {
+    box-shadow: var(--shadow-card-hover);
   }
 
   .card-hover {
@@ -139,24 +148,24 @@
   .btn-primary {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
     gap: 0.5rem;
-    padding: 0.625rem 1.25rem;
-    font-size: 0.875rem;
+    padding: 0.625rem 1rem;
+    font-size: 13px;
     font-weight: 700;
-    border-radius: 0.75rem; /* 12px */
-    background-color: var(--primary-500);
-    color: #ffffff;
-    box-shadow: 0 4px 14px 0 rgba(0, 102, 140, 0.35);
-    transition: all 0.2s ease;
+    color: white;
+    background: var(--primary-500);
+    border-radius: 12px;
+    box-shadow: var(--shadow-card);
+    transition: all 0.15s ease;
+    cursor: pointer;
+    border: none;
   }
   .btn-primary:hover {
-    background-color: var(--primary-600);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px 0 rgba(0, 102, 140, 0.45);
+    background: var(--primary-600);
+    box-shadow: var(--shadow-card-hover);
   }
   .btn-primary:active {
-    transform: translateY(0);
+    transform: scale(0.95);
   }
 
   .btn-secondary {
@@ -207,31 +216,40 @@
   }
 
   .th-cell {
-    background-color: var(--bg-subtle);
-    padding: 0.75rem 1rem;
+    background: var(--bg-subtle, var(--bg-muted));
+    padding: 0.625rem 1rem;
     text-align: left;
-    font-size: 10px;
+    font-size: 0.625rem;
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.05em;
     color: var(--text-muted);
-    border-bottom: 1px solid var(--border-color);
-    white-space: nowrap;
   }
 
   .td-cell {
-    padding: 0.875rem 1rem;
-    font-size: 0.8125rem; /* 13px */
-    color: var(--text-primary);
-    border-bottom: 1px solid var(--border-color);
-    vertical-align: middle;
+    padding: 0.75rem 1rem;
+    font-size: 13px;
+    border-top: 1px solid var(--border-color);
   }
 
   .tr-hover {
     transition: background-color 0.15s ease;
   }
   .tr-hover:hover {
-    background-color: var(--bg-hover-row);
+    background: var(--bg-subtle, rgba(0,0,0,0.02));
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.625rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid;
   }
 
   /* Form Inputs */

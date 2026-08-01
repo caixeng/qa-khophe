@@ -40,7 +40,10 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status = '', variant, 
   const displayVariant = variant || (mapped ? mapped.variant : 'neutral');
 
   return (
-    <span className={cn(
+    <span 
+      role="status"
+      aria-label={displayLabel}
+      className={cn(
       "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
       variantStyles[displayVariant],
       className

@@ -1,25 +1,30 @@
 import * as React from 'react';
 import { useState, useMemo } from 'react';
-import { Plus, Calculator, History, Box } from 'lucide-react';
-import { cn, formatKg } from '../lib/utils';
-import { PageHeader } from '../components/PageHeader';
+import { Calculator, History, Box, Printer } from 'lucide-react';
+import { cn, formatKg, formatNgay } from '../lib/utils';
 import { Modal } from '../components/Modal';
 import { NumPad } from '../components/NumPad';
+import { DataState } from '../components/DataState';
 import { useAsyncData } from '../hooks/useAsyncData';
+import { useToast } from '../contexts/ToastContext';
 import { weighingService } from '../services/weighingService';
 import { PALLET_TYPES, type PalletType } from '../lib/palletUtils';
+import { printPhieuCan } from '../lib/print';
 
-// 29/07/2026 CÂN PHẾ NAM Dataset (24 bao)
-const NAM_BAGS_2907 = [844, 722, 990, 734, 885, 894, 829, 752, 1010, 835, 951, 871, 1015, 1009, 900, 836, 706, 870, 904, 827, 883, 875, 899, 903];
+interface CanPhePageProps {
+  actionRef?: React.MutableRefObject<(() => void) | null>;
+}
 
-export const CanPhePage: React.FC = () => {
-  const { data: sessionsData, refetch } = useAsyncData(weighingService.getSessions, []);
+export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
+  const { data: sessionsData, loading, error, refetch } = useAsyncData(weighingService.getSessions, []);
   const sessions = sessionsData || [];
+  const { toast } = useToast();
 
-  const [activeBags, setActiveBags] = useState<number[]>(NAM_BAGS_2907);
+  const [activeBags, setActiveBags] = useState<number[]>([]);
   const [isNumPadOpen, setIsNumPadOpen] = useState(false);
   const [selectedPallet, setSelectedPallet] = useState<PalletType>('none');
   const [palletQty, setPalletQty] = useState<number>(1);
+  const [printingSessionId, setPrintingSessionId] = useState<string | null>(null);
 
   const grossWeight = useMemo(() => {
     return activeBags.reduce((a, b) => a + b, 0);
@@ -53,22 +58,37 @@ export const CanPhePage: React.FC = () => {
           for (let i = 0; i < activeBags.length; i++) {
             await weighingService.addBag(newSession.id, activeBags.length - i, activeBags[i]);
           }
+          toast.success('Đã lưu phiên cân');
           refetch();
         } catch (err) {
+          toast.error('Lỗi khi lưu phiên cân');
           console.error('Lỗi khi lưu phiên cân:', err);
+          return;
         }
       }
     }
     setActiveBags([]);
   };
 
+  if (actionRef) {
+    actionRef.current = handleNewSession;
+  }
+
+  const handlePrintSession = async (session: (typeof sessions)[number]) => {
+    setPrintingSessionId(session.id);
+    try {
+      const bags = await weighingService.getSessionBags(session.id);
+      printPhieuCan(session, bags);
+    } catch (err) {
+      toast.error('Lỗi khi tải chi tiết phiên cân để in');
+      console.error('Lỗi khi tải chi tiết phiên cân để in:', err);
+    } finally {
+      setPrintingSessionId(null);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
-      <PageHeader 
-        title="Cân Phế" 
-        subtitle="Quản lý cân phế từng bao, hỗ trợ trừ bì Ba Lết (Sắt 41kg, Gỗ 27kg, Nhựa 20kg, Lồng 81kg)"
-        action={{ label: 'Phiên cân mới', icon: Plus, onClick: handleNewSession }} 
-      />
 
       {/* Active Weighing Session Header */}
       <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-5">
@@ -76,11 +96,13 @@ export const CanPhePage: React.FC = () => {
           <div>
             <div className="flex items-center space-x-2">
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700">
-                Phiên cân 29/07/2026 đang mở
+                {activeBags.length > 0 ? 'Phiên cân đang mở' : 'Chưa có phiên cân nào đang mở'}
               </span>
-              <span className="text-xs text-[var(--text-muted)] font-mono">CÂN PHẾ NAM</span>
+              <span className="text-xs text-[var(--text-muted)] font-mono">{formatNgay(new Date().toISOString())}</span>
             </div>
-            <h2 className="text-xl font-bold text-[var(--text-primary)] mt-1">Phế liệu nhựa Nam (24 bao)</h2>
+            <h2 className="text-xl font-bold text-[var(--text-primary)] mt-1">
+              {activeBags.length > 0 ? `Đang cân (${activeBags.length} bao)` : 'Bấm "Mở NumPad" để bắt đầu cân bao mới'}
+            </h2>
           </div>
 
           <button
@@ -169,7 +191,7 @@ export const CanPhePage: React.FC = () => {
         {/* Bag Chips Grid */}
         <div className="space-y-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] flex justify-between items-center">
-            <span>Danh sách bao phế 29/07 đã cân ({activeBags.length} bao)</span>
+            <span>Danh sách bao đã cân ({activeBags.length} bao)</span>
             <span className="font-mono text-emerald-600 font-bold">TB: {(netWeight / (activeBags.length || 1)).toFixed(1)} kg/bao</span>
           </h3>
           <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
@@ -192,29 +214,31 @@ export const CanPhePage: React.FC = () => {
           <span>Lịch sử các phiên cân phế</span>
         </h3>
 
-        <div className="space-y-2">
-          {sessions.length > 0 ? (
-            sessions.map((s) => (
-              <div key={s.id} className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center">
-                <div>
-                  <p className="text-xs font-bold text-[var(--text-primary)]">{s.date} - {s.material_type}</p>
+        <DataState loading={loading} error={error} isEmpty={sessions.length === 0} emptyTitle="Chưa có phiên cân nào">
+          <div className="space-y-2">
+            {sessions.map((s) => (
+              <div key={s.id} className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center gap-3">
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-[var(--text-primary)]">{formatNgay(s.date)} - {s.material_type}</p>
                   <p className="text-[10px] text-[var(--text-muted)]">{s.total_bags} bao</p>
                 </div>
-                <span className="font-mono font-bold text-xs text-[var(--primary-500)]">
-                  {formatKg(s.total_kg || (s as any).total_weight_kg || 0)}
-                </span>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className="font-mono font-bold text-xs text-[var(--primary-500)]">
+                    {formatKg(s.total_kg || 0)}
+                  </span>
+                  <button
+                    onClick={() => handlePrintSession(s)}
+                    disabled={printingSessionId === s.id}
+                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--primary-500)] transition-colors cursor-pointer disabled:opacity-50"
+                    title="In phiếu cân"
+                  >
+                    <Printer size={15} />
+                  </button>
+                </div>
               </div>
-            ))
-          ) : (
-            <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center">
-              <div>
-                <p className="text-xs font-bold text-[var(--text-primary)]">29/07/2026 - Cân Phế Nam (không lết)</p>
-                <p className="text-[10px] text-[var(--text-muted)]">24 bao • Tấm nhựa nano</p>
-              </div>
-              <span className="font-mono font-bold text-xs text-emerald-600">20.947 kg</span>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        </DataState>
       </div>
 
       {/* NumPad Modal */}

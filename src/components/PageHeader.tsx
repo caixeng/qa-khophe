@@ -29,6 +29,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, descrip
       {action && (
         <button 
           onClick={action.onClick}
+          aria-label={action.label}
           className="btn-primary flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto"
         >
           {React.isValidElement(IconComp) ? (

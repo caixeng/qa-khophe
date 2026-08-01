@@ -1,21 +1,33 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Home, Users, Package, BarChart3, Settings, 
+import {
+  Home, Users, Package, BarChart3, Settings,
   Menu, ChevronLeft, ChevronRight, LogOut, Recycle, Wallet,
-  ChevronDown, Sun, Leaf, Moon, Check, UserCheck
+  ChevronDown, Sun, Leaf, Moon, Check, UserCheck, Search
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/ThemeContext';
+import { Breadcrumb } from '../components/Breadcrumb';
+import { GlobalSearch } from '../components/GlobalSearch';
+import { MobileManagerInput } from '../components/mobile/MobileManagerInput';
+import { Suspense } from 'react';
+import { KpiCardSkeleton, TableSkeleton } from '../components/SkeletonLoader';
+
+const PageLoadingSkeleton = () => (
+  <div className="space-y-6">
+    <KpiCardSkeleton />
+    <TableSkeleton rows={8} />
+  </div>
+);
 
 const MENU_ITEMS = [
   { id: 'dashboard', path: '/', label: 'Tổng quan', icon: Home },
   { id: 'phe', path: '/phe', label: 'Quản lý Phế', icon: Recycle },
   { id: 'inventory', path: '/ton-kho', label: 'Tồn kho', icon: Package },
-  { id: 'finance', path: '/tai-chinh', label: 'Tài chính', icon: Wallet },
-  { id: 'employees', path: '/nhan-vien', label: 'Quản lý Nhân sự', icon: UserCheck },
+  { id: 'finance', path: '/tai-chinh', label: 'Tài chính', icon: Wallet, managerOnly: true },
+  { id: 'employees', path: '/nhan-vien', label: 'Quản lý Nhân sự', icon: UserCheck, managerOnly: true },
   { id: 'contacts', path: '/danh-ba', label: 'Danh bạ đối tác', icon: Users },
   { id: 'reports', path: '/bao-cao', label: 'Báo cáo', icon: BarChart3 },
   { id: 'settings', path: '/cai-dat', label: 'Cài đặt', icon: Settings },
@@ -37,10 +49,26 @@ export const AppLayout = () => {
   const navigate = useNavigate();
   
   const [showDropdown, setShowDropdown] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('sidebar_collapsed', collapsed.toString());
   }, [collapsed]);
+
+  // Ctrl/Cmd + K mở tìm kiếm toàn cục
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const isManagerOrAdmin = user?.role === 'manager' || user?.role === 'admin';
+  const visibleMenuItems = MENU_ITEMS.filter((item) => !item.managerOnly || isManagerOrAdmin);
 
   const currentPage = MENU_ITEMS.find(item => {
     if (item.path === '/') return location.pathname === '/';
@@ -53,10 +81,13 @@ export const AppLayout = () => {
     navigate('/login');
   };
 
-  const mobileTop5 = MENU_ITEMS.slice(0, 5);
+  const mobileTop5 = visibleMenuItems.slice(0, 5);
 
   return (
     <div className="flex h-screen w-full bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-[var(--bg-surface)] focus:text-[var(--text-primary)] top-0 left-0">
+        Chuyển tới nội dung chính
+      </a>
       
       {/* DESKTOP SIDEBAR */}
       <aside 
@@ -68,7 +99,7 @@ export const AppLayout = () => {
         <div className="flex items-center justify-between h-16 px-4 border-b border-[var(--border-color)]">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] flex items-center justify-center text-white shadow-md shrink-0">
-              <Recycle size={20} className="animate-spin-slow" />
+              <Recycle size={20} className="transition-transform duration-500 hover:rotate-180" />
             </div>
             {!collapsed && (
               <div className="flex flex-col min-w-0">
@@ -83,14 +114,15 @@ export const AppLayout = () => {
           </div>
           <button 
             onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? "Mở rộng menu" : "Thu gọn menu"}
             className="p-1.5 hover:bg-[var(--bg-subtle)] rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] shadow-sm transition-all absolute -right-3 top-5"
           >
             {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1.5">
-          {MENU_ITEMS.map((item) => (
+        <nav role="navigation" aria-label="Menu chính" className="flex-1 overflow-y-auto py-4 px-2 space-y-1.5">
+          {visibleMenuItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -98,10 +130,10 @@ export const AppLayout = () => {
               className={() => {
                 const isCurrent = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
                 return cn(
-                  "flex items-center px-3.5 py-3 rounded-xl transition-all font-bold text-xs group relative",
+                  "flex items-center px-3.5 py-3 rounded-xl transition-all font-bold text-[13px] group relative",
                   isCurrent 
-                    ? "bg-[var(--primary-50)] text-[var(--primary-600)] shadow-xs border-l-4 border-[var(--primary-500)]" 
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)] border-l-4 border-transparent"
+                    ? "bg-[var(--primary-50)] text-[var(--primary-600)] shadow-xs font-bold" 
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
                 );
               }}
             >
@@ -118,8 +150,8 @@ export const AppLayout = () => {
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold truncate text-[var(--text-primary)]">{user?.name || 'Admin KhoPhe'}</p>
-                <p className="text-[10px] text-[var(--text-muted)] truncate">{user?.email || 'admin@khophe.vn'}</p>
+                <p className="text-[13px] font-bold truncate text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
+                <p className="text-[10px] text-[var(--text-muted)] truncate">{user?.email || '—'}</p>
               </div>
             )}
           </div>
@@ -129,11 +161,14 @@ export const AppLayout = () => {
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* HEADER */}
-        <header className="h-16 flex items-center justify-between px-4 lg:px-8 bg-[var(--bg-surface)] border-b border-[var(--border-color)] z-30 shadow-xs">
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-bold tracking-tight text-[var(--text-primary)] hidden sm:block">
+        <header className="h-16 flex items-center justify-between px-4 lg:px-6 backdrop-blur-md bg-[var(--bg-surface)]/80 border-b border-[var(--border-color)] z-30 shadow-xs">
+          <div className="flex flex-col justify-center">
+            <h1 className="text-lg font-bold tracking-tight text-[var(--text-primary)] hidden sm:block leading-tight">
               {currentPage.label}
             </h1>
+            <div className="hidden sm:block mt-0.5">
+              <Breadcrumb />
+            </div>
             <div className="sm:hidden flex items-center gap-2">
               <Recycle size={18} className="text-[var(--primary-500)]" />
               <span className="font-black text-base text-[var(--primary-500)]">KhoPhe</span>
@@ -141,21 +176,42 @@ export const AppLayout = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Global Search Trigger (Ctrl+K) */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              aria-label="Tìm kiếm toàn hệ thống"
+              className="hidden sm:flex items-center gap-2 rounded-xl border border-border bg-subtle px-3 py-2 text-xs text-ink-muted shadow-card transition-all hover:bg-[var(--bg-hover-row)] cursor-pointer"
+            >
+              <Search size={14} />
+              <span className="hidden md:inline">Tìm kiếm...</span>
+              <kbd className="hidden md:inline-flex items-center gap-1 rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-bold text-ink-muted">
+                Ctrl+K
+              </kbd>
+            </button>
+            <button
+              onClick={() => setSearchOpen(true)}
+              aria-label="Tìm kiếm toàn hệ thống"
+              className="sm:hidden p-2 rounded-xl border border-border bg-subtle text-[var(--text-muted)] cursor-pointer"
+            >
+              <Search size={16} />
+            </button>
+
             {/* User Profile & Quick Settings Menu (Dropdown) */}
             <div className="relative">
               <button 
                 onClick={() => setShowDropdown(!showDropdown)}
+                aria-label="Menu người dùng"
                 className="flex items-center gap-2 hover:bg-[var(--bg-subtle)] p-1.5 pr-2.5 rounded-xl border border-transparent hover:border-[var(--border-color)] transition-all cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] flex items-center justify-center text-white font-bold text-xs shadow-sm">
                   {user?.name?.charAt(0) || 'A'}
                 </div>
                 <div className="hidden md:flex flex-col text-left">
-                  <span className="text-xs font-bold text-[var(--text-primary)] leading-tight">
-                    {user?.name || 'Admin KhoPhe'}
+                  <span className="text-[13px] font-bold text-[var(--text-primary)] leading-tight">
+                    {user?.name || 'Người dùng'}
                   </span>
                   <span className="text-[10px] text-[var(--text-muted)] leading-tight">
-                    {user?.email || 'admin@khophe.vn'}
+                    {user?.email || '—'}
                   </span>
                 </div>
                 <ChevronDown size={14} className="text-[var(--text-muted)] hidden sm:block" />
@@ -170,8 +226,8 @@ export const AppLayout = () => {
                   <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] p-4 shadow-xl z-50 animate-fade-in text-left">
                     {/* User info header */}
                     <div className="pb-3 border-b border-[var(--border-color)]">
-                      <p className="text-xs font-bold text-[var(--text-primary)]">{user?.name || 'Admin KhoPhe'}</p>
-                      <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{user?.email || 'admin@khophe.vn'}</p>
+                      <p className="text-[13px] font-bold text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{user?.email || '—'}</p>
                     </div>
 
                     {/* CÀI ĐẶT CÁ NHÂN */}
@@ -274,15 +330,17 @@ export const AppLayout = () => {
         </header>
 
         {/* SCROLLABLE OUTLET */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 pb-24 lg:pb-6">
-          <div className="max-w-7xl mx-auto">
-            <Outlet />
+        <main id="main-content" className="flex-1 overflow-y-auto pt-4 px-4 lg:px-6 pb-8">
+          <div className="w-full">
+            <Suspense fallback={<PageLoadingSkeleton />}>
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-surface)] border-t border-[var(--border-color)] flex justify-around items-center h-16 px-2 z-20 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+      <nav role="navigation" aria-label="Menu di động" className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-surface)] border-t border-[var(--border-color)] flex justify-around items-center h-16 px-2 z-20 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
         {mobileTop5.map((item) => (
           <NavLink
             key={item.path}
@@ -307,6 +365,10 @@ export const AppLayout = () => {
           <span className="text-[10px] truncate w-full text-center">Thêm</span>
         </NavLink>
       </nav>
+
+      {isManagerOrAdmin && <MobileManagerInput />}
+
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 };

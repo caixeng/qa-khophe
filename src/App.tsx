@@ -1,22 +1,41 @@
 import * as React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ToastProvider } from './contexts/ToastContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SlidePanelProvider } from './contexts/SlidePanelContext';
 import { AppLayout } from './layouts/AppLayout';
-import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { DanhBaPage } from './pages/DanhBaPage';
-import { QuanLyPhePage } from './pages/QuanLyPhePage';
-import { TaiChinhPage } from './pages/TaiChinhPage';
-import { TonKhoPage } from './pages/TonKhoPage';
-import { NhanVienPage } from './pages/NhanVienPage';
-import { BaoCaoPage } from './pages/BaoCaoPage';
-import { CaiDatPage } from './pages/CaiDatPage';
+const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const DanhBaPage = React.lazy(() => import('./pages/DanhBaPage').then(m => ({ default: m.DanhBaPage })));
+const QuanLyPhePage = React.lazy(() => import('./pages/QuanLyPhePage').then(m => ({ default: m.QuanLyPhePage })));
+const TaiChinhPage = React.lazy(() => import('./pages/TaiChinhPage').then(m => ({ default: m.TaiChinhPage })));
+const TonKhoPage = React.lazy(() => import('./pages/TonKhoPage').then(m => ({ default: m.TonKhoPage })));
+const NhanVienPage = React.lazy(() => import('./pages/NhanVienPage').then(m => ({ default: m.NhanVienPage })));
+const BaoCaoPage = React.lazy(() => import('./pages/BaoCaoPage').then(m => ({ default: m.BaoCaoPage })));
+const CaiDatPage = React.lazy(() => import('./pages/CaiDatPage').then(m => ({ default: m.CaiDatPage })));
+const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { Recycle } from 'lucide-react';
+
+const LoadingScreen = () => (
+  <div className="flex flex-col h-screen items-center justify-center bg-[var(--bg-app)] text-[var(--primary-500)]">
+    <div className="relative flex items-center justify-center w-16 h-16 mb-4">
+      <div className="absolute inset-0 rounded-full border-4 border-[var(--primary-100)] border-t-[var(--primary-500)] animate-spin"></div>
+      <Recycle size={32} />
+    </div>
+    <h2 className="text-xl font-bold tracking-tight">KhoPhe ERP</h2>
+    <p className="text-sm text-[var(--text-muted)] mt-1 animate-pulse">Đang tải dữ liệu...</p>
+  </div>
+);
 
 const RequireAuth = ({ children }: { children: React.ReactElement }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -27,48 +46,57 @@ const RequireAuth = ({ children }: { children: React.ReactElement }) => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <SlidePanelProvider>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              
-              <Route 
-                path="/" 
-                element={
-                  <RequireAuth>
-                    <AppLayout />
-                  </RequireAuth>
-                }
-              >
-                <Route index element={<DashboardPage />} />
-                
-                {/* Consolidated Module: Quản lý Phế */}
-                <Route path="phe" element={<QuanLyPhePage />} />
-                
-                {/* Consolidated Module: Tài chính */}
-                <Route path="tai-chinh" element={<TaiChinhPage />} />
-                
-                <Route path="ton-kho" element={<TonKhoPage />} />
-                <Route path="nhan-vien" element={<NhanVienPage />} />
-                <Route path="danh-ba" element={<DanhBaPage />} />
-                <Route path="bao-cao" element={<BaoCaoPage />} />
-                <Route path="cai-dat" element={<CaiDatPage />} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ToastProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <SlidePanelProvider>
+              <React.Suspense fallback={<div className="flex h-screen items-center justify-center bg-[var(--bg-app)]"><div className="w-8 h-8 rounded-full border-4 border-[var(--primary-500)] border-t-transparent animate-spin"></div></div>}>
+                <Routes>
+                  <Route path="/login" element={<LoginPage />} />
+                  
+                  <Route 
+                    path="/" 
+                    element={
+                      <RequireAuth>
+                        <AppLayout />
+                      </RequireAuth>
+                    }
+                  >
+                    <Route index element={<DashboardPage />} />
+                    
+                    {/* Consolidated Module: Quản lý Phế */}
+                    <Route path="phe" element={<QuanLyPhePage />} />
+                    
+                    {/* Consolidated Module: Tài chính */}
+                    <Route path="tai-chinh" element={<TaiChinhPage />} />
+                    
+                    <Route path="ton-kho" element={<TonKhoPage />} />
+                    <Route path="nhan-vien" element={<NhanVienPage />} />
+                    <Route path="danh-ba" element={<DanhBaPage />} />
+                    <Route path="bao-cao" element={<BaoCaoPage />} />
+                    <Route path="cai-dat" element={<CaiDatPage />} />
 
-                {/* Direct Subroute Redirects */}
-                <Route path="nhap-phe" element={<Navigate to="/phe?tab=nhap" replace />} />
-                <Route path="xay-phe" element={<Navigate to="/phe?tab=xay" replace />} />
-                <Route path="xuat-phe" element={<Navigate to="/phe?tab=xuat" replace />} />
-                <Route path="can-phe" element={<Navigate to="/phe?tab=can" replace />} />
-                <Route path="chi-phi" element={<Navigate to="/tai-chinh?tab=chiphi" replace />} />
-                <Route path="cong-no" element={<Navigate to="/tai-chinh?tab=congno" replace />} />
-              </Route>
-            </Routes>
-          </SlidePanelProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+                    {/* Direct Subroute Redirects */}
+                    <Route path="nhap-phe" element={<Navigate to="/phe?tab=nhap" replace />} />
+                    <Route path="xay-phe" element={<Navigate to="/phe?tab=xay" replace />} />
+                    <Route path="xuat-phe" element={<Navigate to="/phe?tab=xuat" replace />} />
+                    <Route path="can-phe" element={<Navigate to="/phe?tab=can" replace />} />
+                    <Route path="chi-phi" element={<Navigate to="/tai-chinh?tab=chiphi" replace />} />
+                    <Route path="cong-no" element={<Navigate to="/tai-chinh?tab=congno" replace />} />
+                  </Route>
+
+                  {/* Catch-all route for 404 Not Found */}
+                  <Route path="*" element={<NotFoundPage />} />
+                </Routes>
+              </React.Suspense>
+            </SlidePanelProvider>
+          </AuthProvider>
+        </ThemeProvider>
+        </ToastProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

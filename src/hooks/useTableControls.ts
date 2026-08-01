@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -16,15 +16,23 @@ export function useTableControls<T = any>(
   config?: { searchFields?: (keyof T)[]; pageSize?: number }
 ) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [page, setPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(config?.pageSize || 10);
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
-  const itemsPerPage = config?.pageSize || 10;
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   const filteredData = useMemo(() => {
     if (!data) return [];
-    if (!searchQuery.trim()) return data;
+    if (!debouncedQuery.trim()) return data;
 
-    const lowerSearch = searchQuery.toLowerCase();
+    const lowerSearch = debouncedQuery.toLowerCase();
     const fields = config?.searchFields;
 
     return data.filter((item) => {
@@ -39,7 +47,7 @@ export function useTableControls<T = any>(
         (val) => typeof val === 'string' && val.toLowerCase().includes(lowerSearch)
       );
     });
-  }, [data, searchQuery, config?.searchFields]);
+  }, [data, debouncedQuery, config?.searchFields]);
 
   const sortedData = useMemo(() => {
     if (!sortConfig) return filteredData;
@@ -71,6 +79,7 @@ export function useTableControls<T = any>(
   return {
     // Search
     searchQuery,
+    debouncedQuery,
     setSearchQuery: (q: string) => { setSearchQuery(q); setPage(1); },
     // Aliases for compatibility
     searchTerm: searchQuery,
@@ -81,6 +90,7 @@ export function useTableControls<T = any>(
     currentPage: page,
     setCurrentPage: setPage,
     itemsPerPage,
+    setItemsPerPage,
     totalPages,
     // Sort
     sortConfig,

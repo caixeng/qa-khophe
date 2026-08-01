@@ -39,12 +39,12 @@ export default {
         DEFAULT: 'var(--border-color)',
       },
       boxShadow: {
-        card: 'var(--shadow-card)',
-        'card-hover': 'var(--shadow-card-hover)',
-        dropdown: 'var(--shadow-dropdown)',
+        'card': '0 1px 2px 0 rgb(74 49 16 / 0.04), 0 1px 3px 0 rgb(74 49 16 / 0.06)',
+        'card-hover': '0 4px 12px 0 rgb(74 49 16 / 0.08), 0 2px 4px 0 rgb(74 49 16 / 0.04)',
+        'dropdown': '0 10px 30px -5px rgb(74 49 16 / 0.12), 0 4px 6px -2px rgb(74 49 16 / 0.04)',
       },
       fontSize: {
-        '2xs': ['0.6875rem', { lineHeight: '1rem' }],
+        '2xs': ['0.625rem', { lineHeight: '0.875rem' }],
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',

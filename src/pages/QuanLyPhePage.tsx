@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowDownToLine, Settings2, ArrowUpFromLine, Scale } from 'lucide-react';
+import { ArrowDownToLine, Settings2, ArrowUpFromLine, Scale, Plus } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { NhapPhePage } from './NhapPhePage';
 import { XayPhePage } from './XayPhePage';
@@ -21,6 +21,7 @@ export const QuanLyPhePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = (searchParams.get('tab') as PheTab) || 'nhap';
   const [activeTab, setActiveTab] = useState<PheTab>(tabParam);
+  const actionRef = React.useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (searchParams.get('tab') !== activeTab) {
@@ -28,23 +29,27 @@ export const QuanLyPhePage: React.FC = () => {
     }
   }, [activeTab]);
 
+  const getActionLabel = (tab: PheTab) => {
+    switch (tab) {
+      case 'nhap': return 'Thêm phiếu nhập';
+      case 'xay': return 'Ghi phiếu xay';
+      case 'xuat': return 'Thêm phiếu xuất';
+      case 'can': return 'Phiên cân mới';
+    }
+  };
+
+  const handleActionClick = () => {
+    if (actionRef.current) {
+      actionRef.current();
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Top Header & Tab Navigation */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl p-4 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-              Quản Lý Phế Liệu
-            </h1>
-            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-              Tập trung quản lý các công đoạn nhập, xay nghiền, xuất bán và cân phế
-            </p>
-          </div>
-        </div>
-
-        {/* Tab Buttons */}
-        <div className="flex items-center gap-2 overflow-x-auto border-b border-[var(--border-color)] pb-1">
+      {/* CIC-IBST UNIFIED TOP TOOLBAR ROW */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* CIC-IBST Pill Tabs Segmented Control */}
+        <div className="flex flex-wrap items-center gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] w-fit">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -53,29 +58,31 @@ export const QuanLyPhePage: React.FC = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all whitespace-nowrap border relative",
+                  "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer",
                   isActive
-                    ? "bg-[var(--primary-50)] text-[var(--primary-600)] border-[var(--primary-500)]/30 shadow-xs"
-                    : "bg-transparent text-[var(--text-secondary)] border-transparent hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                    ? "bg-[var(--primary-500)] text-white shadow-xs"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
                 )}
               >
-                <Icon size={16} className={cn(isActive ? "text-[var(--primary-500)]" : tab.color)} />
+                <Icon size={14} className={isActive ? "text-white" : tab.color} />
                 <span>{tab.label}</span>
-                {isActive && (
-                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[var(--primary-500)] rounded-full" />
-                )}
               </button>
             );
           })}
         </div>
+
+        {/* Right aligned action button in exact same row */}
+        <button onClick={handleActionClick} className="btn-primary flex items-center gap-2">
+          <Plus size={16} /> {getActionLabel(activeTab)}
+        </button>
       </div>
 
       {/* Tab Content */}
       <div className="transition-all duration-200">
-        {activeTab === 'nhap' && <NhapPhePage />}
-        {activeTab === 'xay' && <XayPhePage />}
-        {activeTab === 'xuat' && <XuatPhePage />}
-        {activeTab === 'can' && <CanPhePage />}
+        {activeTab === 'nhap' && <NhapPhePage actionRef={actionRef} />}
+        {activeTab === 'xay' && <XayPhePage actionRef={actionRef} />}
+        {activeTab === 'xuat' && <XuatPhePage actionRef={actionRef} />}
+        {activeTab === 'can' && <CanPhePage actionRef={actionRef} />}
       </div>
     </div>
   );

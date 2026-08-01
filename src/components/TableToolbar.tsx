@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Search } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { DateRangePicker } from './DateRangePicker';
 
 export interface TableToolbarProps {
   searchTerm?: string;
@@ -12,6 +13,10 @@ export interface TableToolbarProps {
   children?: React.ReactNode;
   totalCount?: number;
   className?: string;
+  showDateFilter?: boolean;
+  startDate?: string;
+  endDate?: string;
+  onDateChange?: (start: string, end: string) => void;
 }
 
 export const TableToolbar: React.FC<TableToolbarProps> = ({
@@ -23,7 +28,11 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   placeholder = 'Tìm kiếm...',
   children,
   totalCount,
-  className
+  className,
+  showDateFilter,
+  startDate,
+  endDate,
+  onDateChange
 }) => {
   const value = searchValue !== undefined ? searchValue : (searchQuery !== undefined ? searchQuery : (searchTerm !== undefined ? searchTerm : ''));
   const handleChange = (val: string) => {
@@ -33,7 +42,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
 
   return (
     <div className={cn("flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 p-3 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs", className)}>
-      <div className="relative w-full sm:max-w-md">
+      <div role="search" className="relative w-full sm:max-w-md">
         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
           <Search className="h-4 w-4 text-[var(--text-muted)]" />
         </div>
@@ -42,11 +51,19 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
           value={value}
           onChange={(e) => handleChange(e.target.value)}
           placeholder={placeholder}
+          aria-label="Tìm kiếm"
           className="input-field w-full pl-10 pr-4 py-2 text-xs font-medium bg-[var(--bg-subtle)] border-[var(--border-color)] rounded-xl placeholder:text-[var(--text-placeholder)] focus:ring-2 focus:ring-[var(--primary-500)]/20"
         />
       </div>
       
       <div className="flex items-center gap-2.5 w-full sm:w-auto overflow-x-auto">
+        {showDateFilter && onDateChange && (
+          <DateRangePicker
+            startDate={startDate || ''}
+            endDate={endDate || ''}
+            onChange={onDateChange}
+          />
+        )}
         {children}
         
         {totalCount !== undefined && (

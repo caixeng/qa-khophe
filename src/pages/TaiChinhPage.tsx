@@ -26,44 +26,27 @@ export const TaiChinhPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Top Header & Tab Navigation */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl p-4 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-              Quản Lý Tài Chính
-            </h1>
-            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-              Theo dõi toàn bộ chi phí xưởng, tiền ứng kho và công nợ phải thu/trả
-            </p>
-          </div>
-        </div>
-
-        {/* Tab Buttons */}
-        <div className="flex items-center gap-2 overflow-x-auto border-b border-[var(--border-color)] pb-1">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all whitespace-nowrap border relative",
-                  isActive
-                    ? "bg-[var(--primary-50)] text-[var(--primary-600)] border-[var(--primary-500)]/30 shadow-xs"
-                    : "bg-transparent text-[var(--text-secondary)] border-transparent hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
-                )}
-              >
-                <Icon size={16} className={cn(isActive ? "text-[var(--primary-500)]" : tab.color)} />
-                <span>{tab.label}</span>
-                {isActive && (
-                  <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-[var(--primary-500)] rounded-full" />
-                )}
-              </button>
-            );
-          })}
-        </div>
+      {/* CIC-IBST Pill Tabs Segmented Control */}
+      <div className="flex flex-wrap items-center gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] w-fit">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer",
+                isActive
+                  ? "bg-[var(--primary-500)] text-white shadow-xs"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+              )}
+            >
+              <Icon size={14} className={isActive ? "text-white" : tab.color} />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab Content */}

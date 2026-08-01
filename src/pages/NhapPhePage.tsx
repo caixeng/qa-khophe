@@ -1,20 +1,27 @@
 import * as React from 'react';
-import { useMemo } from 'react';
-import { Plus, Edit, Trash2, TrendingUp, Package, Clock, DollarSign } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Edit, Trash2, TrendingUp, Package, Clock, DollarSign, Printer } from 'lucide-react';
 import { formatTien, formatNgay, formatKg } from '../lib/utils';
-import { PageHeader } from '../components/PageHeader';
 import { Modal, FormField } from '../components/Modal';
+import { printPhieuNhap } from '../lib/print';
 import { StatusBadge } from '../components/StatusBadge';
 import { TableToolbar } from '../components/TableToolbar';
 import { DataState } from '../components/DataState';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
+import { useToast } from '../contexts/ToastContext';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { PaginationBar } from '../components/PaginationBar';
 import { importsService } from '../services/importsService';
 import { contactsService } from '../services/contactsService';
 import type { Import, PaymentStatus, ProcessingStatus } from '../types';
 
-export const NhapPhePage: React.FC = () => {
+interface NhapPhePageProps {
+  actionRef?: React.MutableRefObject<(() => void) | null>;
+}
+
+export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
   const { data: importsData, loading, error, refetch } = useAsyncData(importsService.getAll, []);
   const { data: contactsData } = useAsyncData(contactsService.getAll, []);
   
@@ -25,8 +32,11 @@ export const NhapPhePage: React.FC = () => {
     return contacts.filter(c => c.type === 'supplier' || !c.type);
   }, [contacts]);
 
+  const { toast } = useToast();
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+
   // Table Controls
-  const { searchQuery, setSearchQuery } = useTableControls();
+  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
 
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Import>({
@@ -39,6 +49,10 @@ export const NhapPhePage: React.FC = () => {
       processing_status: 'pending',
     }
   });
+
+  if (actionRef) {
+    actionRef.current = openModal;
+  }
 
   const filteredData = useMemo(() => {
     return imports.filter((item) => {
@@ -73,7 +87,7 @@ export const NhapPhePage: React.FC = () => {
     const price = Number(data.price_per_kg) || 0;
     
     if (qty <= 0) {
-      alert('Vui lòng nhập khối lượng lớn hơn 0 kg');
+      toast.warning('Vui lòng nhập khối lượng lớn hơn 0 kg');
       return;
     }
 
@@ -87,6 +101,7 @@ export const NhapPhePage: React.FC = () => {
           contact_name: contactName,
           total_amount: qty * price
         });
+        toast.success('Đã cập nhật phiếu nhập');
       } else {
         await importsService.create({
           date: data.date || new Date().toISOString().split('T')[0],
@@ -100,36 +115,35 @@ export const NhapPhePage: React.FC = () => {
           processing_status: data.processing_status || 'pending',
           notes: data.notes,
         });
+        toast.success('Đã thêm phiếu nhập mới');
       }
       closeModal();
       refetch();
     } catch (err) {
+      toast.error('Lỗi khi lưu phiếu nhập');
       console.error('Lỗi khi lưu phiếu nhập:', err);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa phiếu nhập này?')) {
-      try {
-        await importsService.delete(id);
-        refetch();
-      } catch (err) {
-        console.error('Lỗi khi xóa phiếu nhập:', err);
-      }
+    setConfirmState({ isOpen: true, id });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await importsService.delete(confirmState.id);
+      toast.success('Đã xóa phiếu nhập');
+      refetch();
+    } catch (err) {
+      toast.error('Lỗi khi xóa phiếu nhập');
+      console.error('Lỗi khi xóa phiếu nhập:', err);
     }
+    setConfirmState({ isOpen: false, id: '' });
   };
 
   return (
     <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
-      <PageHeader
-        title="Nhập Phế Liệu"
-        subtitle="Quản lý lô phế nhập vào từ các nhà cung cấp"
-        action={{
-          label: 'Thêm phiếu nhập',
-          icon: Plus,
-          onClick: () => openModal(),
-        }}
-      />
+
 
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -187,20 +201,21 @@ export const NhapPhePage: React.FC = () => {
         <div className="erp-table-container">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
+              <caption className="sr-only">Danh sách phiếu nhập phế</caption>
               <thead>
                 <tr>
-                  <th className="th-cell">Ngày nhập</th>
-                  <th className="th-cell">Người bán (NCC)</th>
+                  <th scope="col" className="th-cell">Ngày nhập</th>
+                  <th scope="col" className="th-cell">Người bán (NCC)</th>
                   <th className="th-cell text-right">Số lượng (kg)</th>
                   <th className="th-cell text-right">Giá/kg</th>
                   <th className="th-cell text-right">Tổng tiền</th>
-                  <th className="th-cell">Thanh toán</th>
-                  <th className="th-cell">Xử lý</th>
+                  <th scope="col" className="th-cell">Thanh toán</th>
+                  <th scope="col" className="th-cell">Xử lý</th>
                   <th className="th-cell text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map((item) => (
+                {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item) => (
                   <tr key={item.id} className="tr-hover">
                     <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(item.date)}</td>
                     <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{item.contact_name || 'Khách lẻ'}</td>
@@ -221,6 +236,13 @@ export const NhapPhePage: React.FC = () => {
                     </td>
                     <td className="td-cell text-right">
                       <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => printPhieuNhap(item)}
+                          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
+                          title="In phiếu"
+                        >
+                          <Printer size={16} />
+                        </button>
                         <button
                           onClick={() => openModal(item)}
                           className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
@@ -243,6 +265,13 @@ export const NhapPhePage: React.FC = () => {
             </table>
           </div>
         </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalItems={filteredData.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </DataState>
 
       {/* Modal Add/Edit */}
@@ -356,6 +385,18 @@ export const NhapPhePage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Confirm Delete */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState({ isOpen: false, id: '' })}
+        onConfirm={confirmDelete}
+        title="Xóa phiếu nhập"
+        message="Bạn có chắc chắn muốn xóa phiếu nhập phế liệu này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xóa"
+        cancelText="Hủy"
+      />
     </div>
   );
 };

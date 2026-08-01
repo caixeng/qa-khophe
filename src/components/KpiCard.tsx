@@ -50,6 +50,8 @@ export const KpiCard: React.FC<KpiCardProps> = ({
 
   return (
     <div
+      role="region"
+      aria-label={title}
       className={cn(
         'card p-5 relative overflow-hidden animate-fade-in-up',
         className

@@ -1,48 +1,24 @@
 import { supabase } from '../lib/supabase';
 import type { Expense, Advance } from '../types';
 
-export const INITIAL_NOTEBOOK_EXPENSES: Expense[] = [
-  {
-    id: 'exp-2807-1',
-    date: '2026-07-28',
-    category: 'fuel',
-    amount: 800000,
-    description: 'Xăng 800.000đ',
-    notes: 'Chi tiêu kho ngày 28/07/2026 (Sổ 28/07)'
-  },
-  {
-    id: 'exp-2807-2',
-    date: '2026-07-28',
-    category: 'other',
-    amount: 85000,
-    description: 'Thắp hương 85.000đ',
-    notes: 'Chi tiêu kho ngày 28/07/2026'
-  }
-];
-
 export const expensesService = {
   async getExpenses(): Promise<Expense[]> {
-    try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .order('date', { ascending: false });
+    const { data, error } = await supabase
+      .from('expenses')
+      .select('*')
+      .order('date', { ascending: false });
 
-      if (error || !data || data.length === 0) {
-        return INITIAL_NOTEBOOK_EXPENSES;
-      }
-      return data.map(item => ({
-        id: item.id,
-        date: item.date,
-        category: item.category || 'other',
-        amount: Number(item.amount) || 0,
-        description: item.description || '',
-        notes: item.notes,
-        created_at: item.created_at,
-      }));
-    } catch {
-      return INITIAL_NOTEBOOK_EXPENSES;
-    }
+    if (error) throw new Error(error.message);
+
+    return (data || []).map(item => ({
+      id: item.id,
+      date: item.date,
+      category: item.category || 'other',
+      amount: Number(item.amount) || 0,
+      description: item.description || '',
+      notes: item.notes,
+      created_at: item.created_at,
+    }));
   },
 
   async createExpense(expense: Partial<Expense>): Promise<Expense> {
@@ -58,38 +34,23 @@ export const expensesService = {
       .select()
       .single();
 
-    if (error) {
-      return {
-        id: `exp-${Date.now()}`,
-        date: expense.date || '2026-07-28',
-        category: expense.category || 'other',
-        amount: Number(expense.amount) || 0,
-        description: expense.description || '',
-        notes: expense.notes,
-      };
-    }
+    if (error) throw new Error(error.message);
     return data;
   },
 
   async deleteExpense(id: string): Promise<void> {
-    await supabase
-      .from('expenses')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabase.from('expenses').delete().eq('id', id);
+    if (error) throw new Error(error.message);
   },
 
   async getAdvances(): Promise<Advance[]> {
-    try {
-      const { data, error } = await supabase
-        .from('advances')
-        .select('*')
-        .order('date', { ascending: false });
+    const { data, error } = await supabase
+      .from('advances')
+      .select('*')
+      .order('date', { ascending: false });
 
-      if (error || !data) return [];
-      return data;
-    } catch {
-      return [];
-    }
+    if (error) throw new Error(error.message);
+    return data || [];
   },
 
   async createAdvance(advance: Partial<Advance>): Promise<Advance> {
@@ -97,7 +58,7 @@ export const expensesService = {
       .from('advances')
       .insert({
         date: advance.date || new Date().toISOString().split('T')[0],
-        person: advance.person || advance.person_name || 'Chủ xưởng',
+        person: advance.person || 'Chủ xưởng',
         amount: Number(advance.amount) || 0,
         type: advance.type || 'advance',
         notes: advance.notes || null,
@@ -105,7 +66,7 @@ export const expensesService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) throw new Error(error.message);
     return data;
   }
 };

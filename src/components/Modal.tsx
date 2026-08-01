@@ -13,16 +13,61 @@ export interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, className }) => {
+  const modalRef = React.useRef<HTMLDivElement>(null);
+
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      document.addEventListener('keydown', handleKeyDown);
+      
+      // Focus first element
+      setTimeout(() => {
+        if (modalRef.current) {
+          const focusableElements = modalRef.current.querySelectorAll(
+            'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          const firstElement = focusableElements[0] as HTMLElement;
+          if (firstElement) {
+            firstElement.focus();
+          }
+        }
+      }, 10);
     } else {
       document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleKeyDown);
     }
     return () => {
       document.body.style.overflow = 'unset';
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, onClose]);
+
+  const handleTabKey = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Tab' || !modalRef.current) return;
+    const focusableElements = modalRef.current.querySelectorAll(
+      'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0] as HTMLElement;
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+    
+    if (e.shiftKey) {
+      if (document.activeElement === firstElement) {
+        e.preventDefault();
+        lastElement?.focus();
+      }
+    } else {
+      if (document.activeElement === lastElement) {
+        e.preventDefault();
+        firstElement?.focus();
+      }
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -35,15 +80,22 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
       />
       
       {/* Modal Card */}
-      <div className={cn(
+      <div 
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+        onKeyDown={handleTabKey}
+        className={cn(
         "card bg-[var(--bg-surface)] w-full max-w-lg shadow-xl relative z-10 animate-fade-in flex flex-col max-h-[90vh]",
         className
       )}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
-          <h2 className="text-lg font-bold text-[var(--text-primary)]">{title}</h2>
+          <h2 id="modal-title" className="text-lg font-bold text-[var(--text-primary)]">{title}</h2>
           <button 
             onClick={onClose}
+            aria-label="Đóng"
             className="p-1 hover:bg-[var(--bg-subtle)] rounded-md transition-colors cursor-pointer"
           >
             <X className="w-5 h-5 text-[var(--text-secondary)]" />

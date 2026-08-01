@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { User, Palette, Moon, Sun, Leaf, Check, Monitor, Sliders } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, formatRole } from '../lib/utils';
 
 export const CaiDatPage = () => {
   const { theme, setTheme, primaryColor, setPrimaryColor, density, setDensity } = useTheme();
@@ -40,11 +40,11 @@ export const CaiDatPage = () => {
             {user?.name?.charAt(0) || 'A'}
           </div>
           <div>
-            <p className="text-lg font-bold text-[var(--text-primary)]">{user?.name || 'Admin KhoPhe'}</p>
-            <p className="text-xs text-[var(--text-muted)]">{user?.email || 'admin@khophe.vn'}</p>
+            <p className="text-lg font-bold text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
+            <p className="text-xs text-[var(--text-muted)]">{user?.email || '—'}</p>
             <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--primary-50)] text-[var(--primary-600)] border border-[var(--primary-500)]/20">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary-500)]" />
-              {user?.role || 'Quản trị viên kho'}
+              {formatRole(user?.role)}
             </span>
           </div>
         </div>

@@ -8,22 +8,27 @@ import { StatusBadge } from '../components/StatusBadge';
 import { TableToolbar } from '../components/TableToolbar';
 import { DataState } from '../components/DataState';
 import { KpiCard } from '../components/KpiCard';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { PaginationBar } from '../components/PaginationBar';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
+import { useToast } from '../contexts/ToastContext';
 import { employeesService, attendanceService } from '../services/employeesService';
 import type { Employee, Attendance, EmployeeRole, PaymentStatus } from '../types';
 
 const roleLabels: Record<EmployeeRole, { label: string; icon: React.ElementType; color: string }> = {
-  grinder: { label: 'Thợ xay phế', icon: HardHat, color: 'bg-amber-100 text-amber-800 border-amber-200' },
-  weigher: { label: 'Thợ cân phế', icon: Scale, color: 'bg-blue-100 text-blue-800 border-blue-200' },
-  driver: { label: 'Tài xế giao hàng', icon: Truck, color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-  manager: { label: 'Quản lý xưởng', icon: ShieldCheck, color: 'bg-purple-100 text-purple-800 border-purple-200' },
-  staff: { label: 'Nhân viên xưởng', icon: Users, color: 'bg-slate-100 text-slate-800 border-slate-200' },
+  grinder: { label: 'Thợ xay phế', icon: HardHat, color: 'bg-amber-100 text-amber-900 border-amber-200' },
+  weigher: { label: 'Thợ cân phế', icon: Scale, color: 'bg-blue-100 text-blue-900 border-blue-200' },
+  driver: { label: 'Tài xế giao hàng', icon: Truck, color: 'bg-emerald-100 text-emerald-900 border-emerald-200' },
+  manager: { label: 'Quản lý xưởng', icon: ShieldCheck, color: 'bg-purple-100 text-purple-900 border-purple-200' },
+  staff: { label: 'Nhân viên xưởng', icon: Users, color: 'bg-slate-100 text-slate-900 border-slate-200' },
 };
 
 export const NhanVienPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'employees' | 'attendance'>('employees');
+  const { toast } = useToast();
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string; type: 'employee' | 'attendance' }>({ isOpen: false, id: '', type: 'employee' });
 
   const { data: employeesData, loading: empLoading, error: empError, refetch: refetchEmp } = useAsyncData(employeesService.getAll, []);
   const { data: attendanceData, loading: attLoading, error: attError, refetch: refetchAtt } = useAsyncData(attendanceService.getAttendance, []);
@@ -31,7 +36,7 @@ export const NhanVienPage: React.FC = () => {
   const employees = employeesData || [];
   const attendanceList = attendanceData || [];
 
-  const { searchQuery, setSearchQuery } = useTableControls();
+  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
 
   // Employee Form State
   const { formState: empForm, openModal: openEmpModal, closeModal: closeEmpModal, handleChange: handleEmpChange } = useCrudForm<Employee>({
@@ -84,32 +89,40 @@ export const NhanVienPage: React.FC = () => {
     e.preventDefault();
     const data = empForm.data;
     if (!data.name?.trim()) {
-      alert('Vui lòng nhập tên nhân viên');
+      toast.warning('Vui lòng nhập tên nhân viên');
       return;
     }
 
     try {
       if (data.id) {
         await employeesService.update(data.id, data);
+        toast.success('Đã cập nhật hồ sơ nhân viên');
       } else {
         await employeesService.create(data);
+        toast.success('Đã thêm nhân viên mới');
       }
       closeEmpModal();
       refetchEmp();
     } catch (err) {
+      toast.error('Lỗi khi lưu nhân viên');
       console.error('Lỗi khi lưu nhân viên:', err);
     }
   };
 
   const handleDeleteEmployee = async (id: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa hồ sơ nhân viên này?')) {
-      try {
-        await employeesService.delete(id);
-        refetchEmp();
-      } catch (err) {
-        console.error('Lỗi khi xóa nhân viên:', err);
-      }
+    setConfirmState({ isOpen: true, id, type: 'employee' });
+  };
+
+  const confirmDeleteEmployee = async () => {
+    try {
+      await employeesService.delete(confirmState.id);
+      toast.success('Đã xóa hồ sơ nhân viên');
+      refetchEmp();
+    } catch (err) {
+      toast.error('Lỗi khi xóa nhân viên');
+      console.error('Lỗi khi xóa nhân viên:', err);
     }
+    setConfirmState({ isOpen: false, id: '', type: 'employee' });
   };
 
   // Handle Attendance Save
@@ -117,7 +130,7 @@ export const NhanVienPage: React.FC = () => {
     e.preventDefault();
     const data = attForm.data;
     if (!data.employee_id && !data.employee_name) {
-      alert('Vui lòng chọn nhân viên chấm công');
+      toast.warning('Vui lòng chọn nhân viên chấm công');
       return;
     }
 
@@ -132,29 +145,37 @@ export const NhanVienPage: React.FC = () => {
           employee_name: empName,
           daily_pay: dailyPay,
         });
+        toast.success('Đã cập nhật lượt chấm công');
       } else {
         await attendanceService.createAttendance({
           ...data,
           employee_name: empName,
           daily_pay: dailyPay,
         });
+        toast.success('Đã lưu lượt chấm công mới');
       }
       closeAttModal();
       refetchAtt();
     } catch (err) {
+      toast.error('Lỗi khi lưu lượt chấm công');
       console.error('Lỗi khi lưu lượt chấm công:', err);
     }
   };
 
   const handleDeleteAttendance = async (id: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa lượt chấm công này?')) {
-      try {
-        await attendanceService.deleteAttendance(id);
-        refetchAtt();
-      } catch (err) {
-        console.error('Lỗi khi xóa lượt chấm công:', err);
-      }
+    setConfirmState({ isOpen: true, id, type: 'attendance' });
+  };
+
+  const confirmDeleteAttendance = async () => {
+    try {
+      await attendanceService.deleteAttendance(confirmState.id);
+      toast.success('Đã xóa lượt chấm công');
+      refetchAtt();
+    } catch (err) {
+      toast.error('Lỗi khi xóa lượt chấm công');
+      console.error('Lỗi khi xóa lượt chấm công:', err);
     }
+    setConfirmState({ isOpen: false, id: '', type: 'attendance' });
   };
 
   return (
@@ -171,36 +192,36 @@ export const NhanVienPage: React.FC = () => {
 
       {/* KPI Cards for Payroll */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Tổng số nhân sự" value={`${employees.length} người`} subtitle="3 thợ chính ngày 28/07" icon={UserCheck} color="primary" />
+        <KpiCard title="Tổng số nhân sự" value={`${employees.length} người`} subtitle={`${employees.filter(e => e.status === 'active').length} đang làm việc`} icon={UserCheck} color="primary" />
         <KpiCard title="Tổng ngày công" value={`${attStats.totalShifts} công`} subtitle="Ghi nhận tháng này" icon={Calendar} color="info" />
         <KpiCard title="Tổng quỹ lương" value={formatTien(attStats.totalPayroll)} subtitle="Lương thực lĩnh" icon={DollarSign} color="success" />
         <KpiCard title="Lương chưa trả" value={formatTien(attStats.totalUnpaid)} subtitle="Cần thanh toán" icon={DollarSign} color="warning" />
       </div>
 
-      {/* Tabs Header */}
-      <div className="flex border-b border-[var(--border-color)]">
+      {/* CIC-IBST Pill Tabs */}
+      <div className="flex flex-wrap items-center gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] w-fit">
         <button
           onClick={() => setActiveTab('employees')}
           className={cn(
-            'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer flex items-center space-x-2',
+            'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
             activeTab === 'employees'
-              ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              ? 'bg-[var(--primary-500)] text-white shadow-xs'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
           )}
         >
-          <Users size={16} />
+          <Users size={14} className={activeTab === 'employees' ? 'text-white' : 'text-[var(--text-muted)]'} />
           <span>Danh sách nhân viên ({employees.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('attendance')}
           className={cn(
-            'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer flex items-center space-x-2',
+            'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
             activeTab === 'attendance'
-              ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              ? 'bg-[var(--primary-500)] text-white shadow-xs'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
           )}
         >
-          <Calendar size={16} />
+          <Calendar size={14} className={activeTab === 'attendance' ? 'text-white' : 'text-[var(--text-muted)]'} />
           <span>Chấm công & Tính lương ({attendanceList.length})</span>
         </button>
       </div>
@@ -219,19 +240,20 @@ export const NhanVienPage: React.FC = () => {
           <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full">
+                <caption className="sr-only">Danh sách hồ sơ nhân viên</caption>
                 <thead>
                   <tr>
-                    <th className="th-cell">Tên nhân viên</th>
-                    <th className="th-cell">Chức vụ</th>
+                    <th scope="col" className="th-cell">Tên nhân viên</th>
+                    <th scope="col" className="th-cell">Chức vụ</th>
                     <th className="th-cell text-right">Lương công (đ/ngày)</th>
-                    <th className="th-cell">Số điện thoại</th>
-                    <th className="th-cell">Trạng thái</th>
-                    <th className="th-cell">Ghi chú</th>
+                    <th scope="col" className="th-cell">Số điện thoại</th>
+                    <th scope="col" className="th-cell">Trạng thái</th>
+                    <th scope="col" className="th-cell">Ghi chú</th>
                     <th className="th-cell text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEmployees.map((emp) => {
+                  {filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((emp) => {
                     const roleInfo = roleLabels[emp.role] || roleLabels.staff;
                     const RoleIcon = roleInfo.icon;
                     return (
@@ -252,7 +274,7 @@ export const NhanVienPage: React.FC = () => {
                         <td className="td-cell">
                           <span className={cn(
                             "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                            emp.status === 'active' ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"
+                            emp.status === 'active' ? "bg-emerald-100 text-emerald-900" : "bg-slate-100 text-slate-900"
                           )}>
                             {emp.status === 'active' ? 'Đang làm việc' : 'Đã nghỉ'}
                           </span>
@@ -283,6 +305,13 @@ export const NhanVienPage: React.FC = () => {
               </table>
             </div>
           </div>
+          <PaginationBar
+            currentPage={currentPage}
+            totalItems={filteredEmployees.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+          />
         </DataState>
       )}
 
@@ -292,21 +321,22 @@ export const NhanVienPage: React.FC = () => {
           <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full">
+                <caption className="sr-only">Bảng chấm công nhân viên</caption>
                 <thead>
                   <tr>
-                    <th className="th-cell">Ngày chấm công</th>
-                    <th className="th-cell">Tên công nhân</th>
+                    <th scope="col" className="th-cell">Ngày chấm công</th>
+                    <th scope="col" className="th-cell">Tên công nhân</th>
                     <th className="th-cell text-right">Số công</th>
                     <th className="th-cell text-right">Đơn giá/ngày</th>
                     <th className="th-cell text-right">Tạm ứng</th>
                     <th className="th-cell text-right">Thực lĩnh</th>
-                    <th className="th-cell">Trạng thái thanh toán</th>
-                    <th className="th-cell">Ghi chú công</th>
+                    <th scope="col" className="th-cell">Trạng thái thanh toán</th>
+                    <th scope="col" className="th-cell">Ghi chú công</th>
                     <th className="th-cell text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAttendance.map((att) => (
+                  {filteredAttendance.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((att) => (
                     <tr key={att.id} className="tr-hover">
                       <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(att.date)}</td>
                       <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{att.employee_name}</td>
@@ -350,6 +380,13 @@ export const NhanVienPage: React.FC = () => {
               </table>
             </div>
           </div>
+          <PaginationBar
+            currentPage={currentPage}
+            totalItems={filteredAttendance.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+          />
         </DataState>
       )}
 
@@ -559,6 +596,21 @@ export const NhanVienPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* CONFIRM DELETE DIALOG */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState({ isOpen: false, id: '', type: 'employee' })}
+        onConfirm={confirmState.type === 'employee' ? confirmDeleteEmployee : confirmDeleteAttendance}
+        title={confirmState.type === 'employee' ? 'Xóa hồ sơ nhân viên' : 'Xóa lượt chấm công'}
+        message={confirmState.type === 'employee'
+          ? 'Bạn có chắc chắn muốn xóa hồ sơ nhân viên này? Hành động này không thể hoàn tác.'
+          : 'Bạn có chắc chắn muốn xóa lượt chấm công này? Hành động này không thể hoàn tác.'
+        }
+        variant="danger"
+        confirmText="Xóa"
+        cancelText="Hủy"
+      />
     </div>
   );
 };

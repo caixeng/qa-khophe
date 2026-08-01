@@ -10,6 +10,9 @@ import { DataState } from '../components/DataState';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
+import { useToast } from '../contexts/ToastContext';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { PaginationBar } from '../components/PaginationBar';
 import { contactsService } from '../services/contactsService';
 import type { Contact, ContactType } from '../types';
 
@@ -17,9 +20,11 @@ export const DanhBaPage: React.FC = () => {
   const { data: contactsData, loading, error, refetch } = useAsyncData(contactsService.getAll, []);
   const contacts = contactsData || [];
   const [activeTab, setActiveTab] = useState<ContactType>('supplier');
+  const { toast } = useToast();
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
 
   // Table controls
-  const { searchQuery, setSearchQuery } = useTableControls();
+  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
 
   // CRUD Form
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Contact>({
@@ -45,11 +50,15 @@ export const DanhBaPage: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const data = formState.data;
-    if (!data.name) return;
+    if (!data.name) {
+      toast.warning('Vui lòng nhập tên liên hệ');
+      return;
+    }
 
     try {
       if (data.id) {
         await contactsService.update(data.id, data);
+        toast.success('Đã cập nhật thông tin liên hệ');
       } else {
         await contactsService.create({
           name: data.name,
@@ -58,23 +67,30 @@ export const DanhBaPage: React.FC = () => {
           address: data.address,
           notes: data.notes,
         });
+        toast.success('Đã thêm liên hệ mới');
       }
       closeModal();
       refetch();
     } catch (err) {
+      toast.error('Lỗi khi lưu liên hệ');
       console.error('Lỗi khi lưu đối tác:', err);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa đối tác này?')) {
-      try {
-        await contactsService.delete(id);
-        refetch();
-      } catch (err) {
-        console.error('Lỗi khi xóa đối tác:', err);
-      }
+    setConfirmState({ isOpen: true, id });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await contactsService.delete(confirmState.id);
+      toast.success('Đã xóa liên hệ');
+      refetch();
+    } catch (err) {
+      toast.error('Lỗi khi xóa liên hệ');
+      console.error('Lỗi khi xóa đối tác:', err);
     }
+    setConfirmState({ isOpen: false, id: '' });
   };
 
   const counts = useMemo(() => {
@@ -146,17 +162,18 @@ export const DanhBaPage: React.FC = () => {
         <div className="erp-table-container">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
+              <caption className="sr-only">Danh bạ đối tác</caption>
               <thead>
                 <tr>
-                  <th className="th-cell">Tên liên hệ</th>
-                  <th className="th-cell">Số điện thoại</th>
-                  <th className="th-cell">Địa chỉ / Ghi chú</th>
-                  <th className="th-cell">Trạng thái</th>
+                  <th scope="col" className="th-cell">Tên liên hệ</th>
+                  <th scope="col" className="th-cell">Số điện thoại</th>
+                  <th scope="col" className="th-cell">Địa chỉ / Ghi chú</th>
+                  <th scope="col" className="th-cell">Trạng thái</th>
                   <th className="th-cell text-right">Hành động</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map((contact) => (
+                {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((contact) => (
                   <tr key={contact.id} className="tr-hover">
                     <td className="td-cell font-bold">
                       <div className="flex items-center space-x-3">
@@ -213,6 +230,13 @@ export const DanhBaPage: React.FC = () => {
             </table>
           </div>
         </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalItems={filteredData.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </DataState>
 
       {/* Add / Edit Modal */}
@@ -285,6 +309,18 @@ export const DanhBaPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Confirm Delete */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState({ isOpen: false, id: '' })}
+        onConfirm={confirmDelete}
+        title="Xóa liên hệ"
+        message="Bạn có chắc chắn muốn xóa liên hệ này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xóa"
+        cancelText="Hủy"
+      />
     </div>
   );
 };

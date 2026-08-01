@@ -6,20 +6,25 @@ import { PageHeader } from '../components/PageHeader';
 import { KpiCard } from '../components/KpiCard';
 import { DataState } from '../components/DataState';
 import { useAsyncData } from '../hooks/useAsyncData';
+import { useAuth } from '../contexts/AuthContext';
 import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
 import { expensesService } from '../services/expensesService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import * as XLSX from 'xlsx';
 
 const COLORS = ['#00668c', '#059669', '#d97706', '#64748b', '#7c3aed', '#e11d48'];
 
 export const BaoCaoPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'tongquan' | 'nhapxuat' | 'taichinh'>('tongquan');
+  const { user } = useAuth();
+  const canSeeFinance = user?.role === 'manager' || user?.role === 'admin';
 
   const { data: importsData, loading: impLoading } = useAsyncData(importsService.getAll, []);
   const { data: exportsData, loading: expLoading } = useAsyncData(exportsService.getAll, []);
-  const { data: expensesData, loading: expesLoading } = useAsyncData(expensesService.getExpenses, []);
+  const { data: expensesData, loading: expesLoading } = useAsyncData(
+    canSeeFinance ? expensesService.getExpenses : async () => [],
+    [canSeeFinance]
+  );
 
   const imports = importsData || [];
   const exports = exportsData || [];
@@ -29,7 +34,7 @@ export const BaoCaoPage: React.FC = () => {
     const totalImportKg = imports.reduce((sum, i) => sum + (Number(i.quantity_kg) || 0), 0);
     const totalImportCost = imports.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
 
-    const totalExportKg = exports.reduce((sum, e) => sum + (Number(e.total_quantity_kg || e.total_kg) || 0), 0);
+    const totalExportKg = exports.reduce((sum, e) => sum + (Number(e.total_kg) || 0), 0);
     const totalRevenue = exports.reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
 
     const totalOperatingCost = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
@@ -79,7 +84,7 @@ export const BaoCaoPage: React.FC = () => {
 
     exports.forEach(e => {
       if (!datesMap[e.date]) datesMap[e.date] = { importKg: 0, exportKg: 0 };
-      datesMap[e.date].exportKg += Number(e.total_quantity_kg || e.total_kg) || 0;
+      datesMap[e.date].exportKg += Number(e.total_kg) || 0;
     });
 
     return Object.entries(datesMap)
@@ -91,26 +96,58 @@ export const BaoCaoPage: React.FC = () => {
       }));
   }, [imports, exports]);
 
-  const handleExportExcel = () => {
-    const wb = XLSX.utils.book_new();
+  const [exporting, setExporting] = useState(false);
 
-    const summaryData = [
-      ['BÁO CÁO TỔNG QUAN XƯỞNG PHẾ QA KHOPHE'],
-      ['Ngày xuất báo cáo', new Date().toLocaleDateString('vi-VN')],
-      [],
-      ['Chỉ số', 'Giá trị'],
-      ['Tổng sản lượng nhập (kg)', summary.totalImportKg],
-      ['Tổng chi phí mua phế (VNĐ)', summary.totalImportCost],
-      ['Tổng sản lượng xuất (kg)', summary.totalExportKg],
-      ['Tổng doanh thu xuất phế (VNĐ)', summary.totalRevenue],
-      ['Chi phí vận hành xưởng (VNĐ)', summary.totalOperatingCost],
-      ['Lợi nhuận gộp ước tính (VNĐ)', summary.estimatedProfit],
-    ];
+  const handleExportExcel = async () => {
+    setExporting(true);
+    try {
+      // xlsx nặng ~500KB — chỉ tải khi thực sự bấm xuất báo cáo
+      const XLSX = await import('xlsx');
+      const wb = XLSX.utils.book_new();
 
-    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(wb, wsSummary, 'Tổng Quan');
+      const summaryData: (string | number)[][] = [
+        ['BÁO CÁO TỔNG QUAN XƯỞNG PHẾ QA KHOPHE'],
+        ['Ngày xuất báo cáo', new Date().toLocaleDateString('vi-VN')],
+        [],
+        ['Chỉ số', 'Giá trị'],
+        ['Tổng sản lượng nhập (kg)', summary.totalImportKg],
+        ['Tổng chi phí mua phế (VNĐ)', summary.totalImportCost],
+        ['Tổng sản lượng xuất (kg)', summary.totalExportKg],
+        ['Tổng doanh thu xuất phế (VNĐ)', summary.totalRevenue],
+      ];
+      if (canSeeFinance) {
+        summaryData.push(
+          ['Chi phí vận hành xưởng (VNĐ)', summary.totalOperatingCost],
+          ['Lợi nhuận gộp ước tính (VNĐ)', summary.estimatedProfit],
+        );
+      }
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, 'Tổng Quan');
 
-    XLSX.writeFile(wb, `BaoCao_KhoPhe_${new Date().toISOString().split('T')[0]}.xlsx`);
+      const importRows = [
+        ['Ngày', 'Nhà cung cấp', 'Khối lượng (kg)', 'Đơn giá', 'Thành tiền', 'Thanh toán', 'Xử lý'],
+        ...imports.map((i) => [i.date, i.contact_name || 'Khách lẻ', i.quantity_kg, i.price_per_kg, i.total_amount, i.payment_status, i.processing_status]),
+      ];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(importRows), 'Nhập phế');
+
+      const exportRows = [
+        ['Ngày', 'Khách hàng', 'Số bao', 'Khối lượng (kg)', 'Đơn giá', 'Thành tiền', 'Thanh toán'],
+        ...exports.map((e) => [e.date, e.contact_name || 'Khách lẻ', e.bags_count, e.total_kg, e.price_per_kg, e.total_amount, e.payment_status]),
+      ];
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(exportRows), 'Xuất phế');
+
+      if (canSeeFinance) {
+        const expenseRows = [
+          ['Ngày', 'Danh mục', 'Số tiền', 'Diễn giải', 'Ghi chú'],
+          ...expenses.map((e) => [e.date, e.category, e.amount, e.description || '', e.notes || '']),
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expenseRows), 'Chi phí');
+      }
+
+      XLSX.writeFile(wb, `BaoCao_KhoPhe_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const loading = impLoading || expLoading || expesLoading;
@@ -121,7 +158,7 @@ export const BaoCaoPage: React.FC = () => {
         title="Báo cáo & Thống kê"
         subtitle="Tổng hợp chi tiết sản lượng phế liệu và tài chính"
         action={{
-          label: 'Xuất Excel (.xlsx)',
+          label: exporting ? 'Đang xuất...' : 'Xuất Excel (.xlsx)',
           icon: Download,
           onClick: handleExportExcel,
         }}
@@ -150,17 +187,19 @@ export const BaoCaoPage: React.FC = () => {
         >
           Phân bổ nguồn phế
         </button>
-        <button
-          onClick={() => setActiveTab('taichinh')}
-          className={cn(
-            'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
-            activeTab === 'taichinh'
-              ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-          )}
-        >
-          Cơ cấu chi phí
-        </button>
+        {canSeeFinance && (
+          <button
+            onClick={() => setActiveTab('taichinh')}
+            className={cn(
+              'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
+              activeTab === 'taichinh'
+                ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
+                : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            )}
+          >
+            Cơ cấu chi phí
+          </button>
+        )}
       </div>
 
       <DataState loading={loading} error={null} isEmpty={false}>
@@ -169,8 +208,8 @@ export const BaoCaoPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <KpiCard title="Tổng nhập phế" value={formatKg(summary.totalImportKg)} subtitle={formatTien(summary.totalImportCost)} icon={Package} color="success" />
               <KpiCard title="Tổng xuất phế" value={formatKg(summary.totalExportKg)} subtitle={formatTien(summary.totalRevenue)} icon={TrendingUp} color="info" />
-              <KpiCard title="Chi phí vận hành" value={formatTien(summary.totalOperatingCost)} icon={DollarSign} color="danger" />
-              <KpiCard title="Lợi nhuận ước tính" value={formatTien(summary.estimatedProfit)} icon={DollarSign} color="primary" />
+              {canSeeFinance && <KpiCard title="Chi phí vận hành" value={formatTien(summary.totalOperatingCost)} icon={DollarSign} color="danger" />}
+              {canSeeFinance && <KpiCard title="Lợi nhuận ước tính" value={formatTien(summary.estimatedProfit)} icon={DollarSign} color="primary" />}
             </div>
 
             <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl">

@@ -1,0 +1,19 @@
+{
+  "name": "KhoPhe ERP - Quản lý Kho Phế Liệu",
+  "short_name": "KhoPhe",
+  "description": "Ứng dụng quản lý kho phế liệu nhựa PVC — nhập, xay, xuất, cân, tồn kho, công nợ, nhân sự",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F0ECE1",
+  "theme_color": "#00668c",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

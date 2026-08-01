@@ -2,18 +2,25 @@ import * as React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, Mail, Recycle } from 'lucide-react';
+import { Lock, Mail, Recycle, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, password);
-    navigate('/');
+    setError('');
+    const result = await login(email, password);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      navigate('/');
+    }
   };
 
   return (
@@ -28,8 +35,13 @@ export const LoginPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-xs font-bold text-rose-700 dark:text-rose-300">
+              {error}
+            </div>
+          )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+            <label className="label-field">Email</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-gray-400" />
@@ -39,34 +51,47 @@ export const LoginPage = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none transition-all"
-                placeholder="admin@khophe.vn"
+                className="input-field pl-10"
+                placeholder="ban@congty.vn"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mật khẩu</label>
+            <label className="label-field">Mật khẩu</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Lock className="h-5 w-5 text-gray-400" />
               </div>
               <input 
-                type="password" 
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 focus:ring-2 focus:ring-[var(--primary-500)] focus:border-transparent outline-none transition-all"
+                className="input-field pl-10 pr-10"
                 placeholder="••••••••"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
           </div>
 
           <button 
             type="submit" 
-            className="w-full btn-primary bg-[var(--primary-500)] hover:bg-opacity-90 text-white font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center"
+            disabled={loading}
+            className="w-full btn-primary py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Đăng nhập
+            {loading ? (
+              <><Loader2 className="h-4 w-4 animate-spin" /> Đang đăng nhập...</>
+            ) : (
+              'Đăng nhập'
+            )}
           </button>
         </form>
       </div>

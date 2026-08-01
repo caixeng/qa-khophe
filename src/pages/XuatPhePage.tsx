@@ -1,8 +1,7 @@
 import * as React from 'react';
-import { useMemo } from 'react';
-import { Plus, Edit, Trash2, Truck, DollarSign, Package, TrendingUp } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Edit, Trash2, Truck, DollarSign, Package, TrendingUp, Printer } from 'lucide-react';
 import { formatTien, formatNgay, formatKg } from '../lib/utils';
-import { PageHeader } from '../components/PageHeader';
 import { Modal, FormField } from '../components/Modal';
 import { StatusBadge } from '../components/StatusBadge';
 import { TableToolbar } from '../components/TableToolbar';
@@ -10,31 +9,49 @@ import { DataState } from '../components/DataState';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
+import { useToast } from '../contexts/ToastContext';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { PaginationBar } from '../components/PaginationBar';
 import { exportsService } from '../services/exportsService';
 import { contactsService } from '../services/contactsService';
+import { settingsService } from '../services/settingsService';
+import { printPhieuXuat } from '../lib/print';
 import type { Export as ExportType, PaymentStatus } from '../types';
 
-export const XuatPhePage: React.FC = () => {
+interface XuatPhePageProps {
+  actionRef?: React.MutableRefObject<(() => void) | null>;
+}
+
+export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   const { data: exportsData, loading: expLoading, error: expError, refetch } = useAsyncData(exportsService.getAll, []);
   const { data: contactsData } = useAsyncData(contactsService.getAll, []);
+  const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
 
   const exports = exportsData || [];
   const contacts = contactsData || [];
+  const kgPerBag = kgPerBagData ?? 900;
   const customers = useMemo(() => contacts.filter((c) => c.type === 'customer' || c.type === 'partner'), [contacts]);
 
+  const { toast } = useToast();
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+
   // Table controls
-  const { searchQuery, setSearchQuery } = useTableControls();
+  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
 
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<ExportType>({
     initialData: {
       date: new Date().toISOString().split('T')[0],
       bags_count: 18,
-      total_quantity_kg: 16200,
+      total_kg: 16200,
       price_per_kg: 6000,
       payment_status: 'unpaid',
     }
   });
+
+  if (actionRef) {
+    actionRef.current = openModal;
+  }
 
   const filteredData = useMemo(() => {
     return exports.filter((item) => {
@@ -50,7 +67,7 @@ export const XuatPhePage: React.FC = () => {
 
   // Stats
   const stats = useMemo(() => {
-    const totalKg = exports.reduce((acc, item) => acc + (Number((item as any).total_quantity_kg || item.total_kg) || 0), 0);
+    const totalKg = exports.reduce((acc, item) => acc + (Number(item.total_kg) || 0), 0);
     const totalBags = exports.reduce((acc, item) => acc + (Number(item.bags_count) || 0), 0);
     const totalRevenue = exports.reduce((acc, item) => acc + (Number(item.total_amount) || 0), 0);
     const unpaidAmount = exports
@@ -63,11 +80,11 @@ export const XuatPhePage: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const data = formState.data as any;
-    const qty = Number(data.total_quantity_kg || data.total_kg) || 0;
+    const qty = Number(data.total_kg) || 0;
     const price = Number(data.price_per_kg) || 0;
 
     if (qty <= 0) {
-      alert('Số lượng xuất phải lớn hơn 0 kg');
+      toast.warning('Số lượng xuất phải lớn hơn 0 kg');
       return;
     }
 
@@ -79,51 +96,51 @@ export const XuatPhePage: React.FC = () => {
         await exportsService.update(data.id, {
           ...data,
           contact_name: contactName,
-          total_quantity_kg: qty,
+          total_kg: qty,
           total_amount: qty * price,
         });
+        toast.success('Đã cập nhật phiếu xuất');
       } else {
         await exportsService.create({
           date: data.date || new Date().toISOString().split('T')[0],
           contact_id: data.contact_id || undefined,
           contact_name: contactName,
           bags_count: Number(data.bags_count) || 0,
-          total_quantity_kg: qty,
+          total_kg: qty,
           price_per_kg: price,
           total_amount: qty * price,
           payment_status: (data.payment_status as PaymentStatus) || 'unpaid',
           notes: data.notes,
         });
+        toast.success('Đã thêm phiếu xuất mới');
       }
       closeModal();
       refetch();
     } catch (err) {
+      toast.error('Lỗi khi lưu phiếu xuất');
       console.error('Lỗi khi lưu phiếu xuất:', err);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Bạn có chắc chắn muốn xóa phiếu xuất này?')) {
-      try {
-        await exportsService.delete(id);
-        refetch();
-      } catch (err) {
-        console.error('Lỗi khi xóa phiếu xuất:', err);
-      }
+    setConfirmState({ isOpen: true, id });
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await exportsService.delete(confirmState.id);
+      toast.success('Đã xóa phiếu xuất');
+      refetch();
+    } catch (err) {
+      toast.error('Lỗi khi xóa phiếu xuất');
+      console.error('Lỗi khi xóa phiếu xuất:', err);
     }
+    setConfirmState({ isOpen: false, id: '' });
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <PageHeader
-        title="Xuất Phế Liệu"
-        subtitle="Quản lý xuất bán thành phẩm cho các nhà máy và đại lý thu mua"
-        action={{
-          label: 'Thêm phiếu xuất',
-          icon: Plus,
-          onClick: () => openModal(),
-        }}
-      />
+
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -181,21 +198,22 @@ export const XuatPhePage: React.FC = () => {
         <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full">
+              <caption className="sr-only">Danh sách phiếu xuất phế</caption>
               <thead>
                 <tr>
-                  <th className="th-cell">Ngày xuất</th>
-                  <th className="th-cell">Khách mua (Đại lý)</th>
+                  <th scope="col" className="th-cell">Ngày xuất</th>
+                  <th scope="col" className="th-cell">Khách mua (Đại lý)</th>
                   <th className="th-cell text-right">Số bao</th>
                   <th className="th-cell text-right">Khối lượng (kg)</th>
                   <th className="th-cell text-right">Giá/kg</th>
                   <th className="th-cell text-right">Tổng tiền</th>
-                  <th className="th-cell">Thanh toán</th>
+                  <th scope="col" className="th-cell">Thanh toán</th>
                   <th className="th-cell text-right">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map((item) => {
-                  const qtyKg = Number((item as any).total_quantity_kg || item.total_kg) || 0;
+                {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item) => {
+                  const qtyKg = Number(item.total_kg) || 0;
                   return (
                     <tr key={item.id} className="tr-hover">
                       <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(item.date)}</td>
@@ -220,6 +238,13 @@ export const XuatPhePage: React.FC = () => {
                       <td className="td-cell text-right">
                         <div className="flex items-center justify-end space-x-2">
                           <button
+                            onClick={() => printPhieuXuat(item)}
+                            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
+                            title="In phiếu"
+                          >
+                            <Printer size={16} />
+                          </button>
+                          <button
                             onClick={() => openModal(item)}
                             className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
                             title="Sửa"
@@ -242,6 +267,13 @@ export const XuatPhePage: React.FC = () => {
             </table>
           </div>
         </div>
+        <PaginationBar
+          currentPage={currentPage}
+          totalItems={filteredData.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </DataState>
 
       {/* Form Modal */}
@@ -292,8 +324,8 @@ export const XuatPhePage: React.FC = () => {
                 onChange={(e) => {
                   const bags = Number(e.target.value);
                   handleChange('bags_count', bags);
-                  if (!(formState.data as any)?.total_quantity_kg) {
-                    handleChange('total_quantity_kg' as any, bags * 900);
+                  if (!(formState.data as any)?.total_kg) {
+                    handleChange('total_kg' as any, bags * kgPerBag);
                   }
                 }}
               />
@@ -307,8 +339,8 @@ export const XuatPhePage: React.FC = () => {
                 step="any"
                 className="input-field font-mono font-bold"
                 placeholder="16200"
-                value={(formState.data as any)?.total_quantity_kg || (formState.data as any)?.total_kg || ''}
-                onChange={(e) => handleChange('total_quantity_kg' as any, Number(e.target.value))}
+                value={(formState.data as any)?.total_kg || ''}
+                onChange={(e) => handleChange('total_kg' as any, Number(e.target.value))}
               />
             </FormField>
           </div>
@@ -329,7 +361,7 @@ export const XuatPhePage: React.FC = () => {
           <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center text-xs">
             <span className="text-[var(--text-muted)] font-semibold">TỔNG GIÁ TRỊ XUẤT HÀNG:</span>
             <span className="font-mono font-black text-sm text-[var(--primary-500)]">
-              {formatTien((Number((formState.data as any)?.total_quantity_kg || (formState.data as any)?.total_kg) || 0) * (Number(formState.data?.price_per_kg) || 0))}
+              {formatTien((Number((formState.data as any)?.total_kg) || 0) * (Number(formState.data?.price_per_kg) || 0))}
             </span>
           </div>
 
@@ -364,6 +396,18 @@ export const XuatPhePage: React.FC = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Confirm Delete */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState({ isOpen: false, id: '' })}
+        onConfirm={confirmDelete}
+        title="Xóa phiếu xuất"
+        message="Bạn có chắc chắn muốn xóa phiếu xuất phế liệu này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xóa"
+        cancelText="Hủy"
+      />
     </div>
   );
 };
