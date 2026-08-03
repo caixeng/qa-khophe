@@ -16,7 +16,6 @@ const BaoCaoPage = React.lazy(() => import('./pages/BaoCaoPage').then(m => ({ de
 const CaiDatPage = React.lazy(() => import('./pages/CaiDatPage').then(m => ({ default: m.CaiDatPage })));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { Recycle } from 'lucide-react';
 
 const LoadingScreen = () => (
   <div className="flex flex-col h-screen items-center justify-center bg-[var(--bg-app)] text-[var(--primary-500)]">

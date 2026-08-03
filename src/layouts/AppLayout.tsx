@@ -74,18 +74,11 @@ export const AppLayout = () => {
   const isManagerOrAdmin = user?.role === 'manager' || user?.role === 'admin';
   const visibleMenuItems = MENU_ITEMS.filter((item) => !item.managerOnly || isManagerOrAdmin);
 
-  const currentPage = MENU_ITEMS.find(item => {
-    if (item.path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(item.path);
-  }) || MENU_ITEMS[0];
-
   const handleLogout = () => {
     setShowDropdown(false);
     logout();
     navigate('/login');
   };
-
-  const mobileTop5 = visibleMenuItems.slice(0, 5);
 
   return (
     <div className="flex h-screen w-full bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden">
