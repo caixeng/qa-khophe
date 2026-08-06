@@ -8,7 +8,7 @@ import { DataState } from '../components/DataState';
 import { StatusBadge } from '../components/StatusBadge';
 import { Modal, FormField } from '../components/Modal';
 import { MobileCardList } from '../components/mobile/MobileCardList';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { useAsyncData, useAsyncList } from '../hooks/useAsyncData';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { importsService } from '../services/importsService';
@@ -23,15 +23,14 @@ export const CongNoPage: React.FC = () => {
   const { toast } = useToast();
   const canRecordPayment = user?.role === 'manager' || user?.role === 'admin';
 
-  const { data: importsData, loading: impLoading, error: impError, refetch: refetchImports } = useAsyncData(importsService.getAll, []);
-  const { data: exportsData, loading: expLoading, error: expError, refetch: refetchExports } = useAsyncData(exportsService.getAll, []);
+  const { data: imports, loading: impLoading, error: impError, refetch: refetchImports } = useAsyncList(importsService.getAll, []);
+  const { data: exports, loading: expLoading, error: expError, refetch: refetchExports } = useAsyncList(exportsService.getAll, []);
   const { data: paidImports, refetch: refetchPaidImports } = useAsyncData(() => paymentsService.getPaidByRefType('import'), []);
   const { data: paidExports, refetch: refetchPaidExports } = useAsyncData(() => paymentsService.getPaidByRefType('export'), []);
 
-  const imports = importsData || [];
-  const exports = exportsData || [];
-  const paidByImport = paidImports || {};
-  const paidByExport = paidExports || {};
+  // Tham chiếu ổn định để useMemo bên dưới không tính lại ở mỗi lần render.
+  const paidByImport = useMemo(() => paidImports ?? {}, [paidImports]);
+  const paidByExport = useMemo(() => paidExports ?? {}, [paidExports]);
 
   const [paymentTarget, setPaymentTarget] = useState<{ refType: PaymentRefType; refId: string; label: string; remaining: number } | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
@@ -94,7 +93,7 @@ export const CongNoPage: React.FC = () => {
   const totalPayableAmount = useMemo(() => payables.reduce((sum, x) => sum + x.remaining, 0), [payables]);
 
   return (
-    <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
+    <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Công Nợ Đối Tác"
         subtitle="Quản lý các khoản nợ phải thu (Khách mua) và nợ phải trả (Nhà cung cấp) — tính theo số tiền đã thanh toán thực tế"
@@ -321,6 +320,7 @@ export const CongNoPage: React.FC = () => {
           <FormField label="Số tiền thanh toán" required>
             <input
               type="number"
+              inputMode="decimal"
               required
               min="1"
               className="input-field font-mono font-bold"

@@ -13,18 +13,40 @@ npm run dev
 Các lệnh khác:
 
 ```bash
-npm run build   # tsc -b && vite build
-npm run lint    # oxlint
-npm run test    # vitest run
+npm run build         # tsc -b && vite build
+npm run lint          # oxlint
+npm run test          # vitest run
+npm run format        # prettier --write .
+npm run format:check  # prettier --check .
 ```
 
 ## Cấu hình Supabase
 
 1. Tạo project tại [supabase.com](https://supabase.com).
-2. Vào **SQL Editor**, chạy lần lượt toàn bộ file trong `supabase/migrations/` theo đúng thứ tự số (`001_...` → `007_...`). Mỗi file có ghi chú ở đầu về việc cần làm thêm (nếu có).
-3. Migration `003` bật RLS theo vai trò (`admin` / `manager` / `staff`) và **xoá quyền truy cập ẩn danh** — làm theo hướng dẫn trong comment đầu file để tạo tài khoản admin đầu tiên.
-4. Migration `007` seed lại toàn bộ dữ liệu sổ tay thực tế (tháng 6–7/2026) vào database — an toàn để chạy lại nhiều lần.
-5. Copy `Project URL` và `anon public key` từ **Project Settings > API** vào file `.env`.
+2. Vào **SQL Editor**, chạy lần lượt các file trong `supabase/migrations/` theo đúng thứ tự số:
+   `001` → `003` → `004` → `005` → `006` → `007` → `008`.
+   **Bỏ qua `002_DEPRECATED_allow_anon_rls.sql.bak`** — file này mở toang RLS cho toàn bộ dữ liệu và đã bị huỷ bỏ; migration `003` thay thế hoàn toàn nó.
+3. Migration `003` bật RLS theo vai trò (`admin` / `manager` / `staff`) và xoá quyền truy cập ẩn danh.
+4. Tạo tài khoản đăng nhập thật: **Authentication > Users > Add user** (email + mật khẩu) cho từng người, rồi cấp vai trò:
+   ```sql
+   INSERT INTO users (email, full_name, role)
+   VALUES ('ban@congty.vn', 'Quản trị viên', 'admin')
+   ON CONFLICT (email) DO UPDATE SET role = 'admin';
+   ```
+   Lần đăng nhập đầu tiên, ứng dụng tự gắn `auth_id` vào đúng dòng này theo email.
+5. Migration `007` seed dữ liệu sổ tay thực tế (tháng 6–7/2026) — an toàn khi chạy lại nhiều lần.
+6. Migration `008` **tự kiểm tra bảo mật**: bật RLS cho mọi bảng, xoá policy `USING(true)` còn sót, và cảnh báo nếu có bảng không có policy hoặc chưa có tài khoản admin. Đọc tab **Messages/Notices** sau khi chạy.
+7. Copy `Project URL` và `anon public key` từ **Project Settings > API** vào file `.env`.
+
+> **Không đăng nhập được?** Ứng dụng chỉ chấp nhận tài khoản Supabase Auth thật, và tài khoản đó phải có một dòng tương ứng trong bảng `users`. Nếu đăng nhập đúng mật khẩu mà báo *"chưa được cấp quyền trong hệ thống"*, nghĩa là bước 4 chưa làm cho email đó.
+
+### Kiểm tra nhanh trạng thái bảo mật
+
+```sql
+-- Không được trả về dòng nào:
+SELECT tablename, policyname FROM pg_policies
+WHERE schemaname = 'public' AND (qual = 'true' OR with_check = 'true');
+```
 
 ## Phân quyền
 
@@ -52,10 +74,14 @@ supabase/
 
 ## Ghi chú kỹ thuật
 
-- **Không có mock-data fallback**: nếu Supabase lỗi hoặc RLS từ chối, service `throw` lỗi thật và UI hiện thông báo lỗi (`DataState`) — không hiện số liệu bịa.
+- **Không có mock-data fallback**: nếu Supabase lỗi hoặc RLS từ chối, service `throw` lỗi thật và UI hiện thông báo lỗi (`DataState`) — không bao giờ hiện số liệu bịa. Lỗi Postgres được dịch sang tiếng Việt ở `src/lib/serviceError.ts`.
+- **Thiếu biến môi trường thì app dừng ngay**: `src/lib/supabase.ts` throw lỗi thay vì fallback về URL placeholder rồi chạy im lặng trên dữ liệu rỗng.
+- **Xác thực**: chỉ qua Supabase Auth. Không có tài khoản mặc định, không có đường vòng khi máy chủ từ chối.
 - **In phiếu**: `src/lib/print.ts` — in trực tiếp phiếu nhập/xuất/cân qua cửa sổ trình duyệt, không cần máy in mạng.
-- **PWA tối giản**: `public/sw.js` cache app shell (HTML/JS/CSS) để mở lại được khi mất mạng; dữ liệu nghiệp vụ (Supabase) không bao giờ bị cache.
-- **Xuất Excel đa sheet**: `xlsx` được lazy-load — chỉ tải khi bấm nút Xuất Excel ở trang Báo cáo.
+- **Lọc theo kỳ ở phía máy chủ**: `useDateRange` giữ khoảng ngày trong URL (`?from=…&to=…`), đẩy xuống tận truy vấn Supabase (`.gte('date')`/`.lte('date')`, trần `MAX_ROWS`). Mọi thẻ KPI trên trang tính theo đúng kỳ đang chọn.
+- **PWA**: `public/manifest.json` + `public/sw.js` cache app shell để mở lại được khi mất sóng; dữ liệu Supabase không bao giờ bị cache.
+- **Xuất Excel đa sheet**: `xlsx` lazy-load — chỉ tải khi bấm Xuất Excel ở trang Báo cáo, nên không nằm trong bundle khởi động.
+- **Tách chunk**: `vite.config.ts` tách vendor (react/router/supabase/charts/icons) khỏi mã ứng dụng để sửa code không bắt người dùng tải lại toàn bộ thư viện.
 
 ## Rủi ro bảo mật đã biết (chưa có bản vá từ nhà cung cấp)
 

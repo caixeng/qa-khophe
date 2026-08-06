@@ -1,7 +1,25 @@
+-- ############################################################################
+-- ##  KHÔNG ĐƯỢC CHẠY FILE NÀY. ĐÃ BỊ HUỶ BỎ TỪ 06/08/2026.                 ##
+-- ############################################################################
+--
+-- File này đặt policy USING(true) WITH CHECK(true) cho toàn bộ 9 bảng, kể cả
+-- bảng `users`. Anon key nằm công khai trong bundle JS của trình duyệt, nên
+-- chạy file này đồng nghĩa với việc MỞ TOÀN BỘ dữ liệu nhập/xuất, công nợ và
+-- lương nhân viên cho bất kỳ ai trên internet đọc, sửa và xoá.
+--
+-- Đã được thay thế hoàn toàn bởi `003_users_roles_and_rls.sql` (phân quyền
+-- theo vai trò staff/manager/admin). Migration 003 tự động DROP mọi policy cũ
+-- trước khi tạo policy mới, nên không cần chạy 002 trước.
+--
+-- Giữ lại đuôi .bak để tham khảo lịch sử. Nếu cần khôi phục quyền truy cập cho
+-- ai đó, hãy cấp role trong bảng `users` chứ đừng bao giờ mở lại USING(true).
+--
+-- Kiểm tra hệ thống hiện có còn policy nguy hiểm nào không:
+--   SELECT tablename, policyname, qual FROM pg_policies
+--   WHERE schemaname = 'public' AND qual = 'true';
+--   -- Không trả về dòng nào = an toàn.
 -- =============================================
--- QA KHOPHE — Migration 002: RLS Allow All (Anon + Authenticated)
--- Paste vào Supabase SQL Editor để bật quyền truy cập cho app
--- URL: https://supabase.com/dashboard/project/ageezcxrthqmmacnrqpf/sql
+-- (Nội dung gốc bên dưới — chỉ để tham khảo)
 -- =============================================
 
 DROP POLICY IF EXISTS "Allow all for authenticated" ON users;

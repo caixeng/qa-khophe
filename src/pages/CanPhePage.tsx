@@ -5,7 +5,7 @@ import { cn, formatKg, formatNgay } from '../lib/utils';
 import { Modal } from '../components/Modal';
 import { NumPad } from '../components/NumPad';
 import { DataState } from '../components/DataState';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { useAsyncList } from '../hooks/useAsyncData';
 import { useToast } from '../contexts/ToastContext';
 import { weighingService } from '../services/weighingService';
 import { PALLET_TYPES, type PalletType } from '../lib/palletUtils';
@@ -16,8 +16,7 @@ interface CanPhePageProps {
 }
 
 export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
-  const { data: sessionsData, loading, error, refetch } = useAsyncData(weighingService.getSessions, []);
-  const sessions = sessionsData || [];
+  const { data: sessions, loading, error, refetch } = useAsyncList(weighingService.getSessions, []);
   const { toast } = useToast();
 
   const [activeBags, setActiveBags] = useState<number[]>([]);
@@ -88,14 +87,14 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
+    <div className="space-y-6 animate-fade-in">
 
       {/* Active Weighing Session Header */}
       <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[var(--border-color)] pb-4 gap-3">
           <div>
             <div className="flex items-center space-x-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700">
                 {activeBags.length > 0 ? 'Phiên cân đang mở' : 'Chưa có phiên cân nào đang mở'}
               </span>
               <span className="text-xs text-[var(--text-muted)] font-mono">{formatNgay(new Date().toISOString())}</span>
@@ -141,7 +140,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
                   )}
                 >
                   <p className="text-xs font-bold">{cfg.name}</p>
-                  <p className="text-[10px] font-mono opacity-80">{cfg.weightKg > 0 ? `-${cfg.weightKg} kg/lết (${cfg.symbol})` : '0 kg'}</p>
+                  <p className="text-[11px] font-mono opacity-80">{cfg.weightKg > 0 ? `-${cfg.weightKg} kg/lết (${cfg.symbol})` : '0 kg'}</p>
                 </button>
               );
             })}
@@ -152,6 +151,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
               <span className="text-xs font-semibold text-[var(--text-secondary)]">Số lượng lết dùng:</span>
               <input
                 type="number"
+                inputMode="decimal"
                 min="1"
                 max="10"
                 value={palletQty}
@@ -168,22 +168,22 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
         {/* Real-time Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng số bao</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng số bao</p>
             <p className="text-2xl font-mono font-black text-[var(--text-primary)] mt-1">{activeBags.length} bao</p>
           </div>
 
           <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng cân thô (Gross)</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng cân thô (Gross)</p>
             <p className="text-2xl font-mono font-black text-[var(--text-primary)] mt-1">{formatKg(grossWeight)}</p>
           </div>
 
           <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Trừ bì lết (Tare)</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Trừ bì lết (Tare)</p>
             <p className="text-2xl font-mono font-black text-rose-600 mt-1">-{tareWeight} kg</p>
           </div>
 
           <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Thực phế (Net)</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Thực phế (Net)</p>
             <p className="text-2xl font-mono font-black text-emerald-600 mt-1">{formatKg(netWeight)}</p>
           </div>
         </div>
@@ -220,7 +220,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
               <div key={s.id} className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-[var(--text-primary)]">{formatNgay(s.date)} - {s.material_type}</p>
-                  <p className="text-[10px] text-[var(--text-muted)]">{s.total_bags} bao</p>
+                  <p className="text-[11px] text-[var(--text-muted)]">{s.total_bags} bao</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <span className="font-mono font-bold text-xs text-[var(--primary-500)]">
@@ -229,7 +229,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
                   <button
                     onClick={() => handlePrintSession(s)}
                     disabled={printingSessionId === s.id}
-                    className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--primary-500)] transition-colors cursor-pointer disabled:opacity-50"
+                    className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--primary-500)] transition-colors cursor-pointer disabled:opacity-50"
                     title="In phiếu cân"
                   >
                     <Printer size={15} />

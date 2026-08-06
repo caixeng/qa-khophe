@@ -8,7 +8,7 @@ import { formatKg, formatNgay } from '../lib/utils';
 import { KpiCard } from '../components/KpiCard';
 import { PageHeader } from '../components/PageHeader';
 import { MobileDirectorDashboard } from '../components/mobile/MobileDirectorDashboard';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { useAsyncData, useAsyncList } from '../hooks/useAsyncData';
 import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
 import { expensesService } from '../services/expensesService';
@@ -22,20 +22,16 @@ export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const canSeeFinance = user?.role === 'manager' || user?.role === 'admin';
 
-  const { data: importsData } = useAsyncData(importsService.getAll, []);
-  const { data: exportsData } = useAsyncData(exportsService.getAll, []);
+  const { data: imports } = useAsyncList(importsService.getAll, []);
+  const { data: exports } = useAsyncList(exportsService.getAll, []);
   // Staff không có quyền đọc expenses (RLS) — tránh gọi API sẽ chỉ nhận lỗi 403
-  const { data: expensesData } = useAsyncData(
+  const { data: expenses } = useAsyncList(
     canSeeFinance ? expensesService.getExpenses : async () => [],
     [canSeeFinance]
   );
-  const { data: grindingData } = useAsyncData(grindingService.getAll, []);
+  const { data: grinding } = useAsyncList(grindingService.getAll, []);
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
 
-  const imports = importsData || [];
-  const exports = exportsData || [];
-  const expenses = expensesData || [];
-  const grinding = grindingData || [];
   const kgPerBag = kgPerBagData ?? 900;
 
   const summary = useMemo(() => {
@@ -118,7 +114,7 @@ export const DashboardPage: React.FC = () => {
   }, [imports, exports, expenses, grinding, kgPerBag, canSeeFinance]);
 
   return (
-    <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
+    <div className="page-shell animate-fade-in">
       {/* MOBILE SPECIFIC VIEW */}
       <div className="block lg:hidden">
         <MobileDirectorDashboard summary={summary} />
@@ -171,7 +167,7 @@ export const DashboardPage: React.FC = () => {
                 <div key={act.id} className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center">
                   <div>
                     <p className="text-xs font-bold text-[var(--text-primary)]">{act.text}</p>
-                    <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{act.time}</p>
+                    <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{act.time}</p>
                   </div>
                   <span className="font-mono font-bold text-xs text-[var(--primary-500)]">{act.amount}</span>
                 </div>

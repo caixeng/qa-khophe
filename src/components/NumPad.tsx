@@ -57,7 +57,7 @@ export const NumPad: React.FC<NumPadProps> = ({
     <div className={cn("w-full max-w-sm mx-auto flex flex-col gap-4", className)}>
       {/* Display */}
       <div className="card p-4 flex flex-col items-center justify-center bg-[var(--bg-surface)] border-2 border-[var(--primary-500)] shadow-xs rounded-2xl">
-        <div className="text-[10px] text-[var(--text-muted)] font-extrabold uppercase tracking-widest mb-1">
+        <div className="text-[11px] text-[var(--text-muted)] font-extrabold uppercase tracking-widest mb-1">
           Khối lượng bao phế
         </div>
         <div className="flex items-baseline gap-2">

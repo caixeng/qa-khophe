@@ -6,7 +6,7 @@ import { PageHeader } from '../components/PageHeader';
 import { KpiCard } from '../components/KpiCard';
 import { DataState } from '../components/DataState';
 import { Modal, FormField } from '../components/Modal';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { useAsyncData, useAsyncList } from '../hooks/useAsyncData';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { grindingService } from '../services/grindingService';
@@ -21,15 +21,12 @@ export const TonKhoPage: React.FC = () => {
   const { toast } = useToast();
   const canCount = user?.role === 'manager' || user?.role === 'admin';
 
-  const { data: grindingData, loading: gLoading, error: gError } = useAsyncData(grindingService.getAll, []);
-  const { data: exportsData, loading: eLoading, error: eError } = useAsyncData(exportsService.getAll, []);
+  const { data: grinding, loading: gLoading, error: gError } = useAsyncList(grindingService.getAll, []);
+  const { data: exports, loading: eLoading, error: eError } = useAsyncList(exportsService.getAll, []);
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
-  const { data: stockCountsData, refetch: refetchStockCounts } = useAsyncData(stockCountService.getAll, []);
+  const { data: stockCounts, refetch: refetchStockCounts } = useAsyncList(stockCountService.getAll, []);
 
-  const grinding = grindingData || [];
-  const exports = exportsData || [];
   const kgPerBag = kgPerBagData ?? 900;
-  const stockCounts = stockCountsData || [];
 
   const [isCountModalOpen, setIsCountModalOpen] = useState(false);
   const [countedBags, setCountedBags] = useState<number>(0);
@@ -133,7 +130,7 @@ export const TonKhoPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="page-shell animate-fade-in">
       <PageHeader
         title="Tồn Kho Bột Nhựa"
         subtitle="Theo dõi biến động tồn kho thực tế tính theo số bao và tổng khối lượng kg"
@@ -172,7 +169,7 @@ export const TonKhoPage: React.FC = () => {
               <div key={evt.id} className="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center">
                 <div>
                   <p className="text-xs font-bold text-[var(--text-primary)]">{evt.note}</p>
-                  <p className="text-[10px] text-[var(--text-muted)] font-mono">{formatNgay(evt.date)}</p>
+                  <p className="text-[11px] text-[var(--text-muted)] font-mono">{formatNgay(evt.date)}</p>
                 </div>
                 <span className={`font-mono font-bold text-xs ${evt.type === 'in' ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {evt.type === 'in' ? '+' : ''}{formatKg(evt.amount)}
@@ -192,10 +189,10 @@ export const TonKhoPage: React.FC = () => {
               <div key={c.id} className="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center gap-3">
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-[var(--text-primary)]">{formatNgay(c.date)} — {c.counted_bags} bao thực tế</p>
-                  <p className="text-[10px] text-[var(--text-muted)] font-mono">
+                  <p className="text-[11px] text-[var(--text-muted)] font-mono">
                     Đếm: {formatKg(c.counted_kg)} · Hệ thống: {formatKg(c.system_kg)}
                   </p>
-                  {c.notes && <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{c.notes}</p>}
+                  {c.notes && <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{c.notes}</p>}
                 </div>
                 <span className={`font-mono font-bold text-xs shrink-0 ${c.diff_kg === 0 ? 'text-[var(--text-muted)]' : c.diff_kg > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                   {c.diff_kg > 0 ? '+' : ''}{formatKg(c.diff_kg)}
@@ -217,6 +214,7 @@ export const TonKhoPage: React.FC = () => {
           <FormField label="Số bao đếm được thực tế" required>
             <input
               type="number"
+              inputMode="decimal"
               required
               min="0"
               className="input-field font-mono font-bold"
@@ -228,6 +226,7 @@ export const TonKhoPage: React.FC = () => {
           <FormField label="Khối lượng đếm được thực tế (kg)" required>
             <input
               type="number"
+              inputMode="decimal"
               required
               min="0"
               step="any"

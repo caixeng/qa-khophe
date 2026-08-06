@@ -31,7 +31,7 @@ const MENU_ITEMS = [
   { id: 'employees', path: '/nhan-vien', label: 'Quản lý Nhân sự', icon: UserCheck, managerOnly: true },
   { id: 'contacts', path: '/danh-ba', label: 'Danh bạ đối tác', icon: Users },
   { id: 'reports', path: '/bao-cao', label: 'Báo cáo', icon: BarChart3 },
-  { id: 'settings', path: '/cai-dat', label: 'Cài đặt', icon: Settings },
+  { id: 'settings', path: '/cai-dat', label: 'Cài đặt', icon: Settings, adminOnly: true },
 ];
 
 const THEME_OPTIONS: { id: Theme; label: string; icon: React.ElementType }[] = [
@@ -70,8 +70,11 @@ export const AppLayout = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const isManagerOrAdmin = user?.role === 'manager' || user?.role === 'admin';
-  const visibleMenuItems = MENU_ITEMS.filter((item) => !item.managerOnly || isManagerOrAdmin);
+  const isAdmin = user?.role === 'admin';
+  const isManagerOrAdmin = user?.role === 'manager' || isAdmin;
+  const visibleMenuItems = MENU_ITEMS.filter(
+    (item) => (!item.managerOnly || isManagerOrAdmin) && (!item.adminOnly || isAdmin),
+  );
 
   const handleLogout = () => {
     setShowDropdown(false);
@@ -102,7 +105,7 @@ export const AppLayout = () => {
                 <span className="font-black text-lg tracking-tight text-[var(--primary-500)] whitespace-nowrap leading-none">
                   VUA PHẾ
                 </span>
-                <span className="text-[10px] font-extrabold tracking-wider text-[var(--text-muted)] uppercase mt-0.5">
+                <span className="text-[11px] font-extrabold tracking-wider text-[var(--text-muted)] uppercase mt-0.5">
                   Tái chế & Quản lý Xưởng
                 </span>
               </div>
@@ -147,7 +150,7 @@ export const AppLayout = () => {
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-bold truncate text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
-                <p className="text-[10px] text-[var(--text-muted)] truncate">{user?.email || '—'}</p>
+                <p className="text-[11px] text-[var(--text-muted)] truncate">{user?.email || '—'}</p>
               </div>
             )}
           </div>
@@ -177,7 +180,7 @@ export const AppLayout = () => {
             >
               <Search size={14} />
               <span className="hidden md:inline">Tìm kiếm...</span>
-              <kbd className="hidden md:inline-flex items-center gap-1 rounded border border-border bg-surface px-1.5 py-0.5 text-[10px] font-bold text-ink-muted">
+              <kbd className="hidden md:inline-flex items-center gap-1 rounded border border-border bg-surface px-1.5 py-0.5 text-[11px] font-bold text-ink-muted">
                 Ctrl+K
               </kbd>
             </button>
@@ -203,7 +206,7 @@ export const AppLayout = () => {
                   <span className="text-[13px] font-bold text-[var(--text-primary)] leading-tight">
                     {user?.name || 'Người dùng'}
                   </span>
-                  <span className="text-[10px] text-[var(--text-muted)] leading-tight">
+                  <span className="text-[11px] text-[var(--text-muted)] leading-tight">
                     {user?.email || '—'}
                   </span>
                 </div>
@@ -220,12 +223,12 @@ export const AppLayout = () => {
                     {/* User info header */}
                     <div className="pb-3 border-b border-[var(--border-color)]">
                       <p className="text-[13px] font-bold text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
-                      <p className="text-[10px] text-[var(--text-muted)] mt-0.5">{user?.email || '—'}</p>
+                      <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{user?.email || '—'}</p>
                     </div>
 
                     {/* CÀI ĐẶT CÁ NHÂN */}
                     <div className="py-3.5 space-y-4 border-b border-[var(--border-color)]">
-                      <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                      <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                         CÀI ĐẶT CÁ NHÂN
                       </div>
 
@@ -278,7 +281,7 @@ export const AppLayout = () => {
                             );
                           })}
                         </div>
-                        <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                        <p className="text-[11px] text-[var(--text-muted)] mt-1">
                           Đang chọn: <span className="font-bold text-[var(--primary-500)]">{PRIMARY_COLORS.find(c => c.id === primaryColor)?.name}</span>
                         </p>
                       </div>
@@ -293,7 +296,7 @@ export const AppLayout = () => {
                               type="button"
                               onClick={() => setDensity(d)}
                               className={cn(
-                                "py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer text-center",
+                                "py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center",
                                 density === d
                                   ? "bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]"
                                   : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
@@ -342,7 +345,7 @@ export const AppLayout = () => {
           )}
         >
           <Home size={20} />
-          <span className="text-[10px] truncate">Trang chủ</span>
+          <span className="text-[11px] truncate">Trang chủ</span>
         </NavLink>
 
         <NavLink
@@ -353,7 +356,7 @@ export const AppLayout = () => {
           )}
         >
           <Recycle size={20} />
-          <span className="text-[10px] truncate">QL Phế</span>
+          <span className="text-[11px] truncate">QL Phế</span>
         </NavLink>
 
         {/* Center Floating Action Button (FAB) */}
@@ -375,7 +378,7 @@ export const AppLayout = () => {
           )}
         >
           <Package size={20} />
-          <span className="text-[10px] truncate">Tồn kho</span>
+          <span className="text-[11px] truncate">Tồn kho</span>
         </NavLink>
 
         <button
@@ -383,7 +386,7 @@ export const AppLayout = () => {
           className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium active:scale-95 cursor-pointer"
         >
           <Menu size={20} />
-          <span className="text-[10px] truncate">Thêm</span>
+          <span className="text-[11px] truncate">Thêm</span>
         </button>
       </nav>
 

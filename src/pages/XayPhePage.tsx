@@ -6,12 +6,15 @@ import { cn, formatNgay, formatKg, formatPhanTram } from '../lib/utils';
 import { Modal, FormField } from '../components/Modal';
 import { TableToolbar } from '../components/TableToolbar';
 import { DataState } from '../components/DataState';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
 import { useToast } from '../contexts/ToastContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
+import { PeriodFilter } from '../components/PeriodFilter';
+import { MobileCardList } from '../components/mobile/MobileCardList';
+import { useDateRange } from '../hooks/useDateRange';
 import { grindingService } from '../services/grindingService';
 import { importsService } from '../services/importsService';
 import type { Grinding } from '../types';
@@ -21,13 +24,17 @@ interface XayPhePageProps {
 }
 
 export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
-  const { data: grindingData, loading, error, refetch } = useAsyncData(grindingService.getAll, []);
-  const { data: importsData } = useAsyncData(importsService.getAll, []);
+  const { range, setRange } = useDateRange();
+  // Lọc ngay ở truy vấn: chỉ kéo về phiếu trong kỳ đang xem.
+  const { data: grindingList, loading, error, refetch } = useAsyncList(
+    () => grindingService.getAll({ from: range.from, to: range.to }),
+    [range.from, range.to],
+  );
+  const { data: importsList } = useAsyncList(importsService.getAll, []);
 
-  const grindingList = grindingData || [];
-  const importsList = importsData || [];
 
   const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
   const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
   const [selectedDetail, setSelectedDetail] = useState<Grinding | null>(null);
 
@@ -47,9 +54,9 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
 
   const [searchParams] = useSearchParams();
 
-  if (actionRef) {
-    actionRef.current = openModal;
-  }
+  React.useEffect(() => {
+    if (actionRef) actionRef.current = openModal;
+  });
 
   React.useEffect(() => {
     if (searchParams.get('open') === 'true') {
@@ -61,7 +68,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
         window.history.replaceState({}, '', newUrl);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, openModal]);
 
   const filteredData = useMemo(() => {
     return grindingList.filter((item) => {
@@ -88,8 +95,17 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
     return { totalInput, totalOutput, totalLossKg, avgLossPct, completedLots };
   }, [grindingList]);
 
+  // Trang hiện tại, dùng chung cho bảng (desktop) và card (mobile) để hai
+  // chế độ hiển thị không bao giờ lệch nhau.
+  const pageItems = useMemo(
+    () => filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+    [filteredData, currentPage, itemsPerPage],
+  );
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Chặn bấm Lưu nhiều lần — mỗi lần bấm thêm là một phiếu trùng.
+    if (saving) return;
     const data = formState.data as any;
     const inputKg = Number(data.input_qty_kg) || 0;
     const outputKg = Number(data.output_qty_kg) || 0;
@@ -99,6 +115,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
       return;
     }
 
+    setSaving(true);
     try {
       if (data.id) {
         await grindingService.update(data.id, data);
@@ -118,8 +135,10 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
       closeModal();
       refetch();
     } catch (err) {
-      toast.error('Lỗi khi lưu phiếu xay');
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu phiếu xay');
       console.error('Lỗi khi lưu phiếu xay:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -133,7 +152,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
       toast.success('Đã xóa phiếu xay');
       refetch();
     } catch (err) {
-      toast.error('Lỗi khi xóa phiếu xay');
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi xoá phiếu xay');
       console.error('Lỗi khi xóa phiếu xay:', err);
     }
     setConfirmState({ isOpen: false, id: '' });
@@ -148,7 +167,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <Scissors size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng xay tháng</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng xay trong kỳ</p>
             <p className="text-xl font-mono font-black text-[var(--text-primary)]">{formatKg(stats.totalInput)}</p>
           </div>
         </div>
@@ -158,7 +177,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <Factory size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Đầu ra thành phẩm</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Đầu ra thành phẩm</p>
             <p className="text-xl font-mono font-black text-emerald-600">{formatKg(stats.totalOutput)}</p>
           </div>
         </div>
@@ -168,7 +187,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <TrendingDown size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng hao hụt</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng hao hụt</p>
             <p className="text-xl font-mono font-black text-rose-600">{formatKg(stats.totalLossKg)}</p>
           </div>
         </div>
@@ -178,13 +197,15 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <Scissors size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">% Hao hụt trung bình</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">% Hao hụt trung bình</p>
             <p className="text-xl font-mono font-black text-[var(--primary-500)]">{formatPhanTram(stats.avgLossPct)}</p>
           </div>
         </div>
       </div>
 
       {/* Table Toolbar */}
+      <PeriodFilter range={range} onChange={setRange} />
+
       <TableToolbar
         placeholder="Tìm theo thợ xay, ghi chú hoặc lô nhập..."
         searchValue={searchQuery}
@@ -194,7 +215,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
 
       {/* Main Data Table */}
       <DataState loading={loading} error={error} isEmpty={filteredData.length === 0}>
-        <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
+        <div className="card hidden lg:block bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full">
               <caption className="sr-only">Danh sách phiếu xay phế</caption>
@@ -212,7 +233,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item) => {
+                {pageItems.map((item) => {
                   const inputKg = Number(item.input_qty_kg) || 0;
                   const outputKg = Number(item.output_qty_kg) || 0;
                   const lossKg = item.loss_kg !== undefined ? item.loss_kg : (inputKg - outputKg);
@@ -258,7 +279,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                         <div className="flex items-center justify-end">
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                            className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
                             title="Xóa phiếu xay"
                           >
                             <Trash2 size={16} />
@@ -272,6 +293,25 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             </table>
           </div>
         </div>
+
+        {/* Card view cho điện thoại */}
+        <MobileCardList
+          items={pageItems.map((item) => ({
+            id: item.id,
+            title: `Xay ${formatKg(item.output_qty_kg || 0)}`,
+            subtitle: `${formatNgay(item.date)} · Thợ ${item.worker || '—'}`,
+            accentColor: (item.loss_pct || 0) > 10 ? '#f43f5e' : '#10b981',
+            onClick: () => setSelectedDetail(item),
+            fields: [
+              { label: 'Đầu vào', value: formatKg(item.input_qty_kg || 0) },
+              { label: 'Ra thành phẩm', value: formatKg(item.output_qty_kg || 0) },
+              { label: 'Hao hụt', value: formatKg(item.loss_kg || 0) },
+              { label: 'Tỷ lệ hao', value: formatPhanTram(item.loss_pct || 0) },
+            ],
+          }))}
+          emptyMessage="Chưa có phiếu xay nào trong kỳ này"
+        />
+
         <PaginationBar
           currentPage={currentPage}
           totalItems={filteredData.length}
@@ -406,6 +446,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <FormField label="Đầu vào phế thô (kg)" required>
               <input
                 type="number"
+                inputMode="decimal"
                 required
                 min="1"
                 step="any"
@@ -419,6 +460,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <FormField label="Đầu ra bột xay (kg)" required>
               <input
                 type="number"
+                inputMode="decimal"
                 required
                 min="0"
                 step="any"
@@ -438,6 +480,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <FormField label="Số bao thành phẩm">
               <input
                 type="number"
+                inputMode="decimal"
                 min="0"
                 className="input-field font-mono"
                 placeholder="Tự động tính theo ~25kg/bao"
@@ -470,8 +513,12 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <button type="button" onClick={closeModal} className="btn-secondary">
               Hủy
             </button>
-            <button type="submit" className="btn-primary">
-              {formState.data?.id ? 'Cập nhật' : 'Tạo phiếu xay'}
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Đang lưu...' : formState.data?.id ? 'Cập nhật' : 'Tạo phiếu xay'}
             </button>
           </div>
         </form>

@@ -28,7 +28,7 @@ export const QuanLyPhePage: React.FC = () => {
     if (tab && ['nhap', 'xay', 'xuat', 'can'].includes(tab) && tab !== activeTab) {
       setActiveTab(tab);
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
 
   const getActionLabel = (tab: PheTab) => {
     switch (tab) {
@@ -46,7 +46,7 @@ export const QuanLyPhePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="page-shell animate-fade-in">
       {/* CIC-IBST UNIFIED TOP TOOLBAR ROW */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* CIC-IBST Pill Tabs Segmented Control */}

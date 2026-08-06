@@ -10,7 +10,7 @@ import { DataState } from '../components/DataState';
 import { KpiCard } from '../components/KpiCard';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
 import { useToast } from '../contexts/ToastContext';
@@ -28,13 +28,13 @@ const roleLabels: Record<EmployeeRole, { label: string; icon: React.ElementType;
 export const NhanVienPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'employees' | 'attendance'>('employees');
   const { toast } = useToast();
+  const [savingEmp, setSavingEmp] = useState(false);
+  const [savingAtt, setSavingAtt] = useState(false);
   const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string; type: 'employee' | 'attendance' }>({ isOpen: false, id: '', type: 'employee' });
 
-  const { data: employeesData, loading: empLoading, error: empError, refetch: refetchEmp } = useAsyncData(employeesService.getAll, []);
-  const { data: attendanceData, loading: attLoading, error: attError, refetch: refetchAtt } = useAsyncData(attendanceService.getAttendance, []);
+  const { data: employees, loading: empLoading, error: empError, refetch: refetchEmp } = useAsyncList(employeesService.getAll, []);
+  const { data: attendanceList, loading: attLoading, error: attError, refetch: refetchAtt } = useAsyncList(attendanceService.getAttendance, []);
 
-  const employees = employeesData || [];
-  const attendanceList = attendanceData || [];
 
   const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
 
@@ -87,12 +87,16 @@ export const NhanVienPage: React.FC = () => {
   // Handle Employee Save
   const handleSaveEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Chặn bấm Lưu nhiều lần — tránh tạo trùng hồ sơ nhân viên.
+    if (savingEmp) return;
+
     const data = empForm.data;
     if (!data.name?.trim()) {
       toast.warning('Vui lòng nhập tên nhân viên');
       return;
     }
 
+    setSavingEmp(true);
     try {
       if (data.id) {
         await employeesService.update(data.id, data);
@@ -104,8 +108,10 @@ export const NhanVienPage: React.FC = () => {
       closeEmpModal();
       refetchEmp();
     } catch (err) {
-      toast.error('Lỗi khi lưu nhân viên');
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu nhân viên');
       console.error('Lỗi khi lưu nhân viên:', err);
+    } finally {
+      setSavingEmp(false);
     }
   };
 
@@ -128,12 +134,16 @@ export const NhanVienPage: React.FC = () => {
   // Handle Attendance Save
   const handleSaveAttendance = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Chặn bấm Lưu nhiều lần — tránh chấm công trùng cho cùng một người.
+    if (savingAtt) return;
+
     const data = attForm.data;
     if (!data.employee_id && !data.employee_name) {
       toast.warning('Vui lòng chọn nhân viên chấm công');
       return;
     }
 
+    setSavingAtt(true);
     try {
       const emp = employees.find(x => x.id === data.employee_id);
       const empName = emp ? emp.name : (data.employee_name || 'Công nhân');
@@ -157,8 +167,10 @@ export const NhanVienPage: React.FC = () => {
       closeAttModal();
       refetchAtt();
     } catch (err) {
-      toast.error('Lỗi khi lưu lượt chấm công');
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu lượt chấm công');
       console.error('Lỗi khi lưu lượt chấm công:', err);
+    } finally {
+      setSavingAtt(false);
     }
   };
 
@@ -179,7 +191,7 @@ export const NhanVienPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
+    <div className="page-shell animate-fade-in">
       <PageHeader
         title="Quản Lý Nhân Sự"
         subtitle="Quản lý hồ sơ công nhân xưởng phế, chấm công hàng ngày và tính lương công"
@@ -273,7 +285,7 @@ export const NhanVienPage: React.FC = () => {
                         </td>
                         <td className="td-cell">
                           <span className={cn(
-                            "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                            "px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider",
                             emp.status === 'active' ? "bg-emerald-100 text-emerald-900" : "bg-slate-100 text-slate-900"
                           )}>
                             {emp.status === 'active' ? 'Đang làm việc' : 'Đã nghỉ'}
@@ -284,14 +296,14 @@ export const NhanVienPage: React.FC = () => {
                           <div className="flex items-center justify-end space-x-2">
                             <button
                               onClick={() => openEmpModal(emp)}
-                              className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
+                              className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
                               title="Sửa"
                             >
                               <Edit size={16} />
                             </button>
                             <button
                               onClick={() => handleDeleteEmployee(emp.id)}
-                              className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
+                              className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
                               title="Xóa"
                             >
                               <Trash2 size={16} />
@@ -360,14 +372,14 @@ export const NhanVienPage: React.FC = () => {
                         <div className="flex items-center justify-end space-x-2">
                           <button
                             onClick={() => openAttModal(att)}
-                            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
+                            className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
                             title="Sửa"
                           >
                             <Edit size={16} />
                           </button>
                           <button
                             onClick={() => handleDeleteAttendance(att.id)}
-                            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
+                            className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
                             title="Xóa"
                           >
                             <Trash2 size={16} />
@@ -426,6 +438,7 @@ export const NhanVienPage: React.FC = () => {
             <FormField label="Đơn giá lương công (đ/ngày)" required>
               <input
                 type="number"
+                inputMode="decimal"
                 required
                 min="0"
                 step="10000"
@@ -473,8 +486,12 @@ export const NhanVienPage: React.FC = () => {
             <button type="button" onClick={closeEmpModal} className="btn-secondary">
               Hủy
             </button>
-            <button type="submit" className="btn-primary">
-              {empForm.data?.id ? 'Cập nhật' : 'Thêm nhân viên'}
+            <button
+              type="submit"
+              disabled={savingEmp}
+              className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {savingEmp ? 'Đang lưu...' : empForm.data?.id ? 'Cập nhật' : 'Thêm nhân viên'}
             </button>
           </div>
         </form>
@@ -537,6 +554,7 @@ export const NhanVienPage: React.FC = () => {
             <FormField label="Mức lương ngày (đ/ngày)">
               <input
                 type="number"
+                inputMode="decimal"
                 min="0"
                 step="10000"
                 className="input-field font-mono font-bold text-[var(--primary-500)]"
@@ -549,6 +567,7 @@ export const NhanVienPage: React.FC = () => {
           <FormField label="Tiền tạm ứng trước (nếu có)">
             <input
               type="number"
+              inputMode="decimal"
               min="0"
               step="10000"
               className="input-field font-mono text-rose-600"
@@ -590,8 +609,12 @@ export const NhanVienPage: React.FC = () => {
             <button type="button" onClick={closeAttModal} className="btn-secondary">
               Hủy
             </button>
-            <button type="submit" className="btn-primary">
-              {attForm.data?.id ? 'Cập nhật' : 'Lưu lượt chấm công'}
+            <button
+              type="submit"
+              disabled={savingAtt}
+              className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {savingAtt ? 'Đang lưu...' : attForm.data?.id ? 'Cập nhật' : 'Lưu lượt chấm công'}
             </button>
           </div>
         </form>

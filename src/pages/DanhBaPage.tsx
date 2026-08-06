@@ -7,7 +7,7 @@ import { Modal, FormField } from '../components/Modal';
 import { StatusBadge } from '../components/StatusBadge';
 import { TableToolbar } from '../components/TableToolbar';
 import { DataState } from '../components/DataState';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
 import { useToast } from '../contexts/ToastContext';
@@ -17,10 +17,10 @@ import { contactsService } from '../services/contactsService';
 import type { Contact, ContactType } from '../types';
 
 export const DanhBaPage: React.FC = () => {
-  const { data: contactsData, loading, error, refetch } = useAsyncData(contactsService.getAll, []);
-  const contacts = contactsData || [];
+  const { data: contacts, loading, error, refetch } = useAsyncList(contactsService.getAll, []);
   const [activeTab, setActiveTab] = useState<ContactType>('supplier');
   const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
   const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
 
   // Table controls
@@ -49,12 +49,16 @@ export const DanhBaPage: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Chặn bấm Lưu nhiều lần — mỗi lần bấm thêm là một đối tác trùng tên.
+    if (saving) return;
+
     const data = formState.data;
     if (!data.name) {
       toast.warning('Vui lòng nhập tên liên hệ');
       return;
     }
 
+    setSaving(true);
     try {
       if (data.id) {
         await contactsService.update(data.id, data);
@@ -72,8 +76,10 @@ export const DanhBaPage: React.FC = () => {
       closeModal();
       refetch();
     } catch (err) {
-      toast.error('Lỗi khi lưu liên hệ');
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu liên hệ');
       console.error('Lỗi khi lưu đối tác:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -102,7 +108,7 @@ export const DanhBaPage: React.FC = () => {
   }, [contacts]);
 
   return (
-    <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
+    <div className="page-shell animate-fade-in">
       <PageHeader
         title="Danh bạ đối tác"
         subtitle="Quản lý thông tin nhà cung cấp, đối tác, khách hàng"
@@ -136,7 +142,7 @@ export const DanhBaPage: React.FC = () => {
               <span>{labels[tabType]}</span>
               <span
                 className={cn(
-                  'rounded-full px-2 py-0.5 text-[10px] font-mono font-bold',
+                  'rounded-full px-2 py-0.5 text-[11px] font-mono font-bold',
                   activeTab === tabType
                     ? 'bg-[var(--primary-500)] text-white'
                     : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
@@ -210,14 +216,14 @@ export const DanhBaPage: React.FC = () => {
                       <div className="flex items-center justify-end space-x-2">
                         <button
                           onClick={() => openModal(contact)}
-                          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
+                          className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
                           title="Sửa"
                         >
                           <Edit size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(contact.id)}
-                          className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                          className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
                           title="Xóa"
                         >
                           <Trash2 size={16} />
@@ -367,8 +373,12 @@ export const DanhBaPage: React.FC = () => {
             <button type="button" onClick={closeModal} className="btn-secondary">
               Hủy
             </button>
-            <button type="submit" className="btn-primary">
-              Lưu liên hệ
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Đang lưu...' : 'Lưu liên hệ'}
             </button>
           </div>
         </form>

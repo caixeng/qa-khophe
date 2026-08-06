@@ -7,12 +7,15 @@ import { Modal, FormField } from '../components/Modal';
 import { StatusBadge } from '../components/StatusBadge';
 import { TableToolbar } from '../components/TableToolbar';
 import { DataState } from '../components/DataState';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { useAsyncData, useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
 import { useToast } from '../contexts/ToastContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
+import { PeriodFilter } from '../components/PeriodFilter';
+import { MobileCardList } from '../components/mobile/MobileCardList';
+import { useDateRange } from '../hooks/useDateRange';
 import { exportsService } from '../services/exportsService';
 import { contactsService } from '../services/contactsService';
 import { settingsService } from '../services/settingsService';
@@ -24,16 +27,20 @@ interface XuatPhePageProps {
 }
 
 export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
-  const { data: exportsData, loading: expLoading, error: expError, refetch } = useAsyncData(exportsService.getAll, []);
-  const { data: contactsData } = useAsyncData(contactsService.getAll, []);
+  const { range, setRange } = useDateRange();
+  // Lọc ngay ở truy vấn: chỉ kéo về phiếu trong kỳ đang xem.
+  const { data: exports, loading: expLoading, error: expError, refetch } = useAsyncList(
+    () => exportsService.getAll({ from: range.from, to: range.to }),
+    [range.from, range.to],
+  );
+  const { data: contacts } = useAsyncList(contactsService.getAll, []);
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
 
-  const exports = exportsData || [];
-  const contacts = contactsData || [];
   const kgPerBag = kgPerBagData ?? 900;
   const customers = useMemo(() => contacts.filter((c) => c.type === 'customer' || c.type === 'partner'), [contacts]);
 
   const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
   const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
   const [selectedDetail, setSelectedDetail] = useState<ExportType | null>(null);
 
@@ -53,9 +60,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
 
   const [searchParams] = useSearchParams();
 
-  if (actionRef) {
-    actionRef.current = openModal;
-  }
+  React.useEffect(() => {
+    if (actionRef) actionRef.current = openModal;
+  });
 
   React.useEffect(() => {
     if (searchParams.get('open') === 'true') {
@@ -67,7 +74,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
         window.history.replaceState({}, '', newUrl);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, openModal]);
 
   const filteredData = useMemo(() => {
     return exports.filter((item) => {
@@ -93,8 +100,17 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
     return { totalKg, totalBags, totalRevenue, unpaidAmount };
   }, [exports]);
 
+  // Trang hiện tại, dùng chung cho bảng (desktop) và card (mobile) để hai
+  // chế độ hiển thị không bao giờ lệch nhau.
+  const pageItems = useMemo(
+    () => filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+    [filteredData, currentPage, itemsPerPage],
+  );
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Chặn bấm Lưu nhiều lần — mỗi lần bấm thêm là một phiếu trùng.
+    if (saving) return;
     const data = formState.data as any;
     const qty = Number(data.total_kg) || 0;
     const price = Number(data.price_per_kg) || 0;
@@ -104,6 +120,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
       return;
     }
 
+    setSaving(true);
     try {
       const selectedCustomer = customers.find(c => c.id === data.contact_id);
       const contactName = selectedCustomer ? selectedCustomer.name : (data.contact_name || 'Khách lẻ');
@@ -133,8 +150,10 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
       closeModal();
       refetch();
     } catch (err) {
-      toast.error('Lỗi khi lưu phiếu xuất');
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu phiếu xuất');
       console.error('Lỗi khi lưu phiếu xuất:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -148,7 +167,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
       toast.success('Đã xóa phiếu xuất');
       refetch();
     } catch (err) {
-      toast.error('Lỗi khi xóa phiếu xuất');
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi xoá phiếu xuất');
       console.error('Lỗi khi xóa phiếu xuất:', err);
     }
     setConfirmState({ isOpen: false, id: '' });
@@ -163,7 +182,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <Truck size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng khối lượng xuất</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng khối lượng xuất</p>
             <p className="text-xl font-mono font-black text-[var(--text-primary)]">{formatKg(stats.totalKg)}</p>
           </div>
         </div>
@@ -173,7 +192,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <Package size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng số bao xuất</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng số bao xuất</p>
             <p className="text-xl font-mono font-black text-[var(--text-primary)]">{stats.totalBags} bao</p>
           </div>
         </div>
@@ -183,7 +202,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <TrendingUp size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Doanh thu xuất phế</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Doanh thu xuất phế</p>
             <p className="text-xl font-mono font-black text-emerald-600">{formatTien(stats.totalRevenue)}</p>
           </div>
         </div>
@@ -193,13 +212,15 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <DollarSign size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Chưa thu (Công nợ)</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Chưa thu (Công nợ)</p>
             <p className="text-xl font-mono font-black text-rose-600">{formatTien(stats.unpaidAmount)}</p>
           </div>
         </div>
       </div>
 
       {/* Table Toolbar */}
+      <PeriodFilter range={range} onChange={setRange} />
+
       <TableToolbar
         placeholder="Tìm theo khách mua, ngày xuất hoặc ghi chú..."
         searchValue={searchQuery}
@@ -209,7 +230,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
 
       {/* Main Data Table */}
       <DataState loading={expLoading} error={expError} isEmpty={filteredData.length === 0}>
-        <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
+        <div className="card hidden lg:block bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
             <table className="w-full">
               <caption className="sr-only">Danh sách phiếu xuất phế</caption>
@@ -226,7 +247,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item) => {
+                {pageItems.map((item) => {
                   const qtyKg = Number(item.total_kg) || 0;
                   return (
                     <tr
@@ -258,7 +279,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                         <div className="flex items-center justify-end">
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                            className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
                             title="Xóa phiếu xuất"
                           >
                             <Trash2 size={16} />
@@ -272,6 +293,26 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             </table>
           </div>
         </div>
+
+        {/* Card view cho điện thoại */}
+        <MobileCardList
+          items={pageItems.map((item) => ({
+            id: item.id,
+            title: item.contact_name || 'Khách lẻ',
+            subtitle: formatNgay(item.date),
+            badge: <StatusBadge status={item.payment_status} />,
+            accentColor: item.payment_status === 'unpaid' ? '#f43f5e' : '#10b981',
+            onClick: () => setSelectedDetail(item),
+            fields: [
+              { label: 'Số bao', value: `${item.bags_count} bao` },
+              { label: 'Khối lượng', value: formatKg(item.total_kg || 0) },
+              { label: 'Đơn giá', value: `${formatTien(item.price_per_kg)}/kg` },
+              { label: 'Thành tiền', value: formatTien(item.total_amount) },
+            ],
+          }))}
+          emptyMessage="Chưa có phiếu xuất nào trong kỳ này"
+        />
+
         <PaginationBar
           currentPage={currentPage}
           totalItems={filteredData.length}
@@ -408,6 +449,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <FormField label="Số bao xuất">
               <input
                 type="number"
+                inputMode="decimal"
                 min="1"
                 className="input-field font-mono"
                 placeholder="18"
@@ -425,6 +467,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <FormField label="Tổng khối lượng (kg)" required>
               <input
                 type="number"
+                inputMode="decimal"
                 required
                 min="1"
                 step="any"
@@ -439,6 +482,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
           <FormField label="Giá bán (đ/kg)" required>
             <input
               type="number"
+              inputMode="decimal"
               required
               min="0"
               className="input-field font-mono"
@@ -481,8 +525,12 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <button type="button" onClick={closeModal} className="btn-secondary">
               Hủy
             </button>
-            <button type="submit" className="btn-primary">
-              {formState.data?.id ? 'Cập nhật' : 'Tạo phiếu xuất'}
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Đang lưu...' : formState.data?.id ? 'Cập nhật' : 'Tạo phiếu xuất'}
             </button>
           </div>
         </form>

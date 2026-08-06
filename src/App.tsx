@@ -16,6 +16,7 @@ const BaoCaoPage = React.lazy(() => import('./pages/BaoCaoPage').then(m => ({ de
 const CaiDatPage = React.lazy(() => import('./pages/CaiDatPage').then(m => ({ default: m.CaiDatPage })));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { RequireRole } from './components/RequireRole';
 
 const LoadingScreen = () => (
   <div className="flex flex-col h-screen items-center justify-center bg-[var(--bg-app)] text-[var(--primary-500)]">
@@ -67,14 +68,35 @@ function App() {
                     {/* Consolidated Module: Quản lý Phế */}
                     <Route path="phe" element={<QuanLyPhePage />} />
                     
-                    {/* Consolidated Module: Tài chính */}
-                    <Route path="tai-chinh" element={<TaiChinhPage />} />
-                    
+                    {/* Consolidated Module: Tài chính — chi phí, ứng lương, công nợ */}
+                    <Route
+                      path="tai-chinh"
+                      element={
+                        <RequireRole allow={['manager', 'admin']}>
+                          <TaiChinhPage />
+                        </RequireRole>
+                      }
+                    />
+
                     <Route path="ton-kho" element={<TonKhoPage />} />
-                    <Route path="nhan-vien" element={<NhanVienPage />} />
+                    <Route
+                      path="nhan-vien"
+                      element={
+                        <RequireRole allow={['manager', 'admin']}>
+                          <NhanVienPage />
+                        </RequireRole>
+                      }
+                    />
                     <Route path="danh-ba" element={<DanhBaPage />} />
                     <Route path="bao-cao" element={<BaoCaoPage />} />
-                    <Route path="cai-dat" element={<CaiDatPage />} />
+                    <Route
+                      path="cai-dat"
+                      element={
+                        <RequireRole allow={['admin']}>
+                          <CaiDatPage />
+                        </RequireRole>
+                      }
+                    />
 
                     {/* Direct Subroute Redirects */}
                     <Route path="nhap-phe" element={<Navigate to="/phe?tab=nhap" replace />} />

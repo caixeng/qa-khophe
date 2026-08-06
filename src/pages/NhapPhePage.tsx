@@ -8,12 +8,15 @@ import { printPhieuNhap } from '../lib/print';
 import { StatusBadge } from '../components/StatusBadge';
 import { TableToolbar } from '../components/TableToolbar';
 import { DataState } from '../components/DataState';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
 import { useToast } from '../contexts/ToastContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
+import { PeriodFilter } from '../components/PeriodFilter';
+import { MobileCardList } from '../components/mobile/MobileCardList';
+import { useDateRange } from '../hooks/useDateRange';
 import { importsService } from '../services/importsService';
 import { contactsService } from '../services/contactsService';
 import type { Import, PaymentStatus, ProcessingStatus } from '../types';
@@ -23,17 +26,21 @@ interface NhapPhePageProps {
 }
 
 export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
-  const { data: importsData, loading, error, refetch } = useAsyncData(importsService.getAll, []);
-  const { data: contactsData } = useAsyncData(contactsService.getAll, []);
-  
-  const imports = importsData || [];
-  const contacts = contactsData || [];
+  const { range, setRange } = useDateRange();
+  // Lọc ngay ở truy vấn: chỉ kéo về phiếu trong kỳ đang xem, không phải cả lịch sử.
+  const { data: imports, loading, error, refetch } = useAsyncList(
+    () => importsService.getAll({ from: range.from, to: range.to }),
+    [range.from, range.to],
+  );
+  const { data: contacts } = useAsyncList(contactsService.getAll, []);
+
 
   const suppliers = useMemo(() => {
     return contacts.filter(c => c.type === 'supplier' || !c.type);
   }, [contacts]);
 
   const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
   const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
   const [selectedDetail, setSelectedDetail] = useState<Import | null>(null);
 
@@ -54,9 +61,9 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
 
   const [searchParams] = useSearchParams();
 
-  if (actionRef) {
-    actionRef.current = openModal;
-  }
+  React.useEffect(() => {
+    if (actionRef) actionRef.current = openModal;
+  });
 
   React.useEffect(() => {
     if (searchParams.get('open') === 'true') {
@@ -68,7 +75,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
         window.history.replaceState({}, '', newUrl);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, openModal]);
 
   const filteredData = useMemo(() => {
     return imports.filter((item) => {
@@ -96,17 +103,30 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
     return { totalKg, totalLots, pendingLots, unpaidAmount };
   }, [imports]);
 
+  // Trang hiện tại, dùng chung cho bảng (desktop) và card (mobile) để hai
+  // chế độ hiển thị không bao giờ lệch nhau.
+  const pageItems = useMemo(
+    () => filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+    [filteredData, currentPage, itemsPerPage],
+  );
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Chặn bấm Lưu nhiều lần: ở xưởng mạng chậm, người dùng hay bấm lại vì
+    // tưởng chưa ăn — mỗi lần bấm thêm là một phiếu trùng, làm sai cả tồn kho
+    // lẫn công nợ của nhà cung cấp.
+    if (saving) return;
+
     const data = formState.data;
     const qty = Number(data.quantity_kg) || 0;
     const price = Number(data.price_per_kg) || 0;
-    
+
     if (qty <= 0) {
       toast.warning('Vui lòng nhập khối lượng lớn hơn 0 kg');
       return;
     }
 
+    setSaving(true);
     try {
       const selectedContact = suppliers.find(s => s.id === data.contact_id);
       const contactName = selectedContact ? selectedContact.name : (data.contact_name || 'Khách lẻ');
@@ -136,8 +156,10 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
       closeModal();
       refetch();
     } catch (err) {
-      toast.error('Lỗi khi lưu phiếu nhập');
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu phiếu nhập');
       console.error('Lỗi khi lưu phiếu nhập:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -158,7 +180,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-4 flex items-center space-x-4 bg-[var(--bg-surface)]">
@@ -166,7 +188,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             <Package size={22} />
           </div>
           <div>
-            <p className="text-xs text-[var(--text-muted)] font-semibold uppercase">Tổng nhập tháng</p>
+            <p className="text-xs text-[var(--text-muted)] font-semibold uppercase">Tổng nhập trong kỳ</p>
             <p className="text-xl font-bold font-mono text-[var(--text-primary)]">{formatKg(stats.totalKg)}</p>
           </div>
         </div>
@@ -202,6 +224,8 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
         </div>
       </div>
 
+      <PeriodFilter range={range} onChange={setRange} />
+
       {/* Toolbar */}
       <TableToolbar
         searchQuery={searchQuery}
@@ -212,7 +236,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
 
       <DataState loading={loading} error={error} isEmpty={filteredData.length === 0} emptyTitle="Chưa có phiếu nhập phế">
         {/* Table */}
-        <div className="erp-table-container">
+        <div className="erp-table-container hidden lg:block">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <caption className="sr-only">Danh sách phiếu nhập phế</caption>
@@ -229,7 +253,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                 </tr>
               </thead>
               <tbody>
-                {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item) => (
+                {pageItems.map((item) => (
                   <tr
                     key={item.id}
                     className="tr-hover cursor-pointer"
@@ -257,7 +281,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                       <div className="flex items-center justify-end">
                         <button
                           onClick={() => handleDelete(item.id)}
-                          className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                          className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
                           title="Xóa phiếu"
                         >
                           <Trash2 size={16} />
@@ -270,6 +294,26 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             </table>
           </div>
         </div>
+
+        {/* Card view cho điện thoại — bảng cuộn ngang không dùng được ở xưởng */}
+        <MobileCardList
+          items={pageItems.map((item) => ({
+            id: item.id,
+            title: item.contact_name || 'Khách lẻ',
+            subtitle: formatNgay(item.date),
+            badge: <StatusBadge status={item.payment_status} />,
+            accentColor: item.processing_status === 'pending' ? '#f59e0b' : '#10b981',
+            onClick: () => setSelectedDetail(item),
+            fields: [
+              { label: 'Khối lượng', value: formatKg(item.quantity_kg) },
+              { label: 'Đơn giá', value: `${formatTien(item.price_per_kg)}/kg` },
+              { label: 'Thành tiền', value: formatTien(item.total_amount) },
+              { label: 'Xử lý', value: <StatusBadge status={item.processing_status} /> },
+            ],
+          }))}
+          emptyMessage="Chưa có phiếu nhập nào trong kỳ này"
+        />
+
         <PaginationBar
           currentPage={currentPage}
           totalItems={filteredData.length}
@@ -403,6 +447,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           <FormField label="Khối lượng (kg)" required>
             <input
               type="number"
+              inputMode="decimal"
               required
               min="1"
               step="any"
@@ -416,6 +461,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           <FormField label="Đơn giá (đ/kg)" required>
             <input
               type="number"
+              inputMode="decimal"
               required
               min="0"
               className="input-field font-mono"
@@ -473,8 +519,12 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             <button type="button" onClick={closeModal} className="btn-secondary">
               Hủy
             </button>
-            <button type="submit" className="btn-primary">
-              Lưu phiếu nhập
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {saving ? 'Đang lưu...' : 'Lưu phiếu nhập'}
             </button>
           </div>
         </form>

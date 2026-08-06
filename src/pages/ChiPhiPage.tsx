@@ -8,9 +8,11 @@ import { Modal, FormField } from '../components/Modal';
 import { TableToolbar } from '../components/TableToolbar';
 import { KpiCard } from '../components/KpiCard';
 import { DataState } from '../components/DataState';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
+import { useToast } from '../contexts/ToastContext';
 import { expensesService } from '../services/expensesService';
 import type { Expense } from '../types';
 
@@ -27,13 +29,14 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType; c
 
 export const ChiPhiPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'chiphi' | 'ungtien'>('chiphi');
-  const { data: expensesData, loading: expLoading, error: expError, refetch: refetchExp } = useAsyncData(expensesService.getExpenses, []);
-  const { data: advancesData, loading: advLoading, error: advError } = useAsyncData(expensesService.getAdvances, []);
+  const { data: expenses, loading: expLoading, error: expError, refetch: refetchExp } = useAsyncList(expensesService.getExpenses, []);
+  const { data: advances, loading: advLoading, error: advError } = useAsyncList(expensesService.getAdvances, []);
 
-  const expenses = expensesData || [];
-  const advances = advancesData || [];
 
   const { searchQuery, setSearchQuery } = useTableControls();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
 
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Expense>({
     initialData: {
@@ -57,7 +60,7 @@ export const ChiPhiPage: React.FC = () => {
         window.history.replaceState({}, '', newUrl);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, openModal]);
 
   const filteredExpenses = useMemo(() => {
     if (!searchQuery) return expenses;
@@ -83,13 +86,16 @@ export const ChiPhiPage: React.FC = () => {
 
   const handleSaveExpense = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving) return;
+
     const data = formState.data;
     const amount = Number(data.amount) || 0;
     if (amount <= 0) {
-      alert('Số tiền chi phí phải lớn hơn 0');
+      toast.warning('Số tiền chi phí phải lớn hơn 0');
       return;
     }
 
+    setSaving(true);
     try {
       await expensesService.createExpense({
         date: data.date || new Date().toISOString().split('T')[0],
@@ -98,26 +104,35 @@ export const ChiPhiPage: React.FC = () => {
         description: data.description || '',
         notes: data.notes,
       });
+      toast.success('Đã ghi nhận khoản chi phí');
       closeModal();
       refetchExp();
     } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Không lưu được khoản chi phí');
       console.error('Lỗi khi lưu chi phí:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDeleteExpense = async (id: string) => {
-    if (confirm('Bạn có chắc muốn xóa khoản chi phí này?')) {
-      try {
-        await expensesService.deleteExpense(id);
-        refetchExp();
-      } catch (err) {
-        console.error('Lỗi khi xóa chi phí:', err);
-      }
+  const handleDeleteExpense = (id: string) => {
+    setConfirmState({ isOpen: true, id });
+  };
+
+  const confirmDeleteExpense = async () => {
+    try {
+      await expensesService.deleteExpense(confirmState.id);
+      toast.success('Đã xoá khoản chi phí');
+      refetchExp();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Không xoá được khoản chi phí');
+      console.error('Lỗi khi xóa chi phí:', err);
     }
+    setConfirmState({ isOpen: false, id: '' });
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
+    <div className="space-y-6 animate-fade-in">
       <PageHeader 
         title="Chi Phí & Ứng Tiền" 
         subtitle="Quản lý các khoản chi phát sinh tại xưởng và theo dõi ứng tiền"
@@ -194,7 +209,7 @@ export const ChiPhiPage: React.FC = () => {
                           <td className="td-cell text-right">
                             <button
                               onClick={() => handleDeleteExpense(exp.id)}
-                              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                              className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
                               title="Xóa"
                             >
                               <Trash2 size={16} />
@@ -288,6 +303,7 @@ export const ChiPhiPage: React.FC = () => {
           <FormField label="Số tiền (đ)" required>
             <input
               type="number"
+              inputMode="decimal"
               required
               min="1"
               className="input-field font-mono font-bold text-rose-600"
@@ -321,12 +337,23 @@ export const ChiPhiPage: React.FC = () => {
             <button type="button" onClick={closeModal} className="btn-secondary">
               Hủy
             </button>
-            <button type="submit" className="btn-primary">
-              Lưu chi phí
+            <button type="submit" disabled={saving} className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed">
+              {saving ? 'Đang lưu...' : 'Lưu chi phí'}
             </button>
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={() => setConfirmState({ isOpen: false, id: '' })}
+        onConfirm={confirmDeleteExpense}
+        title="Xoá khoản chi phí"
+        message="Bạn có chắc chắn muốn xoá khoản chi phí này? Hành động này không thể hoàn tác."
+        variant="danger"
+        confirmText="Xoá"
+        cancelText="Hủy"
+      />
     </div>
   );
 };

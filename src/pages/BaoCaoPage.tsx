@@ -5,30 +5,75 @@ import { cn, formatTien, formatKg } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
 import { KpiCard } from '../components/KpiCard';
 import { DataState } from '../components/DataState';
-import { useAsyncData } from '../hooks/useAsyncData';
+import { useAsyncList } from '../hooks/useAsyncData';
+import { useDateRange } from '../hooks/useDateRange';
+import { PeriodFilter } from '../components/PeriodFilter';
 import { useAuth } from '../contexts/AuthContext';
 import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
+import { grindingService } from '../services/grindingService';
 import { expensesService } from '../services/expensesService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 
 const COLORS = ['#00668c', '#059669', '#d97706', '#64748b', '#7c3aed', '#e11d48'];
 
 export const BaoCaoPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'tongquan' | 'nhapxuat' | 'taichinh'>('tongquan');
+  const [activeTab, setActiveTab] = useState<'tongquan' | 'nhapxuat' | 'hieusuat' | 'taichinh'>('tongquan');
   const { user } = useAuth();
   const canSeeFinance = user?.role === 'manager' || user?.role === 'admin';
 
-  const { data: importsData, loading: impLoading } = useAsyncData(importsService.getAll, []);
-  const { data: exportsData, loading: expLoading } = useAsyncData(exportsService.getAll, []);
-  const { data: expensesData, loading: expesLoading } = useAsyncData(
+  const { range, setRange } = useDateRange();
+
+  // Toàn bộ báo cáo tính theo kỳ đang chọn — trước đây mọi con số đều cộng dồn
+  // toàn bộ lịch sử, nên "lãi ước tính" không gắn với khoảng thời gian nào cả
+  // và không dùng được để so sánh tháng này với tháng trước.
+  const { data: imports, loading: impLoading } = useAsyncList(
+    () => importsService.getAll({ from: range.from, to: range.to }),
+    [range.from, range.to],
+  );
+  const { data: exports, loading: expLoading } = useAsyncList(
+    () => exportsService.getAll({ from: range.from, to: range.to }),
+    [range.from, range.to],
+  );
+  const { data: grinding } = useAsyncList(
+    () => grindingService.getAll({ from: range.from, to: range.to }),
+    [range.from, range.to],
+  );
+  const { data: expenses, loading: expesLoading } = useAsyncList(
     canSeeFinance ? expensesService.getExpenses : async () => [],
     [canSeeFinance]
   );
 
-  const imports = importsData || [];
-  const exports = exportsData || [];
-  const expenses = expensesData || [];
+  /**
+   * Hiệu suất xay: tỷ lệ hao hụt theo từng thợ.
+   *
+   * Đây là con số quyết định lãi thật của xưởng — cùng một lô phế, chênh 5%
+   * hao hụt là chênh vài triệu đồng. Gộp theo thợ để thấy được chỗ nào đang
+   * hao bất thường thay vì chỉ nhìn một tỷ lệ trung bình chung.
+   */
+  const grindingEfficiency = useMemo(() => {
+    const byWorker: Record<string, { input: number; output: number; lots: number }> = {};
+
+    grinding.forEach((g) => {
+      const worker = g.worker?.trim() || 'Chưa ghi tên thợ';
+      if (!byWorker[worker]) byWorker[worker] = { input: 0, output: 0, lots: 0 };
+      byWorker[worker].input += Number(g.input_qty_kg) || 0;
+      byWorker[worker].output += Number(g.output_qty_kg) || 0;
+      byWorker[worker].lots += 1;
+    });
+
+    return Object.entries(byWorker)
+      .map(([worker, v]) => ({
+        worker,
+        lots: v.lots,
+        inputKg: v.input,
+        outputKg: v.output,
+        lossKg: v.input - v.output,
+        lossPct: v.input > 0 ? ((v.input - v.output) / v.input) * 100 : 0,
+      }))
+      .sort((a, b) => b.lossPct - a.lossPct);
+  }, [grinding]);
+
 
   const summary = useMemo(() => {
     const totalImportKg = imports.reduce((sum, i) => sum + (Number(i.quantity_kg) || 0), 0);
@@ -153,7 +198,7 @@ export const BaoCaoPage: React.FC = () => {
   const loading = impLoading || expLoading || expesLoading;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="page-shell animate-fade-in">
       <PageHeader
         title="Báo cáo & Thống kê"
         subtitle="Tổng hợp chi tiết sản lượng phế liệu và tài chính"
@@ -164,7 +209,9 @@ export const BaoCaoPage: React.FC = () => {
         }}
       />
 
-      <div className="flex border-b border-[var(--border-color)]">
+      <PeriodFilter range={range} onChange={setRange} />
+
+      <div className="flex flex-wrap border-b border-[var(--border-color)]">
         <button
           onClick={() => setActiveTab('tongquan')}
           className={cn(
@@ -186,6 +233,17 @@ export const BaoCaoPage: React.FC = () => {
           )}
         >
           Phân bổ nguồn phế
+        </button>
+        <button
+          onClick={() => setActiveTab('hieusuat')}
+          className={cn(
+            'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
+            activeTab === 'hieusuat'
+              ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+          )}
+        >
+          Hiệu suất xay
         </button>
         {canSeeFinance && (
           <button
@@ -246,6 +304,58 @@ export const BaoCaoPage: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'hieusuat' && (
+          <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-[var(--text-primary)]">Tỷ lệ hao hụt khi xay theo thợ</h3>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                Sắp xếp theo mức hao hụt giảm dần. Cùng một lô phế, chênh vài phần trăm hao hụt là chênh vài triệu đồng — dòng trên cùng là chỗ đáng xem lại trước tiên.
+              </p>
+            </div>
+
+            {grindingEfficiency.length === 0 ? (
+              <p className="py-8 text-center text-xs text-[var(--text-muted)]">
+                Chưa có phiếu xay nào trong kỳ này.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <caption className="sr-only">Hiệu suất xay theo thợ</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col" className="th-cell">Thợ xay</th>
+                      <th scope="col" className="th-cell text-right">Số lô</th>
+                      <th scope="col" className="th-cell text-right">Đầu vào</th>
+                      <th scope="col" className="th-cell text-right">Ra thành phẩm</th>
+                      <th scope="col" className="th-cell text-right">Hao hụt</th>
+                      <th scope="col" className="th-cell text-right">Tỷ lệ hao</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {grindingEfficiency.map((row) => (
+                      <tr key={row.worker} className="tr-hover">
+                        <td className="td-cell text-xs font-bold text-[var(--text-primary)]">{row.worker}</td>
+                        <td className="td-cell text-right font-mono text-xs">{row.lots}</td>
+                        <td className="td-cell text-right font-mono text-xs">{formatKg(row.inputKg)}</td>
+                        <td className="td-cell text-right font-mono text-xs">{formatKg(row.outputKg)}</td>
+                        <td className="td-cell text-right font-mono text-xs">{formatKg(row.lossKg)}</td>
+                        <td
+                          className={cn(
+                            'td-cell text-right font-mono text-xs font-bold',
+                            row.lossPct > 10 ? 'text-rose-600' : row.lossPct > 5 ? 'text-amber-600' : 'text-emerald-600'
+                          )}
+                        >
+                          {row.lossPct.toFixed(1)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

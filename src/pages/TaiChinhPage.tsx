@@ -23,10 +23,10 @@ export const TaiChinhPage: React.FC = () => {
     if (tab && ['chiphi', 'congno'].includes(tab) && tab !== activeTab) {
       setActiveTab(tab);
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="page-shell animate-fade-in">
       {/* CIC-IBST Pill Tabs Segmented Control */}
       <div className="flex flex-wrap items-center gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] w-fit">
         {TABS.map((tab) => {

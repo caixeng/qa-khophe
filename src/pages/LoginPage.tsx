@@ -1,25 +1,35 @@
 import * as React from 'react';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export const LoginPage = () => {
-  const [username, setUsername] = useState('Admin');
-  const [password, setPassword] = useState('123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login, loading } = useAuth();
+  const { user, login, loading, signingIn } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Đã có phiên hợp lệ (vd: mở lại tab) → về thẳng trang trước đó thay vì bắt đăng nhập lại
+  useEffect(() => {
+    if (!loading && user) {
+      const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
+      navigate(from || '/', { replace: true });
+    }
+  }, [loading, user, navigate, location.state]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const result = await login(username, password);
+    const result = await login(email, password);
     if (result.error) {
       setError(result.error);
     } else {
-      navigate('/');
+      const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
+      navigate(from || '/', { replace: true });
     }
   };
 
@@ -42,18 +52,19 @@ export const LoginPage = () => {
           )}
 
           <div>
-            <label className="label-field">TÊN ĐĂNG NHẬP / EMAIL</label>
+            <label className="label-field">EMAIL</label>
             <div className="relative mt-1">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                 <User className="h-5 w-5 text-gray-400" />
               </div>
-              <input 
-                type="text" 
+              <input
+                type="email"
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="input-field pl-10 font-semibold"
-                placeholder="Ví dụ: Admin"
+                placeholder="ten@congty.vn"
               />
             </div>
           </div>
@@ -64,9 +75,10 @@ export const LoginPage = () => {
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                 <Lock className="h-5 w-5 text-gray-400" />
               </div>
-              <input 
+              <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-field pl-10 pr-10 font-mono"
@@ -85,10 +97,10 @@ export const LoginPage = () => {
 
           <button 
             type="submit" 
-            disabled={loading}
+            disabled={signingIn}
             className="w-full btn-primary py-3 text-sm font-bold shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? (
+            {signingIn ? (
               <span className="flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" /> Đang đăng nhập...
               </span>

@@ -1,10 +1,10 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { UserRole } from '../types';
 
 interface UserProfile {
-  id?: string;
+  id: string;
   name: string;
   email: string;
   role: UserRole;
@@ -12,20 +12,23 @@ interface UserProfile {
 
 interface AuthContextType {
   user: UserProfile | null;
-  login: (usernameOrEmail: string, pass: string) => Promise<{ error?: string }>;
+  login: (email: string, pass: string) => Promise<{ error?: string }>;
   logout: () => Promise<void>;
+  /** true trong lúc kiểm tra phiên đăng nhập lúc khởi động — dùng để chặn render sớm */
   loading: boolean;
+  /** true trong lúc đang gửi form đăng nhập */
+  signingIn: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
-const DEFAULT_ADMIN_USER: UserProfile = {
-  id: 'usr-admin',
-  name: 'Admin KhoPhe',
-  email: 'admin@khophe.vn',
-  role: 'admin',
-};
-
+/**
+ * Lấy hồ sơ người dùng trong bảng `users` tương ứng với phiên Supabase Auth.
+ *
+ * Hồ sơ này quyết định `role`, và `role` là thứ mọi policy RLS dựa vào. Không có
+ * hồ sơ = không có quyền gì trong DB, nên trường hợp đó phải báo lỗi rõ ràng chứ
+ * không được tự gán một vai trò mặc định ở phía client.
+ */
 async function resolveProfile(session: Session): Promise<UserProfile | null> {
   const authId = session.user.id;
   const email = session.user.email;
@@ -42,6 +45,8 @@ async function resolveProfile(session: Session): Promise<UserProfile | null> {
 
   if (!email) return null;
 
+  // Admin có thể tạo sẵn dòng users theo email trước khi người đó đăng nhập lần
+  // đầu; lần đăng nhập đầu tiên sẽ tự gắn auth_id vào đúng dòng đó.
   const { data: byEmail } = await supabase
     .from('users')
     .select('id, full_name, email, role')
@@ -62,104 +67,108 @@ async function resolveProfile(session: Session): Promise<UserProfile | null> {
   return { id: profile.id, name: profile.full_name, email: profile.email, role: profile.role };
 }
 
+const NO_PROFILE_MESSAGE =
+  'Tài khoản đăng nhập được nhưng chưa được cấp quyền trong hệ thống. Liên hệ quản trị viên để thêm bạn vào danh sách người dùng.';
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<UserProfile | null>(() => {
-    try {
-      const saved = localStorage.getItem('vua_phe_user');
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return DEFAULT_ADMIN_USER; // Default fallback to Admin
-  });
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [signingIn, setSigningIn] = useState(false);
+
+  const applySession = useCallback(async (session: Session | null): Promise<string | undefined> => {
+    if (!session?.user) {
+      setUser(null);
+      return undefined;
+    }
+
+    const profile = await resolveProfile(session);
+    if (!profile) {
+      // Đăng nhập hợp lệ nhưng không có hồ sơ → mọi truy vấn sẽ bị RLS chặn.
+      // Đăng xuất luôn để không rơi vào trạng thái "đã vào app mà không làm được gì".
+      await supabase.auth.signOut();
+      setUser(null);
+      return NO_PROFILE_MESSAGE;
+    }
+
+    setUser(profile);
+    return undefined;
+  }, []);
 
   useEffect(() => {
     let active = true;
 
-    const syncSession = async (session: Session | null) => {
-      if (!session?.user) {
-        return;
-      }
-      const profile = await resolveProfile(session);
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session } }) => {
+        if (!active) return;
+        await applySession(session);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
-      if (profile) {
-        setUser(profile);
-        localStorage.setItem('vua_phe_user', JSON.stringify(profile));
+      // SIGNED_IN được xử lý trong hàm login() để lấy được thông báo lỗi;
+      // ở đây chỉ cần phản ứng với việc phiên bị mất hoặc được làm mới.
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        void applySession(session);
       }
-    };
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      syncSession(session);
-    }).catch(() => {});
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      syncSession(session);
     });
 
     return () => {
       active = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [applySession]);
 
-  const login = async (usernameOrEmail: string, pass: string) => {
-    setLoading(true);
+  const login = async (email: string, pass: string): Promise<{ error?: string }> => {
+    setSigningIn(true);
     try {
-      const trimmed = usernameOrEmail.trim();
+      const trimmed = email.trim();
 
-      // Nếu nhập username không có @ (ví dụ: Admin, admin, manager...) hoặc đúng mật khẩu 123456
-      if (!trimmed.includes('@') || trimmed.toLowerCase() === 'admin') {
-        const adminProfile: UserProfile = {
-          id: 'usr-admin',
-          name: trimmed.toLowerCase() === 'admin' ? 'Admin KhoPhe' : trimmed,
-          email: `${trimmed.toLowerCase()}@khophe.vn`,
-          role: 'admin',
-        };
-        setUser(adminProfile);
-        localStorage.setItem('vua_phe_user', JSON.stringify(adminProfile));
-        return {};
+      if (!trimmed.includes('@')) {
+        return { error: 'Vui lòng đăng nhập bằng địa chỉ email đã được cấp.' };
       }
 
-      // Nếu có email chính thức, thử đăng nhập qua Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({ email: trimmed, password: pass });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: trimmed,
+        password: pass,
+      });
 
       if (error || !data.session) {
-        // Fallback login cho phép làm việc
-        const fallbackProfile: UserProfile = {
-          id: 'usr-fallback',
-          name: trimmed.split('@')[0] || 'Admin',
-          email: trimmed,
-          role: 'admin',
-        };
-        setUser(fallbackProfile);
-        localStorage.setItem('vua_phe_user', JSON.stringify(fallbackProfile));
-        return {};
+        return { error: 'Email hoặc mật khẩu không đúng.' };
       }
 
-      const profile = await resolveProfile(data.session);
-      const activeProfile = profile || { email: trimmed, name: trimmed, role: 'admin' as UserRole };
-      setUser(activeProfile);
-      localStorage.setItem('vua_phe_user', JSON.stringify(activeProfile));
+      const profileError = await applySession(data.session);
+      if (profileError) return { error: profileError };
+
       return {};
-    } catch (e: any) {
-      // Fallback
-      setUser(DEFAULT_ADMIN_USER);
-      localStorage.setItem('vua_phe_user', JSON.stringify(DEFAULT_ADMIN_USER));
-      return {};
+    } catch {
+      return { error: 'Không kết nối được tới máy chủ. Kiểm tra lại đường truyền rồi thử lại.' };
     } finally {
-      setLoading(false);
+      setSigningIn(false);
     }
   };
 
   const logout = async () => {
     try {
       await supabase.auth.signOut();
-    } catch {}
-    localStorage.removeItem('vua_phe_user');
+    } catch {
+      // Phiên phía máy chủ có thể đã hết hạn — vẫn phải xoá trạng thái phía client.
+    }
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, signingIn }}>
       {children}
     </AuthContext.Provider>
   );

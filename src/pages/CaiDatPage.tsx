@@ -21,7 +21,7 @@ export const CaiDatPage = () => {
   ];
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 max-w-5xl mx-auto pb-12">
+    <div className="page-shell animate-in fade-in duration-300 max-w-5xl mx-auto">
       
       {/* Page Header */}
       <div className="flex flex-col gap-1">
@@ -123,7 +123,7 @@ export const CaiDatPage = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-[var(--text-primary)] truncate">{c.name}</p>
-                  <p className="text-[10px] font-mono text-[var(--text-muted)] uppercase">{c.hex}</p>
+                  <p className="text-[11px] font-mono text-[var(--text-muted)] uppercase">{c.hex}</p>
                 </div>
               </button>
             );
@@ -155,7 +155,7 @@ export const CaiDatPage = () => {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className={cn(
-                    "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                    "px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border",
                     isActive ? "bg-[var(--primary-500)] text-white border-transparent" : "bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-color)]"
                   )}>
                     {d.badge}
