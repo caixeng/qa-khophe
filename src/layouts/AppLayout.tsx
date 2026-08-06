@@ -11,7 +11,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/ThemeContext';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { GlobalSearch } from '../components/GlobalSearch';
-import { MobileManagerInput } from '../components/mobile/MobileManagerInput';
 import { MobileMoreMenuSheet } from '../components/mobile/MobileMoreMenuSheet';
 import { MobileQuickActionModal } from '../components/mobile/MobileQuickActionModal';
 import { Suspense } from 'react';
@@ -391,8 +390,6 @@ export const AppLayout = () => {
       {/* MOBILE SHEETS */}
       <MobileMoreMenuSheet isOpen={moreMenuOpen} onClose={() => setMoreMenuOpen(false)} />
       <MobileQuickActionModal isOpen={quickActionOpen} onClose={() => setQuickActionOpen(false)} />
-
-      {isManagerOrAdmin && <MobileManagerInput />}
 
       <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
