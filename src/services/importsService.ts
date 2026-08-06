@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import type { Import } from '../types';
 
-export const ALL_NOTEBOOK_IMPORTS: Import[] = [
+export let ALL_NOTEBOOK_IMPORTS: Import[] = [
   { id: 'imp-1', date: '2026-06-28', contact_name: 'Em Hoàn', material_type: 'Tấm nhựa nano', quantity_kg: 1395, price_per_kg: 4000, total_amount: 5580000, payment_status: 'paid', processing_status: 'done', notes: 'R Hoàn (Xay 29/06: 1.412kg, +17kg)' },
   { id: 'imp-2', date: '2026-06-29', contact_name: 'Nga', material_type: 'Tấm nhựa nano', quantity_kg: 2280, price_per_kg: 4000, total_amount: 9120000, payment_status: 'paid', processing_status: 'done', notes: 'R Nga (Xay 29-30/06: 2.248kg, -32kg)' },
   { id: 'imp-3', date: '2026-06-29', contact_name: 'Em Hoàn', material_type: 'Tấm nhựa nano', quantity_kg: 2505, price_per_kg: 4000, total_amount: 10020000, payment_status: 'paid', processing_status: 'done', notes: 'R Hoàn (Xay 30/06: 2.496kg, -9kg)' },
@@ -31,7 +31,7 @@ export const ALL_NOTEBOOK_IMPORTS: Import[] = [
   { id: 'imp-25', date: '2026-07-31', contact_name: 'Chị Hoan', material_type: 'Tấm nhựa nano', quantity_kg: 2530, price_per_kg: 4500, total_amount: 11385000, payment_status: 'paid', processing_status: 'pending', notes: 'chưa R Chị Hoan (Eco Wood 4915kg/2385kg - TT 11.385.000đ)' },
   { id: 'imp-26', date: '2026-08-03', contact_name: 'Em Cường', material_type: 'Tấm nhựa nano', quantity_kg: 3150, price_per_kg: 4000, total_amount: 12600000, payment_status: 'unpaid', processing_status: 'pending', notes: 'chưa R Em Cường (22/08)' },
 
-  // Dòng 28 - 31 (Mới bổ sung)
+  // Dòng 28 - 31
   { id: 'imp-27', date: '2026-08-03', contact_name: 'A Danh', material_type: 'Tấm nhựa nano', quantity_kg: 2500, price_per_kg: 4000, total_amount: 10000000, payment_status: 'unpaid', processing_status: 'pending', notes: 'chưa A Danh' },
   { id: 'imp-28', date: '2026-08-04', contact_name: 'Chị Hoan', material_type: 'Tấm nhựa nano', quantity_kg: 3460, price_per_kg: 4000, total_amount: 13840000, payment_status: 'unpaid', processing_status: 'pending', notes: 'chưa CHoan' },
   { id: 'imp-29', date: '2026-08-05', contact_name: 'Hiền', material_type: 'Tấm nhựa nano', quantity_kg: 3035, price_per_kg: 4000, total_amount: 12140000, payment_status: 'unpaid', processing_status: 'pending', notes: 'chưa Hiền' },
@@ -58,7 +58,7 @@ export const importsService = {
         quantity_kg: Number(item.quantity_kg) || 0,
         material_type: item.material_type || 'Tấm nhựa nano',
         price_per_kg: Number(item.price_per_kg) || 4000,
-        total_amount: Number(item.total_amount) || 0,
+        total_amount: Number(item.total_amount) || (Number(item.quantity_kg) * Number(item.price_per_kg)),
         payment_status: item.payment_status || 'unpaid',
         processing_status: item.processing_status || 'pending',
         notes: item.notes,
@@ -74,25 +74,44 @@ export const importsService = {
     const price = Number(item.price_per_kg) || 4000;
     const total = qty * price;
 
-    const { data, error } = await supabase
-      .from('imports')
-      .insert({
-        date: item.date || new Date().toISOString().split('T')[0],
-        contact_id: item.contact_id || null,
-        material_type: item.material_type || 'Tấm nhựa nano',
-        quantity_kg: qty,
-        price_per_kg: price,
-        payment_status: item.payment_status || 'unpaid',
-        processing_status: item.processing_status || 'pending',
-        notes: item.notes || null,
-      })
-      .select()
-      .single();
+    let createdItem: Import | null = null;
+    try {
+      const { data, error } = await supabase
+        .from('imports')
+        .insert({
+          date: item.date || new Date().toISOString().split('T')[0],
+          contact_id: item.contact_id || null,
+          material_type: item.material_type || 'Tấm nhựa nano',
+          quantity_kg: qty,
+          price_per_kg: price,
+          payment_status: item.payment_status || 'unpaid',
+          processing_status: item.processing_status || 'pending',
+          notes: item.notes || null,
+        })
+        .select('*, contacts(name)')
+        .single();
 
-    if (error) {
-      return {
+      if (!error && data) {
+        createdItem = {
+          id: data.id,
+          date: data.date,
+          contact_id: data.contact_id,
+          contact_name: data.contacts?.name || item.contact_name || 'NCC Phế',
+          quantity_kg: qty,
+          material_type: data.material_type,
+          price_per_kg: price,
+          total_amount: total,
+          payment_status: data.payment_status,
+          processing_status: data.processing_status,
+          notes: data.notes
+        };
+      }
+    } catch {}
+
+    if (!createdItem) {
+      createdItem = {
         id: `imp-${Date.now()}`,
-        date: item.date || '2026-07-28',
+        date: item.date || new Date().toISOString().split('T')[0],
         contact_id: item.contact_id,
         contact_name: item.contact_name || 'NCC Phế',
         quantity_kg: qty,
@@ -104,32 +123,52 @@ export const importsService = {
         notes: item.notes,
       };
     }
-    return data;
+
+    ALL_NOTEBOOK_IMPORTS.unshift(createdItem);
+    return createdItem;
   },
 
   async update(id: string, item: Partial<Import>): Promise<void> {
     const qty = Number(item.quantity_kg) || 0;
     const price = Number(item.price_per_kg) || 4000;
+    const total = qty * price;
 
-    await supabase
-      .from('imports')
-      .update({
-        date: item.date,
-        contact_id: item.contact_id || null,
+    // Update local memory list
+    const index = ALL_NOTEBOOK_IMPORTS.findIndex(i => i.id === id);
+    if (index !== -1) {
+      ALL_NOTEBOOK_IMPORTS[index] = {
+        ...ALL_NOTEBOOK_IMPORTS[index],
+        ...item,
         quantity_kg: qty,
-        material_type: item.material_type,
         price_per_kg: price,
-        payment_status: item.payment_status,
-        processing_status: item.processing_status,
-        notes: item.notes || null,
-      })
-      .eq('id', id);
+        total_amount: total,
+      };
+    }
+
+    try {
+      await supabase
+        .from('imports')
+        .update({
+          date: item.date,
+          contact_id: item.contact_id || null,
+          quantity_kg: qty,
+          material_type: item.material_type,
+          price_per_kg: price,
+          payment_status: item.payment_status,
+          processing_status: item.processing_status,
+          notes: item.notes || null,
+        })
+        .eq('id', id);
+    } catch {}
   },
 
   async delete(id: string): Promise<void> {
-    await supabase
-      .from('imports')
-      .delete()
-      .eq('id', id);
+    ALL_NOTEBOOK_IMPORTS = ALL_NOTEBOOK_IMPORTS.filter(i => i.id !== id);
+    try {
+      await supabase
+        .from('imports')
+        .delete()
+        .eq('id', id);
+    } catch {}
   }
 };

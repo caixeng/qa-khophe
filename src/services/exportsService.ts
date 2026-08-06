@@ -1,95 +1,138 @@
 import { supabase } from '../lib/supabase';
 import type { Export } from '../types';
 
+let LOCAL_EXPORTS: Export[] = [];
+
 export const exportsService = {
   async getAll(): Promise<Export[]> {
-    const { data, error } = await supabase
-      .from('exports')
-      .select('*, contacts(name)')
-      .is('deleted_at', null)
-      .order('date', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('exports')
+        .select('*, contacts(name)')
+        .is('deleted_at', null)
+        .order('date', { ascending: false });
 
-    if (error) throw new Error(error.message);
+      if (!error && data && data.length > 0) {
+        const fetched = data.map(item => ({
+          id: item.id,
+          date: item.date,
+          contact_id: item.contact_id,
+          contact_name: item.contacts?.name || 'Khách lẻ',
+          bags_count: Number(item.bags_count) || 0,
+          total_kg: Number(item.total_kg) || 0,
+          price_per_kg: Number(item.price_per_kg) || 0,
+          total_amount: Number(item.total_amount) || (Number(item.total_kg) * Number(item.price_per_kg)),
+          payment_status: item.payment_status || 'unpaid',
+          weighing_session_id: item.weighing_session_id,
+          notes: item.notes,
+          created_at: item.created_at,
+        }));
+        LOCAL_EXPORTS = fetched;
+        return fetched;
+      }
+    } catch {}
 
-    return (data || []).map(item => ({
-      id: item.id,
-      date: item.date,
-      contact_id: item.contact_id,
-      contact_name: item.contacts?.name || 'Khách lẻ',
-      bags_count: Number(item.bags_count) || 0,
-      total_kg: Number(item.total_kg) || 0,
-      price_per_kg: Number(item.price_per_kg) || 0,
-      total_amount: Number(item.total_amount) || 0,
-      payment_status: item.payment_status || 'unpaid',
-      weighing_session_id: item.weighing_session_id,
-      notes: item.notes,
-      created_at: item.created_at,
-    }));
+    return LOCAL_EXPORTS;
   },
 
   async create(item: Partial<Export>): Promise<Export> {
     const qty = Number(item.total_kg) || 0;
     const price = Number(item.price_per_kg) || 0;
+    const total = qty * price;
 
-    const { data, error } = await supabase
-      .from('exports')
-      .insert({
+    let newItem: Export | null = null;
+    try {
+      const { data, error } = await supabase
+        .from('exports')
+        .insert({
+          date: item.date || new Date().toISOString().split('T')[0],
+          contact_id: item.contact_id || null,
+          bags_count: Number(item.bags_count) || 0,
+          total_kg: qty,
+          price_per_kg: price,
+          payment_status: item.payment_status || 'unpaid',
+          weighing_session_id: item.weighing_session_id || null,
+          notes: item.notes || null,
+        })
+        .select('*, contacts(name)')
+        .single();
+
+      if (!error && data) {
+        newItem = {
+          id: data.id,
+          date: data.date,
+          contact_id: data.contact_id,
+          contact_name: data.contacts?.name || item.contact_name || 'Khách lẻ',
+          bags_count: Number(data.bags_count) || 0,
+          total_kg: Number(data.total_kg) || 0,
+          price_per_kg: Number(data.price_per_kg) || 0,
+          total_amount: total,
+          payment_status: data.payment_status,
+          weighing_session_id: data.weighing_session_id,
+          notes: data.notes,
+          created_at: data.created_at,
+        };
+      }
+    } catch {}
+
+    if (!newItem) {
+      newItem = {
+        id: `exp-${Date.now()}`,
         date: item.date || new Date().toISOString().split('T')[0],
-        contact_id: item.contact_id || null,
+        contact_id: item.contact_id,
+        contact_name: item.contact_name || 'Khách lẻ',
         bags_count: Number(item.bags_count) || 0,
         total_kg: qty,
         price_per_kg: price,
+        total_amount: total,
         payment_status: item.payment_status || 'unpaid',
-        weighing_session_id: item.weighing_session_id || null,
-        notes: item.notes || null,
-      })
-      .select('*, contacts(name)')
-      .single();
+        notes: item.notes,
+      };
+    }
 
-    if (error) throw new Error(error.message);
-
-    return {
-      id: data.id,
-      date: data.date,
-      contact_id: data.contact_id,
-      contact_name: data.contacts?.name || item.contact_name || 'Khách lẻ',
-      bags_count: Number(data.bags_count) || 0,
-      total_kg: Number(data.total_kg) || 0,
-      price_per_kg: Number(data.price_per_kg) || 0,
-      total_amount: Number(data.total_amount) || 0,
-      payment_status: data.payment_status,
-      weighing_session_id: data.weighing_session_id,
-      notes: data.notes,
-      created_at: data.created_at,
-    };
+    LOCAL_EXPORTS.unshift(newItem);
+    return newItem;
   },
 
   async update(id: string, item: Partial<Export>): Promise<void> {
     const qty = Number(item.total_kg) || 0;
     const price = Number(item.price_per_kg) || 0;
+    const total = qty * price;
 
-    const { error } = await supabase
-      .from('exports')
-      .update({
-        date: item.date,
-        contact_id: item.contact_id || null,
-        bags_count: Number(item.bags_count) || 0,
+    const index = LOCAL_EXPORTS.findIndex(e => e.id === id);
+    if (index !== -1) {
+      LOCAL_EXPORTS[index] = {
+        ...LOCAL_EXPORTS[index],
+        ...item,
         total_kg: qty,
         price_per_kg: price,
-        payment_status: item.payment_status,
-        notes: item.notes || null,
-      })
-      .eq('id', id);
+        total_amount: total,
+      };
+    }
 
-    if (error) throw new Error(error.message);
+    try {
+      await supabase
+        .from('exports')
+        .update({
+          date: item.date,
+          contact_id: item.contact_id || null,
+          bags_count: Number(item.bags_count) || 0,
+          total_kg: qty,
+          price_per_kg: price,
+          payment_status: item.payment_status,
+          notes: item.notes || null,
+        })
+        .eq('id', id);
+    } catch {}
   },
 
   async delete(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('exports')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', id);
-
-    if (error) throw new Error(error.message);
+    LOCAL_EXPORTS = LOCAL_EXPORTS.filter(e => e.id !== id);
+    try {
+      await supabase
+        .from('exports')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', id);
+    } catch {}
   }
 };

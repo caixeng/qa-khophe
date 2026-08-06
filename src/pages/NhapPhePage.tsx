@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Edit, Trash2, TrendingUp, Package, Clock, DollarSign, Printer } from 'lucide-react';
+import { Edit, Trash2, Package, Clock, DollarSign, Printer } from 'lucide-react';
 import { formatTien, formatNgay, formatKg } from '../lib/utils';
 import { Modal, FormField } from '../components/Modal';
 import { printPhieuNhap } from '../lib/print';
@@ -35,6 +35,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
 
   const { toast } = useToast();
   const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+  const [selectedDetail, setSelectedDetail] = useState<Import | null>(null);
 
   // Table Controls
   const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
@@ -158,8 +159,6 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
 
   return (
     <div className="space-y-6 animate-fade-in pb-20 md:pb-6">
-
-
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-4 flex items-center space-x-4 bg-[var(--bg-surface)]">
@@ -174,7 +173,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
 
         <div className="card p-4 flex items-center space-x-4 bg-[var(--bg-surface)]">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-200">
-            <TrendingUp size={22} />
+            <Package size={22} />
           </div>
           <div>
             <p className="text-xs text-[var(--text-muted)] font-semibold uppercase">Số lượng lô</p>
@@ -231,7 +230,12 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
               </thead>
               <tbody>
                 {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item) => (
-                  <tr key={item.id} className="tr-hover">
+                  <tr
+                    key={item.id}
+                    className="tr-hover cursor-pointer"
+                    onClick={() => setSelectedDetail(item)}
+                    title="Bấm để xem chi tiết phiếu nhập"
+                  >
                     <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(item.date)}</td>
                     <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{item.contact_name || 'Khách lẻ'}</td>
                     <td className="td-cell text-right font-mono font-bold text-xs text-[var(--text-primary)]">
@@ -249,26 +253,12 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                     <td className="td-cell">
                       <StatusBadge status={item.processing_status} />
                     </td>
-                    <td className="td-cell text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button
-                          onClick={() => printPhieuNhap(item)}
-                          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
-                          title="In phiếu"
-                        >
-                          <Printer size={16} />
-                        </button>
-                        <button
-                          onClick={() => openModal(item)}
-                          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
-                          title="Sửa"
-                        >
-                          <Edit size={16} />
-                        </button>
+                    <td className="td-cell text-right" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-end">
                         <button
                           onClick={() => handleDelete(item.id)}
                           className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
-                          title="Xóa"
+                          title="Xóa phiếu"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -288,6 +278,95 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           onItemsPerPageChange={setItemsPerPage}
         />
       </DataState>
+
+      {/* Detail View Modal */}
+      <Modal
+        isOpen={!!selectedDetail}
+        onClose={() => setSelectedDetail(null)}
+        title="Chi tiết phiếu nhập phế"
+      >
+        {selectedDetail && (
+          <div className="space-y-4 text-xs">
+            <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+              <div>
+                <span className="text-[var(--text-muted)] block font-semibold uppercase">Ngày nhập</span>
+                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{formatNgay(selectedDetail.date)}</span>
+              </div>
+              <div>
+                <span className="text-[var(--text-muted)] block font-semibold uppercase">Người bán (NCC)</span>
+                <span className="font-bold text-sm text-[var(--text-primary)]">{selectedDetail.contact_name || 'Khách lẻ'}</span>
+              </div>
+              <div>
+                <span className="text-[var(--text-muted)] block font-semibold uppercase">Khối lượng</span>
+                <span className="font-mono font-bold text-sm text-emerald-600">{formatKg(selectedDetail.quantity_kg)}</span>
+              </div>
+              <div>
+                <span className="text-[var(--text-muted)] block font-semibold uppercase">Đơn giá</span>
+                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{formatTien(selectedDetail.price_per_kg)}/kg</span>
+              </div>
+              <div className="col-span-2 pt-2 border-t border-[var(--border-color)] flex justify-between items-center">
+                <span className="text-[var(--text-muted)] font-semibold uppercase">TỔNG TIỀN PHIẾU:</span>
+                <span className="font-mono font-black text-base text-[var(--primary-500)]">{formatTien(selectedDetail.total_amount)}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+                <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">THANH TOÁN</span>
+                <StatusBadge status={selectedDetail.payment_status} />
+              </div>
+              <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+                <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">TRẠNG THÁI XAY</span>
+                <StatusBadge status={selectedDetail.processing_status} />
+              </div>
+            </div>
+
+            {selectedDetail.notes && (
+              <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+                <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">GHI CHÚ</span>
+                <p className="text-[var(--text-secondary)] italic">{selectedDetail.notes}</p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-4 border-t border-[var(--border-color)] gap-2">
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    printPhieuNhap(selectedDetail);
+                  }}
+                  className="btn-secondary flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
+                >
+                  <Printer size={15} />
+                  <span>In phiếu</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const item = selectedDetail;
+                    setSelectedDetail(null);
+                    openModal(item);
+                  }}
+                  className="btn-primary flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
+                >
+                  <Edit size={15} />
+                  <span>Chỉnh sửa</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => {
+                  const id = selectedDetail.id;
+                  setSelectedDetail(null);
+                  handleDelete(id);
+                }}
+                className="btn-danger flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
+              >
+                <Trash2 size={15} />
+                <span>Xóa</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Modal Add/Edit */}
       <Modal

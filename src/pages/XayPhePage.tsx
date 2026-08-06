@@ -29,6 +29,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
 
   const { toast } = useToast();
   const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+  const [selectedDetail, setSelectedDetail] = useState<Grinding | null>(null);
 
   // Table controls
   const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
@@ -140,8 +141,6 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-
-
       {/* Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl flex items-center space-x-4">
@@ -220,7 +219,12 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                   const lossPct = item.loss_pct ?? (inputKg > 0 ? (lossKg / inputKg) * 100 : 0);
 
                   return (
-                    <tr key={item.id} className="tr-hover">
+                    <tr
+                      key={item.id}
+                      className="tr-hover cursor-pointer"
+                      onClick={() => setSelectedDetail(item)}
+                      title="Bấm để xem chi tiết mẻ xay"
+                    >
                       <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(item.date)}</td>
                       <td className="td-cell font-mono text-xs text-[var(--primary-500)] font-bold">
                         {item.import_id ? item.import_id.slice(0, 8) : 'Lô vãng lai'}
@@ -250,19 +254,12 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                       <td className="td-cell font-medium text-xs text-[var(--text-primary)]">
                         {item.worker || 'Hoa'}
                       </td>
-                      <td className="td-cell text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => openModal(item)}
-                            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
-                            title="Sửa"
-                          >
-                            <Edit size={16} />
-                          </button>
+                      <td className="td-cell text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end">
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 transition-colors cursor-pointer"
-                            title="Xóa"
+                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                            title="Xóa phiếu xay"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -283,6 +280,88 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
           onItemsPerPageChange={setItemsPerPage}
         />
       </DataState>
+
+      {/* Detail Modal */}
+      <Modal
+        isOpen={!!selectedDetail}
+        onClose={() => setSelectedDetail(null)}
+        title="Chi tiết phiếu xay phế"
+      >
+        {selectedDetail && (() => {
+          const inputKg = Number(selectedDetail.input_qty_kg) || 0;
+          const outputKg = Number(selectedDetail.output_qty_kg) || 0;
+          const lossKg = selectedDetail.loss_kg !== undefined ? selectedDetail.loss_kg : (inputKg - outputKg);
+          const lossPct = selectedDetail.loss_pct ?? (inputKg > 0 ? (lossKg / inputKg) * 100 : 0);
+
+          return (
+            <div className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+                <div>
+                  <span className="text-[var(--text-muted)] block font-semibold uppercase">NGÀY XAY</span>
+                  <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{formatNgay(selectedDetail.date)}</span>
+                </div>
+                <div>
+                  <span className="text-[var(--text-muted)] block font-semibold uppercase">LÔ PHẾ NHẬP</span>
+                  <span className="font-mono font-bold text-sm text-[var(--primary-500)]">{selectedDetail.import_id || 'Lô vãng lai'}</span>
+                </div>
+                <div>
+                  <span className="text-[var(--text-muted)] block font-semibold uppercase">ĐẦU VÀO</span>
+                  <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{formatKg(inputKg)}</span>
+                </div>
+                <div>
+                  <span className="text-[var(--text-muted)] block font-semibold uppercase">ĐẦU RA THÀNH PHẨM</span>
+                  <span className="font-mono font-bold text-sm text-emerald-600">{formatKg(outputKg)}</span>
+                </div>
+                <div>
+                  <span className="text-[var(--text-muted)] block font-semibold uppercase">HAO HỤT</span>
+                  <span className="font-mono font-bold text-sm text-rose-600">{formatKg(lossKg)} ({formatPhanTram(lossPct)})</span>
+                </div>
+                <div>
+                  <span className="text-[var(--text-muted)] block font-semibold uppercase">SỐ BAO THÀNH PHẨM</span>
+                  <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{selectedDetail.bags_count || 0} bao</span>
+                </div>
+                <div className="col-span-2 pt-2 border-t border-[var(--border-color)]">
+                  <span className="text-[var(--text-muted)] block font-semibold uppercase">THỢ PHỤ TRÁCH XAY</span>
+                  <span className="font-bold text-sm text-[var(--text-primary)]">{selectedDetail.worker || 'Hoa'}</span>
+                </div>
+              </div>
+
+              {selectedDetail.notes && (
+                <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+                  <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">GHI CHÚ</span>
+                  <p className="text-[var(--text-secondary)] italic">{selectedDetail.notes}</p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-4 border-t border-[var(--border-color)] gap-2">
+                <button
+                  onClick={() => {
+                    const item = selectedDetail;
+                    setSelectedDetail(null);
+                    openModal(item);
+                  }}
+                  className="btn-primary flex items-center space-x-1.5 text-xs font-bold py-2 px-4 cursor-pointer"
+                >
+                  <Edit size={15} />
+                  <span>Chỉnh sửa</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const id = selectedDetail.id;
+                    setSelectedDetail(null);
+                    handleDelete(id);
+                  }}
+                  className="btn-danger flex items-center space-x-1.5 text-xs font-bold py-2 px-4 cursor-pointer"
+                >
+                  <Trash2 size={15} />
+                  <span>Xóa</span>
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
 
       {/* Form Modal */}
       <Modal
