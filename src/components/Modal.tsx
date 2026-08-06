@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -13,7 +13,8 @@ export interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, className }) => {
-  const modalRef = React.useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const prevIsOpen = useRef(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -25,23 +26,29 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       document.addEventListener('keydown', handleKeyDown);
-      
-      // Focus first element
-      setTimeout(() => {
-        if (modalRef.current) {
-          const focusableElements = modalRef.current.querySelectorAll(
-            'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
-          );
-          const firstElement = focusableElements[0] as HTMLElement;
-          if (firstElement) {
-            firstElement.focus();
+
+      // Chỉ tự động focus vào phần tử đầu tiên khi Modal MỚI MỞ
+      // (Tránh cướp focus / mất nháy chuột khi người dùng đang gõ phím)
+      if (!prevIsOpen.current) {
+        setTimeout(() => {
+          if (modalRef.current) {
+            const focusableElements = modalRef.current.querySelectorAll(
+              'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            );
+            const firstElement = focusableElements[0] as HTMLElement;
+            if (firstElement) {
+              firstElement.focus();
+            }
           }
-        }
-      }, 10);
+        }, 50);
+      }
     } else {
       document.body.style.overflow = 'unset';
       document.removeEventListener('keydown', handleKeyDown);
     }
+
+    prevIsOpen.current = isOpen;
+
     return () => {
       document.body.style.overflow = 'unset';
       document.removeEventListener('keydown', handleKeyDown);
@@ -55,7 +62,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
     );
     const firstElement = focusableElements[0] as HTMLElement;
     const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-    
+
     if (e.shiftKey) {
       if (document.activeElement === firstElement) {
         e.preventDefault();
@@ -78,7 +85,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" 
         onClick={onClose} 
       />
-      
+
       {/* Modal Card */}
       <div 
         ref={modalRef}
@@ -101,12 +108,12 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             <X className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
         </div>
-        
+
         {/* Body */}
         <div className="p-4 overflow-y-auto">
           {children}
         </div>
-        
+
         {/* Footer */}
         {footer && (
           <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-subtle)]/50 rounded-b-xl flex justify-end gap-2">
@@ -142,7 +149,7 @@ export const FormField: React.FC<FormFieldProps> = ({
       <label className="label-field block mb-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-      
+
       {children ? (
         children
       ) : as === 'select' ? (
@@ -157,7 +164,7 @@ export const FormField: React.FC<FormFieldProps> = ({
       ) : (
         <input className={cn('input-field w-full', error && 'border-red-500 focus:ring-red-500', className)} />
       )}
-      
+
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
