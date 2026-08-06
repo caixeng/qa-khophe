@@ -1,8 +1,43 @@
 import { createClient } from '@supabase/supabase-js';
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-const url = 'https://ageezcxrthqmmacnrqpf.supabase.co';
-const key =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFnZWV6Y3hydGhxbW1hY25ycXBmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyODcxMzMsImV4cCI6MjEwMDg2MzEzM30._1fUNQ01fyy2Zn0dXpDZUF2ZAZlpQlm_nJlG-VcDoXk';
+/**
+ * Đọc cấu hình từ .env thay vì hardcode.
+ *
+ * Anon key vốn là khoá công khai (nó nằm sẵn trong bundle JS gửi xuống trình
+ * duyệt), nên để lộ nó không phải sự cố — thứ thực sự bảo vệ dữ liệu là RLS.
+ * Nhưng hardcode vào mã nguồn thì mỗi lần xoay khoá lại phải đi sửa code, và
+ * script sẽ âm thầm trỏ vào nhầm project nếu ai đó clone về dùng cho project
+ * khác. Đọc từ .env giải quyết cả hai.
+ */
+function fromEnvFile(key) {
+  const file = resolve(process.cwd(), '.env');
+  if (!existsSync(file)) return null;
+
+  for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) continue;
+    if (trimmed.slice(0, eq).trim() === key) {
+      return trimmed
+        .slice(eq + 1)
+        .trim()
+        .replace(/^["']|["']$/g, '');
+    }
+  }
+  return null;
+}
+
+const url = process.env.VITE_SUPABASE_URL || fromEnvFile('VITE_SUPABASE_URL');
+const key = process.env.VITE_SUPABASE_ANON_KEY || fromEnvFile('VITE_SUPABASE_ANON_KEY');
+
+if (!url || !key) {
+  console.error('Thiếu VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY trong .env (xem .env.example).');
+  process.exit(1);
+}
+
 const supabase = createClient(url, key);
 
 async function seed() {
