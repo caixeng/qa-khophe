@@ -18,16 +18,17 @@ const TABS: { id: PheTab; label: string; icon: React.ElementType; color: string 
 ];
 
 export const QuanLyPhePage: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const tabParam = (searchParams.get('tab') as PheTab) || 'nhap';
   const [activeTab, setActiveTab] = useState<PheTab>(tabParam);
   const actionRef = React.useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    if (searchParams.get('tab') !== activeTab) {
-      setSearchParams({ tab: activeTab }, { replace: true });
+    const tab = searchParams.get('tab') as PheTab;
+    if (tab && ['nhap', 'xay', 'xuat', 'can'].includes(tab) && tab !== activeTab) {
+      setActiveTab(tab);
     }
-  }, [activeTab]);
+  }, [searchParams]);
 
   const getActionLabel = (tab: PheTab) => {
     switch (tab) {

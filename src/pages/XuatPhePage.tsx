@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Edit, Trash2, Truck, DollarSign, Package, TrendingUp, Printer } from 'lucide-react';
 import { formatTien, formatNgay, formatKg } from '../lib/utils';
 import { Modal, FormField } from '../components/Modal';
@@ -49,9 +50,20 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
     }
   });
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   if (actionRef) {
     actionRef.current = openModal;
   }
+
+  React.useEffect(() => {
+    if (searchParams.get('open') === 'true') {
+      openModal();
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('open');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams]);
 
   const filteredData = useMemo(() => {
     return exports.filter((item) => {

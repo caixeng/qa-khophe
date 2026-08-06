@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Edit, Trash2, TrendingUp, Package, Clock, DollarSign, Printer } from 'lucide-react';
 import { formatTien, formatNgay, formatKg } from '../lib/utils';
 import { Modal, FormField } from '../components/Modal';
@@ -50,9 +51,20 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
     }
   });
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   if (actionRef) {
     actionRef.current = openModal;
   }
+
+  React.useEffect(() => {
+    if (searchParams.get('open') === 'true') {
+      openModal();
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('open');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams]);
 
   const filteredData = useMemo(() => {
     return imports.filter((item) => {

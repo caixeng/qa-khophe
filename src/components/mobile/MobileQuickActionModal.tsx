@@ -22,7 +22,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
       borderColor: 'border-emerald-200 dark:border-emerald-900',
       action: () => {
         onClose();
-        navigate('/phe?action=nhap');
+        navigate('/phe?tab=nhap&open=true');
       }
     },
     {
@@ -35,7 +35,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
       borderColor: 'border-amber-200 dark:border-amber-900',
       action: () => {
         onClose();
-        navigate('/phe?action=xay');
+        navigate('/phe?tab=xay&open=true');
       }
     },
     {
@@ -48,7 +48,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
       borderColor: 'border-blue-200 dark:border-blue-900',
       action: () => {
         onClose();
-        navigate('/phe?action=xuat');
+        navigate('/phe?tab=xuat&open=true');
       }
     },
     {
@@ -61,7 +61,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
       borderColor: 'border-rose-200 dark:border-rose-900',
       action: () => {
         onClose();
-        navigate('/tai-chinh?action=chiphi');
+        navigate('/tai-chinh?tab=chiphi&open=true');
       }
     }
   ];

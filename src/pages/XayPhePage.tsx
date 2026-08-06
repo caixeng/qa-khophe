@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Edit, Trash2, Scissors, TrendingDown, Factory } from 'lucide-react';
 import { cn, formatNgay, formatKg, formatPhanTram } from '../lib/utils';
 import { Modal, FormField } from '../components/Modal';
@@ -43,9 +44,20 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
     }
   });
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   if (actionRef) {
     actionRef.current = openModal;
   }
+
+  React.useEffect(() => {
+    if (searchParams.get('open') === 'true') {
+      openModal();
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('open');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams]);
 
   const filteredData = useMemo(() => {
     return grindingList.filter((item) => {

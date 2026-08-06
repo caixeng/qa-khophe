@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Fuel, PenTool as Tool, Droplets, HardHat, Wrench, Truck, Settings, FileText, DollarSign, Wallet, ArrowDownRight, ArrowUpRight, Trash2 } from 'lucide-react';
 import { cn, formatTien, formatNgay } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
@@ -43,6 +44,17 @@ export const ChiPhiPage: React.FC = () => {
       notes: ''
     }
   });
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('open') === 'true') {
+      openModal();
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('open');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams]);
 
   const filteredExpenses = useMemo(() => {
     if (!searchQuery) return expenses;

@@ -14,15 +14,16 @@ const TABS: { id: TaiChinhTab; label: string; icon: React.ElementType; color: st
 ];
 
 export const TaiChinhPage: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const tabParam = (searchParams.get('tab') as TaiChinhTab) || 'chiphi';
   const [activeTab, setActiveTab] = useState<TaiChinhTab>(tabParam);
 
   useEffect(() => {
-    if (searchParams.get('tab') !== activeTab) {
-      setSearchParams({ tab: activeTab }, { replace: true });
+    const tab = searchParams.get('tab') as TaiChinhTab;
+    if (tab && ['chiphi', 'congno'].includes(tab) && tab !== activeTab) {
+      setActiveTab(tab);
     }
-  }, [activeTab]);
+  }, [searchParams]);
 
   return (
     <div className="space-y-6 animate-fade-in">
