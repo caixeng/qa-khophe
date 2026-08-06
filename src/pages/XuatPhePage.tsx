@@ -50,7 +50,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
     }
   });
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   if (actionRef) {
     actionRef.current = openModal;
@@ -59,9 +59,12 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   React.useEffect(() => {
     if (searchParams.get('open') === 'true') {
       openModal();
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('open');
-      setSearchParams(newParams, { replace: true });
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('open')) {
+        params.delete('open');
+        const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
+        window.history.replaceState({}, '', newUrl);
+      }
     }
   }, [searchParams]);
 

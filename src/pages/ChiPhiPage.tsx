@@ -45,14 +45,17 @@ export const ChiPhiPage: React.FC = () => {
     }
   });
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (searchParams.get('open') === 'true') {
       openModal();
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('open');
-      setSearchParams(newParams, { replace: true });
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('open')) {
+        params.delete('open');
+        const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
+        window.history.replaceState({}, '', newUrl);
+      }
     }
   }, [searchParams]);
 

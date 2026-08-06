@@ -137,19 +137,19 @@ export const DashboardPage: React.FC = () => {
 
         {/* Quick actions desktop */}
         <div className="grid grid-cols-4 gap-4">
-          <button onClick={() => navigate('/phe?tab=nhap')} className="p-4 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
+          <button onClick={() => navigate('/phe?tab=nhap&open=true')} className="p-4 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
             <span className="flex items-center gap-2"><Package size={18} /> 📥 Nhập phế</span>
             <ArrowRight size={16} />
           </button>
-          <button onClick={() => navigate('/phe?tab=xay')} className="p-4 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
+          <button onClick={() => navigate('/phe?tab=xay&open=true')} className="p-4 rounded-2xl bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
             <span className="flex items-center gap-2"><Cog size={18} /> ⚙️ Xay phế</span>
             <ArrowRight size={16} />
           </button>
-          <button onClick={() => navigate('/phe?tab=xuat')} className="p-4 rounded-2xl bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
+          <button onClick={() => navigate('/phe?tab=xuat&open=true')} className="p-4 rounded-2xl bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
             <span className="flex items-center gap-2"><Truck size={18} /> 📤 Xuất phế</span>
             <ArrowRight size={16} />
           </button>
-          <button onClick={() => navigate('/tai-chinh?tab=chiphi')} className="p-4 rounded-2xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
+          <button onClick={() => navigate('/tai-chinh?tab=chiphi&open=true')} className="p-4 rounded-2xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 flex items-center justify-between font-bold text-sm transition-all cursor-pointer">
             <span className="flex items-center gap-2"><DollarSign size={18} /> 💰 Ghi chi phí</span>
             <ArrowRight size={16} />
           </button>
