@@ -13,6 +13,19 @@
         "--strictPort"
       ],
       "port": 5199
+    },
+    {
+      "name": "qa-khophe-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview",
+        "--",
+        "--port",
+        "4199",
+        "--strictPort"
+      ],
+      "port": 4199
     }
   ]
 }

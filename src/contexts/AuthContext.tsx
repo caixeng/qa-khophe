@@ -1,26 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import type { UserRole } from '../types';
-
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-}
-
-interface AuthContextType {
-  user: UserProfile | null;
-  login: (email: string, pass: string) => Promise<{ error?: string }>;
-  logout: () => Promise<void>;
-  /** true trong lúc kiểm tra phiên đăng nhập lúc khởi động — dùng để chặn render sớm */
-  loading: boolean;
-  /** true trong lúc đang gửi form đăng nhập */
-  signingIn: boolean;
-}
-
-export const AuthContext = createContext<AuthContextType | null>(null);
+import { AuthContext, type UserProfile } from './auth';
 
 /**
  * Lấy hồ sơ người dùng trong bảng `users` tương ứng với phiên Supabase Auth.
@@ -174,8 +155,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
-};

@@ -9,10 +9,12 @@ import { DataState } from '../components/DataState';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
 import { PeriodFilter } from '../components/PeriodFilter';
+import { SortableHeader } from '../components/SortableHeader';
+import { sortRows } from '../lib/sort';
 import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useDateRange } from '../hooks/useDateRange';
 import { grindingService } from '../services/grindingService';
@@ -39,7 +41,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
   const [selectedDetail, setSelectedDetail] = useState<Grinding | null>(null);
 
   // Table controls
-  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
+  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, sortConfig, handleSort } = useTableControls();
 
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Grinding>({
@@ -97,9 +99,11 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
 
   // Trang hiện tại, dùng chung cho bảng (desktop) và card (mobile) để hai
   // chế độ hiển thị không bao giờ lệch nhau.
+  const sortedData = useMemo(() => sortRows(filteredData, sortConfig), [filteredData, sortConfig]);
+
   const pageItems = useMemo(
-    () => filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
-    [filteredData, currentPage, itemsPerPage],
+    () => sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+    [sortedData, currentPage, itemsPerPage],
   );
 
   const handleSave = async (e: React.FormEvent) => {
@@ -221,14 +225,14 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
               <caption className="sr-only">Danh sách phiếu xay phế</caption>
               <thead>
                 <tr>
-                  <th scope="col" className="th-cell">Ngày xay</th>
+                  <SortableHeader sortKey="date" sortConfig={sortConfig} onSort={handleSort}>Ngày xay</SortableHeader>
                   <th scope="col" className="th-cell">Lô phế nhập</th>
-                  <th className="th-cell text-right">Đầu vào (kg)</th>
-                  <th className="th-cell text-right">Đầu ra (kg)</th>
-                  <th className="th-cell text-right">Hao hụt (kg)</th>
-                  <th className="th-cell text-right">% Hao hụt</th>
-                  <th className="th-cell text-right">Số bao</th>
-                  <th scope="col" className="th-cell">Thợ xay</th>
+                  <SortableHeader sortKey="input_qty_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Đầu vào (kg)</SortableHeader>
+                  <SortableHeader sortKey="output_qty_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Đầu ra (kg)</SortableHeader>
+                  <SortableHeader sortKey="loss_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Hao hụt (kg)</SortableHeader>
+                  <SortableHeader sortKey="loss_pct" sortConfig={sortConfig} onSort={handleSort} align="right">% Hao hụt</SortableHeader>
+                  <SortableHeader sortKey="bags_count" sortConfig={sortConfig} onSort={handleSort} align="right">Số bao</SortableHeader>
+                  <SortableHeader sortKey="worker" sortConfig={sortConfig} onSort={handleSort}>Thợ xay</SortableHeader>
                   <th className="th-cell text-right">Thao tác</th>
                 </tr>
               </thead>

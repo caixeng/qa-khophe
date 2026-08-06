@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle } from 'lucide-react';
+import { logError } from '../lib/errorLog';
 
 interface Props {
   children?: ReactNode;
@@ -21,7 +22,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+    // Dòng đầu của componentStack là component gần nhất đã ném lỗi — đủ để
+    // biết bắt đầu tìm từ đâu mà không phải lưu cả cây stack.
+    const culprit = errorInfo.componentStack?.trim().split('\n')[0]?.trim();
+    logError(error, `render: ${culprit || 'không rõ component'}`);
   }
 
   private handleReload = () => {

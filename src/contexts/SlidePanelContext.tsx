@@ -1,14 +1,7 @@
-import { createContext, useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../lib/utils';
-
-export interface SlidePanelContextType {
-  isOpen: boolean;
-  openPanel: (title: string, content: ReactNode) => void;
-  closePanel: () => void;
-}
-
-export const SlidePanelContext = createContext<SlidePanelContextType | null>(null);
+import { SlidePanelContext } from './slidePanel';
 
 export const SlidePanelProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);

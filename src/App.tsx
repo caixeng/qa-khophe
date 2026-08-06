@@ -2,7 +2,8 @@ import * as React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastProvider } from './contexts/ToastContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/auth';
 import { SlidePanelProvider } from './contexts/SlidePanelContext';
 import { AppLayout } from './layouts/AppLayout';
 const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -14,6 +15,7 @@ const TonKhoPage = React.lazy(() => import('./pages/TonKhoPage').then(m => ({ de
 const NhanVienPage = React.lazy(() => import('./pages/NhanVienPage').then(m => ({ default: m.NhanVienPage })));
 const BaoCaoPage = React.lazy(() => import('./pages/BaoCaoPage').then(m => ({ default: m.BaoCaoPage })));
 const CaiDatPage = React.lazy(() => import('./pages/CaiDatPage').then(m => ({ default: m.CaiDatPage })));
+const DoiTacChiTietPage = React.lazy(() => import('./pages/DoiTacChiTietPage').then(m => ({ default: m.DoiTacChiTietPage })));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RequireRole } from './components/RequireRole';
@@ -88,6 +90,7 @@ function App() {
                       }
                     />
                     <Route path="danh-ba" element={<DanhBaPage />} />
+                    <Route path="danh-ba/:id" element={<DoiTacChiTietPage />} />
                     <Route path="bao-cao" element={<BaoCaoPage />} />
                     <Route
                       path="cai-dat"

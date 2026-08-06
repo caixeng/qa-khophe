@@ -4,9 +4,10 @@ import { Calculator, History, Box, Printer } from 'lucide-react';
 import { cn, formatKg, formatNgay } from '../lib/utils';
 import { Modal } from '../components/Modal';
 import { NumPad } from '../components/NumPad';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DataState } from '../components/DataState';
 import { useAsyncList } from '../hooks/useAsyncData';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/toast';
 import { weighingService } from '../services/weighingService';
 import { PALLET_TYPES, type PalletType } from '../lib/palletUtils';
 import { printPhieuCan } from '../lib/print';
@@ -21,6 +22,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
 
   const [activeBags, setActiveBags] = useState<number[]>([]);
   const [isNumPadOpen, setIsNumPadOpen] = useState(false);
+  const [confirmNewSession, setConfirmNewSession] = useState(false);
   const [selectedPallet, setSelectedPallet] = useState<PalletType>('none');
   const [palletQty, setPalletQty] = useState<number>(1);
   const [printingSessionId, setPrintingSessionId] = useState<string | null>(null);
@@ -43,30 +45,41 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
     setIsNumPadOpen(false);
   };
 
-  const handleNewSession = async () => {
+  /**
+   * Bắt đầu phiên cân mới. Nếu đang có bao chưa lưu thì hỏi trước — dùng
+   * ConfirmDialog thay vì confirm() gốc của trình duyệt, vì hộp thoại gốc bị
+   * chặn trong PWA standalone trên một số máy Android, và khi bị chặn nó trả
+   * về false lặng lẽ: người dùng bấm "phiên mới" và mất sạch số bao vừa cân
+   * mà không hề thấy câu hỏi nào.
+   */
+  const handleNewSession = () => {
     if (activeBags.length > 0) {
-      if (confirm('Lưu phiên cân hiện tại trước khi tạo phiên mới?')) {
-        try {
-          const newSession = await weighingService.createSession({
-            date: new Date().toISOString().split('T')[0],
-            material_type: `Cân phế ${PALLET_TYPES[selectedPallet].name}`,
-            total_bags: activeBags.length,
-            total_kg: netWeight,
-          });
-
-          for (let i = 0; i < activeBags.length; i++) {
-            await weighingService.addBag(newSession.id, activeBags.length - i, activeBags[i]);
-          }
-          toast.success('Đã lưu phiên cân');
-          refetch();
-        } catch (err) {
-          toast.error('Lỗi khi lưu phiên cân');
-          console.error('Lỗi khi lưu phiên cân:', err);
-          return;
-        }
-      }
+      setConfirmNewSession(true);
+      return;
     }
     setActiveBags([]);
+  };
+
+  const saveCurrentSession = async () => {
+    try {
+      const newSession = await weighingService.createSession({
+        date: new Date().toISOString().split('T')[0],
+        material_type: `Cân phế ${PALLET_TYPES[selectedPallet].name}`,
+        total_bags: activeBags.length,
+        total_kg: netWeight,
+      });
+
+      for (let i = 0; i < activeBags.length; i++) {
+        await weighingService.addBag(newSession.id, activeBags.length - i, activeBags[i]);
+      }
+      toast.success('Đã lưu phiên cân');
+      refetch();
+      return true;
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu phiên cân');
+      console.error('Lỗi khi lưu phiên cân:', err);
+      return false;
+    }
   };
 
   if (actionRef) {
@@ -245,6 +258,21 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
       <Modal isOpen={isNumPadOpen} onClose={() => setIsNumPadOpen(false)} title="Nhập khối lượng bao phế mới">
         <NumPad onSubmit={handleAddBag} />
       </Modal>
+      <ConfirmDialog
+        isOpen={confirmNewSession}
+        onClose={() => setConfirmNewSession(false)}
+        onConfirm={async () => {
+          const ok = await saveCurrentSession();
+          setConfirmNewSession(false);
+          // Chỉ xoá danh sách bao khi đã lưu thành công — lưu hỏng mà vẫn xoá
+          // là mất trắng số liệu vừa cân tay.
+          if (ok) setActiveBags([]);
+        }}
+        title="Lưu phiên cân hiện tại?"
+        message={`Đang có ${activeBags.length} bao chưa lưu. Lưu lại trước khi bắt đầu phiên cân mới?`}
+        confirmText="Lưu và tạo phiên mới"
+        cancelText="Quay lại"
+      />
     </div>
   );
 };

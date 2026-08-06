@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, Users, MapPin, Phone, Edit, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
@@ -10,9 +11,11 @@ import { DataState } from '../components/DataState';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
+import { SortableHeader } from '../components/SortableHeader';
+import { sortRows } from '../lib/sort';
 import { contactsService } from '../services/contactsService';
 import type { Contact, ContactType } from '../types';
 
@@ -24,7 +27,7 @@ export const DanhBaPage: React.FC = () => {
   const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
 
   // Table controls
-  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
+  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, sortConfig, handleSort } = useTableControls();
 
   // CRUD Form
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Contact>({
@@ -46,6 +49,13 @@ export const DanhBaPage: React.FC = () => {
         );
       });
   }, [contacts, activeTab, searchQuery]);
+
+  const sortedData = useMemo(() => sortRows(filteredData, sortConfig), [filteredData, sortConfig]);
+
+  const pageItems = useMemo(
+    () => sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+    [sortedData, currentPage, itemsPerPage],
+  );
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +80,7 @@ export const DanhBaPage: React.FC = () => {
           phone: data.phone,
           address: data.address,
           notes: data.notes,
+          default_price_per_kg: data.default_price_per_kg,
         });
         toast.success('Đã thêm liên hệ mới');
       }
@@ -171,22 +182,28 @@ export const DanhBaPage: React.FC = () => {
               <caption className="sr-only">Danh bạ đối tác</caption>
               <thead>
                 <tr>
-                  <th scope="col" className="th-cell">Tên liên hệ</th>
-                  <th scope="col" className="th-cell">Số điện thoại</th>
+                  <SortableHeader sortKey="name" sortConfig={sortConfig} onSort={handleSort}>Tên liên hệ</SortableHeader>
+                  <SortableHeader sortKey="phone" sortConfig={sortConfig} onSort={handleSort}>Số điện thoại</SortableHeader>
                   <th scope="col" className="th-cell">Địa chỉ / Ghi chú</th>
-                  <th scope="col" className="th-cell">Trạng thái</th>
+                  <SortableHeader sortKey="status" sortConfig={sortConfig} onSort={handleSort}>Trạng thái</SortableHeader>
                   <th className="th-cell text-right">Hành động</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((contact) => (
+                {pageItems.map((contact) => (
                   <tr key={contact.id} className="tr-hover">
                     <td className="td-cell font-bold">
                       <div className="flex items-center space-x-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--primary-50)] text-[var(--primary-600)] font-bold border border-[var(--primary-500)]/20">
                           <Users size={16} />
                         </div>
-                        <span className="text-xs text-[var(--text-primary)]">{contact.name}</span>
+                        <Link
+                          to={`/danh-ba/${contact.id}`}
+                          className="text-xs text-[var(--text-primary)] hover:text-[var(--primary-600)] hover:underline"
+                          title="Xem lịch sử giao dịch và công nợ"
+                        >
+                          {contact.name}
+                        </Link>
                       </div>
                     </td>
                     <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
@@ -239,7 +256,7 @@ export const DanhBaPage: React.FC = () => {
 
         {/* Mobile Card List */}
         <div className="lg:hidden space-y-3">
-          {filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((contact) => (
+          {pageItems.map((contact) => (
             <div key={contact.id} className="p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xs space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -247,7 +264,12 @@ export const DanhBaPage: React.FC = () => {
                     <Users size={20} />
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm text-[var(--text-primary)]">{contact.name}</h4>
+                    <Link
+                      to={`/danh-ba/${contact.id}`}
+                      className="font-bold text-sm text-[var(--text-primary)] hover:text-[var(--primary-600)]"
+                    >
+                      {contact.name}
+                    </Link>
                     {contact.phone && (
                       <p className="text-xs font-mono text-[var(--text-muted)] mt-0.5 flex items-center gap-1">
                         <Phone size={12} /> {contact.phone}
@@ -357,6 +379,24 @@ export const DanhBaPage: React.FC = () => {
               value={formState.data?.address || ''}
               onChange={(e) => handleChange('address', e.target.value)}
             />
+          </FormField>
+
+          <FormField label={activeTab === 'supplier' ? 'Giá nhập mặc định (đ/kg)' : 'Giá xuất mặc định (đ/kg)'}>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="any"
+              className="input-field font-mono"
+              placeholder="Bỏ trống nếu dùng giá chung"
+              value={formState.data?.default_price_per_kg ?? ''}
+              onChange={(e) =>
+                handleChange('default_price_per_kg', e.target.value === '' ? undefined : Number(e.target.value))
+              }
+            />
+            <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+              Giá này sẽ tự điền vào phiếu khi chọn đối tác, vẫn sửa lại được từng phiếu.
+            </p>
           </FormField>
 
           <FormField label="Ghi chú">

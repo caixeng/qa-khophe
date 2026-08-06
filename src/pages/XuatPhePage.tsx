@@ -10,10 +10,12 @@ import { DataState } from '../components/DataState';
 import { useAsyncData, useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
 import { PeriodFilter } from '../components/PeriodFilter';
+import { SortableHeader } from '../components/SortableHeader';
+import { sortRows } from '../lib/sort';
 import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useDateRange } from '../hooks/useDateRange';
 import { exportsService } from '../services/exportsService';
@@ -45,7 +47,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   const [selectedDetail, setSelectedDetail] = useState<ExportType | null>(null);
 
   // Table controls
-  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
+  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, sortConfig, handleSort } = useTableControls();
 
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<ExportType>({
@@ -102,9 +104,11 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
 
   // Trang hiện tại, dùng chung cho bảng (desktop) và card (mobile) để hai
   // chế độ hiển thị không bao giờ lệch nhau.
+  const sortedData = useMemo(() => sortRows(filteredData, sortConfig), [filteredData, sortConfig]);
+
   const pageItems = useMemo(
-    () => filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
-    [filteredData, currentPage, itemsPerPage],
+    () => sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+    [sortedData, currentPage, itemsPerPage],
   );
 
   const handleSave = async (e: React.FormEvent) => {
@@ -236,13 +240,13 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
               <caption className="sr-only">Danh sách phiếu xuất phế</caption>
               <thead>
                 <tr>
-                  <th scope="col" className="th-cell">Ngày xuất</th>
-                  <th scope="col" className="th-cell">Khách mua (Đại lý)</th>
-                  <th className="th-cell text-right">Số bao</th>
-                  <th className="th-cell text-right">Khối lượng (kg)</th>
-                  <th className="th-cell text-right">Giá/kg</th>
-                  <th className="th-cell text-right">Tổng tiền</th>
-                  <th scope="col" className="th-cell">Thanh toán</th>
+                  <SortableHeader sortKey="date" sortConfig={sortConfig} onSort={handleSort}>Ngày xuất</SortableHeader>
+                  <SortableHeader sortKey="contact_name" sortConfig={sortConfig} onSort={handleSort}>Khách mua (Đại lý)</SortableHeader>
+                  <SortableHeader sortKey="bags_count" sortConfig={sortConfig} onSort={handleSort} align="right">Số bao</SortableHeader>
+                  <SortableHeader sortKey="total_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Khối lượng (kg)</SortableHeader>
+                  <SortableHeader sortKey="price_per_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Giá/kg</SortableHeader>
+                  <SortableHeader sortKey="total_amount" sortConfig={sortConfig} onSort={handleSort} align="right">Tổng tiền</SortableHeader>
+                  <SortableHeader sortKey="payment_status" sortConfig={sortConfig} onSort={handleSort}>Thanh toán</SortableHeader>
                   <th className="th-cell text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -434,6 +438,11 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                 handleChange('contact_id', cId);
                 const c = customers.find(x => x.id === cId);
                 if (c) handleChange('contact_name', c.name);
+                // Tự điền giá đã thoả thuận với khách này; chỉ áp cho phiếu mới
+                // để không ghi đè giá đã chốt trên phiếu cũ đang sửa.
+                if (c?.default_price_per_kg && !formState.data?.id) {
+                  handleChange('price_per_kg', c.default_price_per_kg);
+                }
               }}
             >
               <option value="">-- Chọn khách hàng / đối tác --</option>

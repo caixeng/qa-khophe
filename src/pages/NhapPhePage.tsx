@@ -11,9 +11,11 @@ import { DataState } from '../components/DataState';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
+import { SortableHeader } from '../components/SortableHeader';
+import { sortRows } from '../lib/sort';
 import { PeriodFilter } from '../components/PeriodFilter';
 import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useDateRange } from '../hooks/useDateRange';
@@ -45,7 +47,8 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
   const [selectedDetail, setSelectedDetail] = useState<Import | null>(null);
 
   // Table Controls
-  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
+  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, sortConfig, handleSort } =
+    useTableControls();
 
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Import>({
@@ -105,9 +108,11 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
 
   // Trang hiện tại, dùng chung cho bảng (desktop) và card (mobile) để hai
   // chế độ hiển thị không bao giờ lệch nhau.
+  const sortedData = useMemo(() => sortRows(filteredData, sortConfig), [filteredData, sortConfig]);
+
   const pageItems = useMemo(
-    () => filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
-    [filteredData, currentPage, itemsPerPage],
+    () => sortedData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage),
+    [sortedData, currentPage, itemsPerPage],
   );
 
   const handleSave = async (e: React.FormEvent) => {
@@ -242,13 +247,13 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
               <caption className="sr-only">Danh sách phiếu nhập phế</caption>
               <thead>
                 <tr>
-                  <th scope="col" className="th-cell">Ngày nhập</th>
-                  <th scope="col" className="th-cell">Người bán (NCC)</th>
-                  <th className="th-cell text-right">Số lượng (kg)</th>
-                  <th className="th-cell text-right">Giá/kg</th>
-                  <th className="th-cell text-right">Tổng tiền</th>
-                  <th scope="col" className="th-cell">Thanh toán</th>
-                  <th scope="col" className="th-cell">Xử lý</th>
+                  <SortableHeader sortKey="date" sortConfig={sortConfig} onSort={handleSort}>Ngày nhập</SortableHeader>
+                  <SortableHeader sortKey="contact_name" sortConfig={sortConfig} onSort={handleSort}>Người bán (NCC)</SortableHeader>
+                  <SortableHeader sortKey="quantity_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Số lượng (kg)</SortableHeader>
+                  <SortableHeader sortKey="price_per_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Giá/kg</SortableHeader>
+                  <SortableHeader sortKey="total_amount" sortConfig={sortConfig} onSort={handleSort} align="right">Tổng tiền</SortableHeader>
+                  <SortableHeader sortKey="payment_status" sortConfig={sortConfig} onSort={handleSort}>Thanh toán</SortableHeader>
+                  <SortableHeader sortKey="processing_status" sortConfig={sortConfig} onSort={handleSort}>Xử lý</SortableHeader>
                   <th className="th-cell text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -433,7 +438,17 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             <select
               className="input-field"
               value={formState.data?.contact_id || ''}
-              onChange={(e) => handleChange('contact_id', e.target.value)}
+              onChange={(e) => {
+                const id = e.target.value;
+                handleChange('contact_id', id);
+                // Tự điền giá đã thoả thuận với NCC này. Chỉ áp khi phiếu đang
+                // ở giá mặc định chung — nếu người nhập đã gõ giá riêng cho
+                // phiếu thì không ghi đè lên con số họ vừa nhập.
+                const price = suppliers.find((s) => s.id === id)?.default_price_per_kg;
+                if (price && !formState.data?.id) {
+                  handleChange('price_per_kg', price);
+                }
+              }}
             >
               <option value="">-- Chọn nhà cung cấp --</option>
               {suppliers.map((s) => (

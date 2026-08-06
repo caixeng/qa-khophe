@@ -7,8 +7,8 @@ import {
   ChevronDown, Sun, Leaf, Moon, Check, UserCheck, Search, Plus
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/auth';
+import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/theme';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { GlobalSearch } from '../components/GlobalSearch';
 import { MobileMoreMenuSheet } from '../components/mobile/MobileMoreMenuSheet';

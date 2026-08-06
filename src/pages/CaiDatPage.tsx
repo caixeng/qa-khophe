@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/theme';
+import { useAuth } from '../contexts/auth';
 import { User, Palette, Moon, Sun, Leaf, Check, Monitor, Sliders } from 'lucide-react';
 import { cn, formatRole } from '../lib/utils';
 

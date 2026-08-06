@@ -8,7 +8,7 @@ import { DataState } from '../components/DataState';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useDateRange } from '../hooks/useDateRange';
 import { PeriodFilter } from '../components/PeriodFilter';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/auth';
 import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
 import { grindingService } from '../services/grindingService';

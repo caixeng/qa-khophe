@@ -15,7 +15,7 @@ import { expensesService } from '../services/expensesService';
 import { grindingService } from '../services/grindingService';
 import { settingsService } from '../services/settingsService';
 import { computeInventory } from '../lib/calc';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/auth';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();

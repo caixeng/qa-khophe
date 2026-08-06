@@ -35,6 +35,8 @@ export interface Contact {
   notes?: string;
   status?: string;
   is_active?: boolean;
+  /** Giá mặc định đ/kg: giá nhập với NCC, giá xuất với khách hàng. */
+  default_price_per_kg?: number;
   created_at?: string;
   updated_at?: string;
 }

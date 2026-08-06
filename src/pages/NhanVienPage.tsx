@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useState, useMemo } from 'react';
 import { Plus, Edit, Trash2, Users, Calendar, DollarSign, Phone, UserCheck, HardHat, Truck, Scale, ShieldCheck } from 'lucide-react';
 import { cn, formatTien, formatNgay } from '../lib/utils';
+import { computePayroll } from '../lib/payroll';
 import { PageHeader } from '../components/PageHeader';
 import { Modal, FormField } from '../components/Modal';
 import { StatusBadge } from '../components/StatusBadge';
@@ -13,7 +14,7 @@ import { PaginationBar } from '../components/PaginationBar';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/toast';
 import { employeesService, attendanceService } from '../services/employeesService';
 import type { Employee, Attendance, EmployeeRole, PaymentStatus } from '../types';
 
@@ -26,7 +27,7 @@ const roleLabels: Record<EmployeeRole, { label: string; icon: React.ElementType;
 };
 
 export const NhanVienPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'employees' | 'attendance'>('employees');
+  const [activeTab, setActiveTab] = useState<'employees' | 'attendance' | 'payroll'>('employees');
   const { toast } = useToast();
   const [savingEmp, setSavingEmp] = useState(false);
   const [savingAtt, setSavingAtt] = useState(false);
@@ -83,6 +84,10 @@ export const NhanVienPage: React.FC = () => {
 
     return { totalShifts, totalPayroll, totalPaid, totalUnpaid };
   }, [attendanceList]);
+
+  // Kỳ lương đang xem, mặc định tháng hiện tại.
+  const [payrollMonth, setPayrollMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const payroll = useMemo(() => computePayroll(attendanceList, payrollMonth), [attendanceList, payrollMonth]);
 
   // Handle Employee Save
   const handleSaveEmployee = async (e: React.FormEvent) => {
@@ -198,7 +203,7 @@ export const NhanVienPage: React.FC = () => {
         action={{
           label: activeTab === 'employees' ? 'Thêm nhân viên' : 'Chấm công mới',
           icon: Plus,
-          onClick: () => activeTab === 'employees' ? openEmpModal() : openAttModal(),
+          onClick: () => (activeTab === 'employees' ? openEmpModal() : openAttModal()),
         }}
       />
 
@@ -235,6 +240,18 @@ export const NhanVienPage: React.FC = () => {
         >
           <Calendar size={14} className={activeTab === 'attendance' ? 'text-white' : 'text-[var(--text-muted)]'} />
           <span>Chấm công & Tính lương ({attendanceList.length})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('payroll')}
+          className={cn(
+            'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
+            activeTab === 'payroll'
+              ? 'bg-[var(--primary-500)] text-white shadow-xs'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
+          )}
+        >
+          <DollarSign size={14} className={activeTab === 'payroll' ? 'text-white' : 'text-[var(--text-muted)]'} />
+          <span>Bảng lương tháng</span>
         </button>
       </div>
 
@@ -399,6 +416,93 @@ export const NhanVienPage: React.FC = () => {
             onPageChange={setCurrentPage}
             onItemsPerPageChange={setItemsPerPage}
           />
+        </DataState>
+      )}
+
+      {/* TAB 3: BẢNG LƯƠNG THÁNG */}
+      {activeTab === 'payroll' && (
+        <DataState loading={attLoading} error={attError} isEmpty={false}>
+          <div className="space-y-4">
+            <div className="card flex flex-wrap items-center justify-between gap-3 bg-[var(--bg-surface)] p-4">
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-[var(--primary-500)]" />
+                <label htmlFor="payroll-month" className="text-xs font-bold text-[var(--text-secondary)]">
+                  Kỳ lương tháng
+                </label>
+                <input
+                  id="payroll-month"
+                  type="month"
+                  value={payrollMonth}
+                  onChange={(e) => setPayrollMonth(e.target.value)}
+                  className="input-field w-auto"
+                />
+              </div>
+              <div className="flex flex-wrap gap-4 text-xs">
+                <span className="text-[var(--text-muted)]">
+                  Tổng công: <b className="font-mono text-[var(--text-primary)]">{payroll.totals.shifts}</b>
+                </span>
+                <span className="text-[var(--text-muted)]">
+                  Thực lĩnh: <b className="font-mono text-emerald-600">{formatTien(payroll.totals.net)}</b>
+                </span>
+                <span className="text-[var(--text-muted)]">
+                  Còn phải trả: <b className="font-mono text-rose-600">{formatTien(payroll.totals.unpaid)}</b>
+                </span>
+              </div>
+            </div>
+
+            {payroll.rows.length === 0 ? (
+              <div className="card bg-[var(--bg-surface)] py-12 text-center">
+                <p className="text-sm text-[var(--text-secondary)]">Chưa có lượt chấm công nào trong tháng này.</p>
+                <p className="mt-1 text-xs text-[var(--text-muted)]">Chọn tháng khác hoặc chấm công ở tab bên cạnh.</p>
+              </div>
+            ) : (
+              <div className="erp-table-container">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <caption className="sr-only">Bảng lương tháng {payrollMonth}</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col" className="th-cell">Nhân viên</th>
+                        <th className="th-cell text-right">Số công</th>
+                        <th className="th-cell text-right">Lương gộp</th>
+                        <th className="th-cell text-right">Đã ứng</th>
+                        <th className="th-cell text-right">Thực lĩnh</th>
+                        <th className="th-cell text-right">Còn phải trả</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payroll.rows.map((r) => (
+                        <tr key={r.name} className="tr-hover">
+                          <td className="td-cell text-xs font-bold text-[var(--text-primary)]">{r.name}</td>
+                          <td className="td-cell text-right font-mono text-xs">{r.shifts}</td>
+                          <td className="td-cell text-right font-mono text-xs">{formatTien(r.gross)}</td>
+                          <td className="td-cell text-right font-mono text-xs text-amber-600">
+                            {r.advance > 0 ? formatTien(r.advance) : '—'}
+                          </td>
+                          <td className="td-cell text-right font-mono text-xs font-bold text-[var(--primary-600)]">
+                            {formatTien(r.net)}
+                          </td>
+                          <td className={cn('td-cell text-right font-mono text-xs font-bold', r.unpaid > 0 ? 'text-rose-600' : 'text-emerald-600')}>
+                            {r.unpaid > 0 ? formatTien(r.unpaid) : 'Đã trả đủ'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-[var(--bg-subtle)] font-bold">
+                        <td className="td-cell text-xs uppercase">Tổng cộng</td>
+                        <td className="td-cell text-right font-mono text-xs">{payroll.totals.shifts}</td>
+                        <td className="td-cell text-right font-mono text-xs">{formatTien(payroll.totals.gross)}</td>
+                        <td className="td-cell text-right font-mono text-xs text-amber-600">{formatTien(payroll.totals.advance)}</td>
+                        <td className="td-cell text-right font-mono text-xs text-[var(--primary-600)]">{formatTien(payroll.totals.net)}</td>
+                        <td className="td-cell text-right font-mono text-xs text-rose-600">{formatTien(payroll.totals.unpaid)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
         </DataState>
       )}
 

@@ -5,8 +5,8 @@ import {
   Users, Package, BarChart3, Settings, 
   LogOut, Recycle, Wallet, UserCheck, Sun, Leaf, Moon, Check 
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useTheme, PRIMARY_COLORS, type Theme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/auth';
+import { useTheme, PRIMARY_COLORS, type Theme } from '../../contexts/theme';
 import { cn } from '../../lib/utils';
 
 interface MobileMoreMenuSheetProps {

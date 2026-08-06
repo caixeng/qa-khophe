@@ -12,7 +12,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/toast';
 import { expensesService } from '../services/expensesService';
 import type { Expense } from '../types';
 
