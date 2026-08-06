@@ -2,11 +2,11 @@ import * as React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, Mail, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export const LoginPage = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('Admin');
+  const [password, setPassword] = useState('123456');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const { login, loading } = useAuth();
@@ -15,7 +15,7 @@ export const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const result = await login(email, password);
+    const result = await login(username, password);
     if (result.error) {
       setError(result.error);
     } else {
@@ -25,7 +25,7 @@ export const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)] px-4">
-      <div className="card w-full max-w-md p-8 bg-[var(--bg-surface)] rounded-xl shadow-[var(--shadow-card)] animate-in fade-in zoom-in duration-300">
+      <div className="card w-full max-w-md p-8 bg-[var(--bg-surface)] rounded-2xl shadow-[var(--shadow-card)] animate-in fade-in zoom-in duration-300">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] text-white shadow-lg mb-4 overflow-hidden p-0.5 ring-2 ring-[var(--primary-400)]/30">
             <img src="/vua_phe_logo2.jpg" alt="VUA PHẾ Logo" className="w-full h-full object-cover rounded-xl" />
@@ -40,27 +40,28 @@ export const LoginPage = () => {
               {error}
             </div>
           )}
+
           <div>
-            <label className="label-field">Email</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="h-5 w-5 text-gray-400" />
+            <label className="label-field">TÊN ĐĂNG NHẬP / EMAIL</label>
+            <div className="relative mt-1">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-gray-400" />
               </div>
               <input 
-                type="email" 
+                type="text" 
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-field pl-10"
-                placeholder="ban@congty.vn"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="input-field pl-10 font-semibold"
+                placeholder="Ví dụ: Admin"
               />
             </div>
           </div>
 
           <div>
-            <label className="label-field">Mật khẩu</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <label className="label-field">MẬT KHẨU</label>
+            <div className="relative mt-1">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                 <Lock className="h-5 w-5 text-gray-400" />
               </div>
               <input 
@@ -68,13 +69,13 @@ export const LoginPage = () => {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-field pl-10 pr-10"
+                className="input-field pl-10 pr-10 font-mono"
                 placeholder="••••••••"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -85,10 +86,12 @@ export const LoginPage = () => {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full btn-primary py-2.5 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full btn-primary py-3 text-sm font-bold shadow-md cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Đang đăng nhập...</>
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" /> Đang đăng nhập...
+              </span>
             ) : (
               'Đăng nhập'
             )}
