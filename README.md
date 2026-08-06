@@ -24,7 +24,7 @@ npm run format:check  # prettier --check .
 
 1. Tạo project tại [supabase.com](https://supabase.com).
 2. Vào **SQL Editor**, chạy lần lượt các file trong `supabase/migrations/` theo đúng thứ tự số:
-   `001` → `003` → `004` → `005` → `006` → `007` → `008`.
+   `001` → `003` → `004` → `005` → `006` → `007` → `008` → `009`.
    **Bỏ qua `002_DEPRECATED_allow_anon_rls.sql.bak`** — file này mở toang RLS cho toàn bộ dữ liệu và đã bị huỷ bỏ; migration `003` thay thế hoàn toàn nó.
 3. Migration `003` bật RLS theo vai trò (`admin` / `manager` / `staff`) và xoá quyền truy cập ẩn danh.
 4. Tạo tài khoản đăng nhập thật: **Authentication > Users > Add user** (email + mật khẩu) cho từng người, rồi cấp vai trò:
@@ -36,7 +36,8 @@ npm run format:check  # prettier --check .
    Lần đăng nhập đầu tiên, ứng dụng tự gắn `auth_id` vào đúng dòng này theo email.
 5. Migration `007` seed dữ liệu sổ tay thực tế (tháng 6–7/2026) — an toàn khi chạy lại nhiều lần.
 6. Migration `008` **tự kiểm tra bảo mật**: bật RLS cho mọi bảng, xoá policy `USING(true)` còn sót, và cảnh báo nếu có bảng không có policy hoặc chưa có tài khoản admin. Đọc tab **Messages/Notices** sau khi chạy.
-7. Copy `Project URL` và `anon public key` từ **Project Settings > API** vào file `.env`.
+7. Migration `009` thêm **bảng giá riêng theo đối tác** (`contacts.default_price_per_kg`) và điền sẵn giá từ đơn giá của phiếu gần nhất. Ứng dụng vẫn chạy bình thường nếu chưa chạy migration này — chỉ là không có tính năng tự điền giá khi chọn đối tác.
+8. Copy `Project URL` và `anon public key` từ **Project Settings > API** vào file `.env`.
 
 > **Không đăng nhập được?** Ứng dụng chỉ chấp nhận tài khoản Supabase Auth thật, và tài khoản đó phải có một dòng tương ứng trong bảng `users`. Nếu đăng nhập đúng mật khẩu mà báo *"chưa được cấp quyền trong hệ thống"*, nghĩa là bước 4 chưa làm cho email đó.
 
@@ -78,8 +79,9 @@ supabase/
 - **Thiếu biến môi trường thì app dừng ngay**: `src/lib/supabase.ts` throw lỗi thay vì fallback về URL placeholder rồi chạy im lặng trên dữ liệu rỗng.
 - **Xác thực**: chỉ qua Supabase Auth. Không có tài khoản mặc định, không có đường vòng khi máy chủ từ chối.
 - **In phiếu**: `src/lib/print.ts` — in trực tiếp phiếu nhập/xuất/cân qua cửa sổ trình duyệt, không cần máy in mạng.
+- **Log lỗi**: `src/lib/errorLog.ts` lưu vòng tròn 50 lỗi gần nhất trong localStorage, bắt cả `window.onerror` lẫn `unhandledrejection` (ErrorBoundary chỉ thấy lỗi lúc render). Muốn chuyển sang Sentry chỉ cần sửa hàm `send()`.
 - **Lọc theo kỳ ở phía máy chủ**: `useDateRange` giữ khoảng ngày trong URL (`?from=…&to=…`), đẩy xuống tận truy vấn Supabase (`.gte('date')`/`.lte('date')`, trần `MAX_ROWS`). Mọi thẻ KPI trên trang tính theo đúng kỳ đang chọn.
-- **PWA**: `public/manifest.json` + `public/sw.js` cache app shell để mở lại được khi mất sóng; dữ liệu Supabase không bao giờ bị cache.
+- **PWA**: `public/manifest.json` + `public/sw.js`. HTML dùng **network-first** (cache chỉ khi offline) vì nó trỏ tới các file JS có hash trong tên — trả HTML cũ sau khi deploy sẽ khiến trình duyệt tải chunk đã bị xoá và hiện màn hình trắng. File có hash dùng cache-first vì nội dung bất biến. Dữ liệu Supabase không bao giờ bị cache.
 - **Xuất Excel đa sheet**: `xlsx` lazy-load — chỉ tải khi bấm Xuất Excel ở trang Báo cáo, nên không nằm trong bundle khởi động.
 - **Tách chunk**: `vite.config.ts` tách vendor (react/router/supabase/charts/icons) khỏi mã ứng dụng để sửa code không bắt người dùng tải lại toàn bộ thư viện.
 
