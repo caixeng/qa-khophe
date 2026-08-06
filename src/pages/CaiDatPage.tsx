@@ -9,24 +9,45 @@ export const CaiDatPage = () => {
   const { user } = useAuth();
 
   const THEMES: { id: Theme; title: string; subtitle: string; icon: React.ElementType }[] = [
-    { id: 'nature', title: 'Nature (Tự nhiên)', subtitle: 'Tông màu Kem & Cát ấm chuẩn CIC-IBST', icon: Leaf },
+    {
+      id: 'nature',
+      title: 'Nature (Tự nhiên)',
+      subtitle: 'Tông màu Kem & Cát ấm chuẩn CIC-IBST',
+      icon: Leaf,
+    },
     { id: 'light', title: 'Light (Sáng)', subtitle: 'Giao diện nền trắng Slate hiện đại', icon: Sun },
     { id: 'dark', title: 'Dark (Tối)', subtitle: 'Chế độ tối dịu mắt cho ban đêm', icon: Moon },
   ];
 
   const DENSITIES: { id: Density; title: string; subtitle: string; badge: string }[] = [
-    { id: 'comfortable', title: 'Thoải mái (100%)', subtitle: 'Khoảng cách rộng rãi, chữ to rõ nét', badge: 'Tiêu chuẩn' },
-    { id: 'compact', title: 'Vừa phải (90%)', subtitle: 'Cân bằng tối ưu giữa khoảng trống và số liệu', badge: 'Khuyên dùng' },
-    { id: 'dense', title: 'Thu nhỏ / Cao (80%)', subtitle: 'Mật độ dữ liệu cao, xem nhiều hàng cùng lúc', badge: 'Nhiều dữ liệu' },
+    {
+      id: 'comfortable',
+      title: 'Thoải mái (100%)',
+      subtitle: 'Khoảng cách rộng rãi, chữ to rõ nét',
+      badge: 'Tiêu chuẩn',
+    },
+    {
+      id: 'compact',
+      title: 'Vừa phải (90%)',
+      subtitle: 'Cân bằng tối ưu giữa khoảng trống và số liệu',
+      badge: 'Khuyên dùng',
+    },
+    {
+      id: 'dense',
+      title: 'Thu nhỏ / Cao (80%)',
+      subtitle: 'Mật độ dữ liệu cao, xem nhiều hàng cùng lúc',
+      badge: 'Nhiều dữ liệu',
+    },
   ];
 
   return (
     <div className="page-shell animate-in fade-in duration-300 max-w-5xl mx-auto">
-      
       {/* Page Header */}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Cài Đặt Hệ Thống</h1>
-        <p className="text-xs text-[var(--text-secondary)]">Cá nhân hóa giao diện, màu sắc chủ đạo và mật độ hiển thị theo nhu cầu làm việc</p>
+        <p className="text-xs text-[var(--text-secondary)]">
+          Cá nhân hóa giao diện, màu sắc chủ đạo và mật độ hiển thị theo nhu cầu làm việc
+        </p>
       </div>
 
       {/* 1. Thông tin tài khoản */}
@@ -56,7 +77,7 @@ export const CaiDatPage = () => {
           <Monitor size={16} className="text-[var(--primary-500)]" />
           1. Chế Độ Giao Diện (3 Themes)
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {THEMES.map((t) => {
             const Icon = t.icon;
@@ -66,17 +87,21 @@ export const CaiDatPage = () => {
                 key={t.id}
                 onClick={() => setTheme(t.id)}
                 className={cn(
-                  "flex flex-col text-left p-4 rounded-xl border-2 transition-all relative group cursor-pointer",
-                  isActive 
-                    ? "border-[var(--primary-500)] bg-[var(--primary-50)]/40 shadow-sm" 
-                    : "border-[var(--border-color)] bg-[var(--bg-subtle)]/30 hover:border-[var(--border-subtle)] hover:bg-[var(--bg-subtle)]"
+                  'flex flex-col text-left p-4 rounded-xl border-2 transition-all relative group cursor-pointer',
+                  isActive
+                    ? 'border-[var(--primary-500)] bg-[var(--primary-50)]/40 shadow-sm'
+                    : 'border-[var(--border-color)] bg-[var(--bg-subtle)]/30 hover:border-[var(--border-subtle)] hover:bg-[var(--bg-subtle)]',
                 )}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <div className={cn(
-                    "p-2 rounded-xl transition-colors",
-                    isActive ? "bg-[var(--primary-500)] text-white" : "bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-color)]"
-                  )}>
+                  <div
+                    className={cn(
+                      'p-2 rounded-xl transition-colors',
+                      isActive
+                        ? 'bg-[var(--primary-500)] text-white'
+                        : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-color)]',
+                    )}
+                  >
                     <Icon size={18} />
                   </div>
                   {isActive && (
@@ -99,8 +124,10 @@ export const CaiDatPage = () => {
           <Palette size={16} className="text-[var(--primary-500)]" />
           2. Tông Màu Chủ Đạo (9 Palettes)
         </h2>
-        <p className="text-xs text-[var(--text-secondary)] mb-4">Thay đổi gam màu nhấn cho nút bấm, bảng biểu, icon và liên kết trên toàn hệ thống</p>
-        
+        <p className="text-xs text-[var(--text-secondary)] mb-4">
+          Thay đổi gam màu nhấn cho nút bấm, bảng biểu, icon và liên kết trên toàn hệ thống
+        </p>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {PRIMARY_COLORS.map((c) => {
             const isActive = primaryColor === c.id;
@@ -109,13 +136,13 @@ export const CaiDatPage = () => {
                 key={c.id}
                 onClick={() => setPrimaryColor(c.id)}
                 className={cn(
-                  "flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left cursor-pointer",
+                  'flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left cursor-pointer',
                   isActive
-                    ? "border-[var(--primary-500)] bg-[var(--primary-50)]/40 shadow-xs"
-                    : "border-[var(--border-color)] bg-[var(--bg-subtle)]/20 hover:bg-[var(--bg-subtle)]"
+                    ? 'border-[var(--primary-500)] bg-[var(--primary-50)]/40 shadow-xs'
+                    : 'border-[var(--border-color)] bg-[var(--bg-subtle)]/20 hover:bg-[var(--bg-subtle)]',
                 )}
               >
-                <div 
+                <div
                   className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-xs transition-transform group-hover:scale-105"
                   style={{ backgroundColor: c.hex }}
                 >
@@ -137,7 +164,9 @@ export const CaiDatPage = () => {
           <Sliders size={16} className="text-[var(--primary-500)]" />
           3. Kích Cỡ Giao Diện & Mật Độ Dữ Liệu (Data Density)
         </h2>
-        <p className="text-xs text-[var(--text-secondary)] mb-4">Điều chỉnh khoảng cách hàng và cỡ chữ trong các bảng dữ liệu nhập/xuất kho</p>
+        <p className="text-xs text-[var(--text-secondary)] mb-4">
+          Điều chỉnh khoảng cách hàng và cỡ chữ trong các bảng dữ liệu nhập/xuất kho
+        </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {DENSITIES.map((d) => {
@@ -147,17 +176,21 @@ export const CaiDatPage = () => {
                 key={d.id}
                 onClick={() => setDensity(d.id)}
                 className={cn(
-                  "flex flex-col text-left p-4 rounded-xl border-2 transition-all relative cursor-pointer",
+                  'flex flex-col text-left p-4 rounded-xl border-2 transition-all relative cursor-pointer',
                   isActive
-                    ? "border-[var(--primary-500)] bg-[var(--primary-50)]/40 shadow-sm"
-                    : "border-[var(--border-color)] bg-[var(--bg-subtle)]/30 hover:border-[var(--border-subtle)] hover:bg-[var(--bg-subtle)]"
+                    ? 'border-[var(--primary-500)] bg-[var(--primary-50)]/40 shadow-sm'
+                    : 'border-[var(--border-color)] bg-[var(--bg-subtle)]/30 hover:border-[var(--border-subtle)] hover:bg-[var(--bg-subtle)]',
                 )}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <span className={cn(
-                    "px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border",
-                    isActive ? "bg-[var(--primary-500)] text-white border-transparent" : "bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-color)]"
-                  )}>
+                  <span
+                    className={cn(
+                      'px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border',
+                      isActive
+                        ? 'bg-[var(--primary-500)] text-white border-transparent'
+                        : 'bg-[var(--bg-surface)] text-[var(--text-muted)] border-[var(--border-color)]',
+                    )}
+                  >
                     {d.badge}
                   </span>
                   {isActive && (
@@ -173,7 +206,6 @@ export const CaiDatPage = () => {
           })}
         </div>
       </div>
-
     </div>
   );
 };

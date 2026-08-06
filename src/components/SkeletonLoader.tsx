@@ -2,13 +2,14 @@ import * as React from 'react';
 import { cn } from '../lib/utils';
 
 export const SkeletonPulse = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
-  <div 
-    className={cn("animate-shimmer rounded-lg", className)} 
+  <div
+    className={cn('animate-shimmer rounded-lg', className)}
     style={{
-      backgroundImage: 'linear-gradient(90deg, var(--bg-muted) 0%, var(--bg-surface) 50%, var(--bg-muted) 100%)',
+      backgroundImage:
+        'linear-gradient(90deg, var(--bg-muted) 0%, var(--bg-surface) 50%, var(--bg-muted) 100%)',
       backgroundSize: '200% 100%',
-      ...style
-    }} 
+      ...style,
+    }}
   />
 );
 
@@ -29,7 +30,7 @@ export const KpiCardSkeleton = () => (
   </div>
 );
 
-export const TableSkeleton = ({ rows = 5, cols = 5 }: { rows?: number, cols?: number }) => (
+export const TableSkeleton = ({ rows = 5, cols = 5 }: { rows?: number; cols?: number }) => (
   <div className="erp-table-container">
     <div className="overflow-x-auto">
       <table className="w-full text-left border-collapse">
@@ -46,7 +47,7 @@ export const TableSkeleton = ({ rows = 5, cols = 5 }: { rows?: number, cols?: nu
           {[...Array(rows)].map((_, rIndex) => (
             <tr key={rIndex}>
               {[...Array(cols)].map((_, cIndex) => {
-                const width = 50 + ((rIndex * cols + cIndex) * 17 % 40);
+                const width = 50 + (((rIndex * cols + cIndex) * 17) % 40);
                 return (
                   <td key={cIndex} className="td-cell">
                     <SkeletonPulse className="h-4" style={{ width: `${width}%` }} />

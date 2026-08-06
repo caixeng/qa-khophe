@@ -23,16 +23,37 @@ export const CongNoPage: React.FC = () => {
   const { toast } = useToast();
   const canRecordPayment = user?.role === 'manager' || user?.role === 'admin';
 
-  const { data: imports, loading: impLoading, error: impError, refetch: refetchImports } = useAsyncList(importsService.getAll, []);
-  const { data: exports, loading: expLoading, error: expError, refetch: refetchExports } = useAsyncList(exportsService.getAll, []);
-  const { data: paidImports, refetch: refetchPaidImports } = useAsyncData(() => paymentsService.getPaidByRefType('import'), []);
-  const { data: paidExports, refetch: refetchPaidExports } = useAsyncData(() => paymentsService.getPaidByRefType('export'), []);
+  const {
+    data: imports,
+    loading: impLoading,
+    error: impError,
+    refetch: refetchImports,
+  } = useAsyncList(importsService.getAll, []);
+  const {
+    data: exports,
+    loading: expLoading,
+    error: expError,
+    refetch: refetchExports,
+  } = useAsyncList(exportsService.getAll, []);
+  const { data: paidImports, refetch: refetchPaidImports } = useAsyncData(
+    () => paymentsService.getPaidByRefType('import'),
+    [],
+  );
+  const { data: paidExports, refetch: refetchPaidExports } = useAsyncData(
+    () => paymentsService.getPaidByRefType('export'),
+    [],
+  );
 
   // Tham chiếu ổn định để useMemo bên dưới không tính lại ở mỗi lần render.
   const paidByImport = useMemo(() => paidImports ?? {}, [paidImports]);
   const paidByExport = useMemo(() => paidExports ?? {}, [paidExports]);
 
-  const [paymentTarget, setPaymentTarget] = useState<{ refType: PaymentRefType; refId: string; label: string; remaining: number } | null>(null);
+  const [paymentTarget, setPaymentTarget] = useState<{
+    refType: PaymentRefType;
+    refId: string;
+    label: string;
+    remaining: number;
+  } | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'transfer' | 'other'>('cash');
   const [paymentNotes, setPaymentNotes] = useState('');
@@ -78,18 +99,35 @@ export const CongNoPage: React.FC = () => {
   // Payables: Imports còn nợ (dựa trên số đã trả thực tế, không chỉ payment_status)
   const payables = useMemo(() => {
     return imports
-      .map((i) => ({ item: i, remaining: computeRemainingWithLegacyStatus(i.total_amount, paidByImport[i.id] || 0, i.payment_status) }))
+      .map((i) => ({
+        item: i,
+        remaining: computeRemainingWithLegacyStatus(
+          i.total_amount,
+          paidByImport[i.id] || 0,
+          i.payment_status,
+        ),
+      }))
       .filter((x) => x.remaining > 0);
   }, [imports, paidByImport]);
 
   // Receivables: Exports còn nợ
   const receivables = useMemo(() => {
     return exports
-      .map((e) => ({ item: e, remaining: computeRemainingWithLegacyStatus(e.total_amount, paidByExport[e.id] || 0, e.payment_status) }))
+      .map((e) => ({
+        item: e,
+        remaining: computeRemainingWithLegacyStatus(
+          e.total_amount,
+          paidByExport[e.id] || 0,
+          e.payment_status,
+        ),
+      }))
       .filter((x) => x.remaining > 0);
   }, [exports, paidByExport]);
 
-  const totalReceivableAmount = useMemo(() => receivables.reduce((sum, x) => sum + x.remaining, 0), [receivables]);
+  const totalReceivableAmount = useMemo(
+    () => receivables.reduce((sum, x) => sum + x.remaining, 0),
+    [receivables],
+  );
   const totalPayableAmount = useMemo(() => payables.reduce((sum, x) => sum + x.remaining, 0), [payables]);
 
   return (
@@ -129,7 +167,7 @@ export const CongNoPage: React.FC = () => {
             'pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer',
             activeTab === 'receivables'
               ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
           )}
         >
           Nợ phải thu khách hàng ({receivables.length})
@@ -140,7 +178,7 @@ export const CongNoPage: React.FC = () => {
             'pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer',
             activeTab === 'payables'
               ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
           )}
         >
           Nợ phải trả nhà cung cấp ({payables.length})
@@ -149,7 +187,12 @@ export const CongNoPage: React.FC = () => {
 
       {/* Receivables Tab */}
       {activeTab === 'receivables' && (
-        <DataState loading={expLoading} error={expError} isEmpty={receivables.length === 0} emptyTitle="Không có công nợ phải thu">
+        <DataState
+          loading={expLoading}
+          error={expError}
+          isEmpty={receivables.length === 0}
+          emptyTitle="Không có công nợ phải thu"
+        >
           {/* Desktop Table */}
           <div className="erp-table-container hidden lg:block">
             <div className="overflow-x-auto">
@@ -157,20 +200,40 @@ export const CongNoPage: React.FC = () => {
                 <caption className="sr-only">Danh sách công nợ phải thu từ khách hàng</caption>
                 <thead>
                   <tr>
-                    <th scope="col" className="th-cell">Ngày phát sinh</th>
-                    <th scope="col" className="th-cell">Khách hàng</th>
-                    <th scope="col" className="th-cell text-right">Tổng giá trị đơn</th>
-                    <th scope="col" className="th-cell text-right">Đã thu</th>
-                    <th scope="col" className="th-cell">Trạng thái</th>
-                    <th scope="col" className="th-cell text-right">Còn phải thu</th>
-                    {canRecordPayment && <th scope="col" className="th-cell text-right">Thao tác</th>}
+                    <th scope="col" className="th-cell">
+                      Ngày phát sinh
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Khách hàng
+                    </th>
+                    <th scope="col" className="th-cell text-right">
+                      Tổng giá trị đơn
+                    </th>
+                    <th scope="col" className="th-cell text-right">
+                      Đã thu
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Trạng thái
+                    </th>
+                    <th scope="col" className="th-cell text-right">
+                      Còn phải thu
+                    </th>
+                    {canRecordPayment && (
+                      <th scope="col" className="th-cell text-right">
+                        Thao tác
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {receivables.map(({ item, remaining }: { item: Export; remaining: number }) => (
                     <tr key={item.id} className="tr-hover">
-                      <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(item.date)}</td>
-                      <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{item.contact_name || 'Khách mua'}</td>
+                      <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
+                        {formatNgay(item.date)}
+                      </td>
+                      <td className="td-cell font-bold text-xs text-[var(--text-primary)]">
+                        {item.contact_name || 'Khách mua'}
+                      </td>
                       <td className="td-cell text-right font-mono text-xs text-[var(--text-secondary)]">
                         {formatTien(item.total_amount)}
                       </td>
@@ -186,7 +249,9 @@ export const CongNoPage: React.FC = () => {
                       {canRecordPayment && (
                         <td className="td-cell text-right">
                           <button
-                            onClick={() => openPaymentModal('export', item.id, item.contact_name || 'Khách mua', remaining)}
+                            onClick={() =>
+                              openPaymentModal('export', item.id, item.contact_name || 'Khách mua', remaining)
+                            }
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-[var(--primary-600)] bg-[var(--primary-50)] hover:bg-[var(--primary-100)] transition-colors cursor-pointer"
                           >
                             <Wallet size={13} /> Ghi thu
@@ -210,17 +275,29 @@ export const CongNoPage: React.FC = () => {
               accentColor: '#e11d48',
               fields: [
                 { label: 'Tổng đơn hàng', value: formatTien(item.total_amount) },
-                { label: 'Đã thu', value: <span className="text-emerald-600 font-bold">{formatTien(paidByExport[item.id] || 0)}</span> },
-                { label: 'Còn nợ phải thu', value: <span className="text-rose-600 font-black text-sm">{formatTien(remaining)}</span> },
+                {
+                  label: 'Đã thu',
+                  value: (
+                    <span className="text-emerald-600 font-bold">
+                      {formatTien(paidByExport[item.id] || 0)}
+                    </span>
+                  ),
+                },
+                {
+                  label: 'Còn nợ phải thu',
+                  value: <span className="text-rose-600 font-black text-sm">{formatTien(remaining)}</span>,
+                },
               ],
               actions: canRecordPayment ? (
                 <button
-                  onClick={() => openPaymentModal('export', item.id, item.contact_name || 'Khách mua', remaining)}
+                  onClick={() =>
+                    openPaymentModal('export', item.id, item.contact_name || 'Khách mua', remaining)
+                  }
                   className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-[var(--primary-500)] text-white text-xs font-bold shadow-xs active:scale-95 transition-transform cursor-pointer"
                 >
                   <Wallet size={14} /> Ghi nhận khoản thu
                 </button>
-              ) : undefined
+              ) : undefined,
             }))}
           />
         </DataState>
@@ -228,7 +305,12 @@ export const CongNoPage: React.FC = () => {
 
       {/* Payables Tab */}
       {activeTab === 'payables' && (
-        <DataState loading={impLoading} error={impError} isEmpty={payables.length === 0} emptyTitle="Không có công nợ phải trả">
+        <DataState
+          loading={impLoading}
+          error={impError}
+          isEmpty={payables.length === 0}
+          emptyTitle="Không có công nợ phải trả"
+        >
           {/* Desktop Table */}
           <div className="erp-table-container hidden lg:block">
             <div className="overflow-x-auto">
@@ -236,20 +318,40 @@ export const CongNoPage: React.FC = () => {
                 <caption className="sr-only">Danh sách công nợ phải trả cho nhà cung cấp</caption>
                 <thead>
                   <tr>
-                    <th scope="col" className="th-cell">Ngày nhập</th>
-                    <th scope="col" className="th-cell">Nhà cung cấp</th>
-                    <th scope="col" className="th-cell text-right">Tổng tiền phiếu</th>
-                    <th scope="col" className="th-cell text-right">Đã trả</th>
-                    <th scope="col" className="th-cell">Trạng thái</th>
-                    <th scope="col" className="th-cell text-right">Còn phải trả</th>
-                    {canRecordPayment && <th scope="col" className="th-cell text-right">Thao tác</th>}
+                    <th scope="col" className="th-cell">
+                      Ngày nhập
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Nhà cung cấp
+                    </th>
+                    <th scope="col" className="th-cell text-right">
+                      Tổng tiền phiếu
+                    </th>
+                    <th scope="col" className="th-cell text-right">
+                      Đã trả
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Trạng thái
+                    </th>
+                    <th scope="col" className="th-cell text-right">
+                      Còn phải trả
+                    </th>
+                    {canRecordPayment && (
+                      <th scope="col" className="th-cell text-right">
+                        Thao tác
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {payables.map(({ item, remaining }: { item: Import; remaining: number }) => (
                     <tr key={item.id} className="tr-hover">
-                      <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(item.date)}</td>
-                      <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{item.contact_name || 'Khách vãng lai'}</td>
+                      <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
+                        {formatNgay(item.date)}
+                      </td>
+                      <td className="td-cell font-bold text-xs text-[var(--text-primary)]">
+                        {item.contact_name || 'Khách vãng lai'}
+                      </td>
                       <td className="td-cell text-right font-mono text-xs text-[var(--text-secondary)]">
                         {formatTien(item.total_amount)}
                       </td>
@@ -265,7 +367,14 @@ export const CongNoPage: React.FC = () => {
                       {canRecordPayment && (
                         <td className="td-cell text-right">
                           <button
-                            onClick={() => openPaymentModal('import', item.id, item.contact_name || 'Khách vãng lai', remaining)}
+                            onClick={() =>
+                              openPaymentModal(
+                                'import',
+                                item.id,
+                                item.contact_name || 'Khách vãng lai',
+                                remaining,
+                              )
+                            }
                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-[var(--primary-600)] bg-[var(--primary-50)] hover:bg-[var(--primary-100)] transition-colors cursor-pointer"
                           >
                             <Wallet size={13} /> Ghi trả
@@ -289,17 +398,29 @@ export const CongNoPage: React.FC = () => {
               accentColor: '#d97706',
               fields: [
                 { label: 'Tổng phiếu nhập', value: formatTien(item.total_amount) },
-                { label: 'Đã thanh toán', value: <span className="text-emerald-600 font-bold">{formatTien(paidByImport[item.id] || 0)}</span> },
-                { label: 'Còn nợ phải trả', value: <span className="text-amber-600 font-black text-sm">{formatTien(remaining)}</span> },
+                {
+                  label: 'Đã thanh toán',
+                  value: (
+                    <span className="text-emerald-600 font-bold">
+                      {formatTien(paidByImport[item.id] || 0)}
+                    </span>
+                  ),
+                },
+                {
+                  label: 'Còn nợ phải trả',
+                  value: <span className="text-amber-600 font-black text-sm">{formatTien(remaining)}</span>,
+                },
               ],
               actions: canRecordPayment ? (
                 <button
-                  onClick={() => openPaymentModal('import', item.id, item.contact_name || 'Khách vãng lai', remaining)}
+                  onClick={() =>
+                    openPaymentModal('import', item.id, item.contact_name || 'Khách vãng lai', remaining)
+                  }
                   className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-600 text-white text-xs font-bold shadow-xs active:scale-95 transition-transform cursor-pointer"
                 >
                   <Wallet size={14} /> Ghi nhận khoản trả
                 </button>
-              ) : undefined
+              ) : undefined,
             }))}
           />
         </DataState>
@@ -314,7 +435,9 @@ export const CongNoPage: React.FC = () => {
         <form onSubmit={handleRecordPayment} className="space-y-4">
           <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center text-xs">
             <span className="text-[var(--text-muted)] font-semibold">Còn lại trước khi ghi:</span>
-            <span className="font-mono font-black text-sm text-rose-600">{formatTien(paymentTarget?.remaining || 0)}</span>
+            <span className="font-mono font-black text-sm text-rose-600">
+              {formatTien(paymentTarget?.remaining || 0)}
+            </span>
           </div>
 
           <FormField label="Số tiền thanh toán" required>

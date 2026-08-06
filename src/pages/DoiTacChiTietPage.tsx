@@ -1,9 +1,7 @@
 import * as React from 'react';
 import { useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import {
-  ArrowLeft, Phone, MapPin, Package, Truck, Wallet, TrendingUp, Printer,
-} from 'lucide-react';
+import { ArrowLeft, Phone, MapPin, Package, Truck, Wallet, TrendingUp, Printer } from 'lucide-react';
 import { cn, formatTien, formatNgay, formatKg } from '../lib/utils';
 import { DataState } from '../components/DataState';
 import { StatusBadge } from '../components/StatusBadge';
@@ -32,10 +30,11 @@ export const DoiTacChiTietPage: React.FC = () => {
   const canSeeFinance = user?.role === 'manager' || user?.role === 'admin';
   const { range, setRange } = useDateRange();
 
-  const { data: contact, loading: cLoading, error: cError } = useAsyncData(
-    () => contactsService.getById(id),
-    [id],
-  );
+  const {
+    data: contact,
+    loading: cLoading,
+    error: cError,
+  } = useAsyncData(() => contactsService.getById(id), [id]);
 
   const { data: imports, loading: iLoading } = useAsyncList(
     () => importsService.getAll({ from: range.from, to: range.to }),
@@ -63,12 +62,14 @@ export const DoiTacChiTietPage: React.FC = () => {
 
     // Phải trả: tiền hàng mình mua của họ mà chưa trả hết.
     const payable = myImports.reduce(
-      (s, i) => s + computeRemainingWithLegacyStatus(i.total_amount, paidByImport[i.id] || 0, i.payment_status),
+      (s, i) =>
+        s + computeRemainingWithLegacyStatus(i.total_amount, paidByImport[i.id] || 0, i.payment_status),
       0,
     );
     // Phải thu: tiền hàng họ mua của mình mà chưa trả hết.
     const receivable = myExports.reduce(
-      (s, e) => s + computeRemainingWithLegacyStatus(e.total_amount, paidByExport[e.id] || 0, e.payment_status),
+      (s, e) =>
+        s + computeRemainingWithLegacyStatus(e.total_amount, paidByExport[e.id] || 0, e.payment_status),
       0,
     );
 
@@ -132,7 +133,10 @@ export const DoiTacChiTietPage: React.FC = () => {
                 </span>
               ) : null}
 
-              <Link to="/danh-ba" className="ml-auto text-xs font-bold text-[var(--primary-500)] hover:underline">
+              <Link
+                to="/danh-ba"
+                className="ml-auto text-xs font-bold text-[var(--primary-500)] hover:underline"
+              >
                 Sửa thông tin
               </Link>
             </div>
@@ -170,8 +174,12 @@ export const DoiTacChiTietPage: React.FC = () => {
                       <Wallet size={20} />
                     </div>
                     <div>
-                      <p className="text-[11px] font-bold uppercase text-[var(--text-muted)]">Mình còn nợ họ</p>
-                      <p className="font-mono text-lg font-black text-amber-600">{formatTien(summary.payable)}</p>
+                      <p className="text-[11px] font-bold uppercase text-[var(--text-muted)]">
+                        Mình còn nợ họ
+                      </p>
+                      <p className="font-mono text-lg font-black text-amber-600">
+                        {formatTien(summary.payable)}
+                      </p>
                     </div>
                   </div>
 
@@ -180,8 +188,12 @@ export const DoiTacChiTietPage: React.FC = () => {
                       <TrendingUp size={20} />
                     </div>
                     <div>
-                      <p className="text-[11px] font-bold uppercase text-[var(--text-muted)]">Họ còn nợ mình</p>
-                      <p className="font-mono text-lg font-black text-rose-600">{formatTien(summary.receivable)}</p>
+                      <p className="text-[11px] font-bold uppercase text-[var(--text-muted)]">
+                        Họ còn nợ mình
+                      </p>
+                      <p className="font-mono text-lg font-black text-rose-600">
+                        {formatTien(summary.receivable)}
+                      </p>
                     </div>
                   </div>
                 </>
@@ -199,34 +211,57 @@ export const DoiTacChiTietPage: React.FC = () => {
                     <caption className="sr-only">Lịch sử phiếu nhập</caption>
                     <thead>
                       <tr>
-                        <th scope="col" className="th-cell">Ngày</th>
+                        <th scope="col" className="th-cell">
+                          Ngày
+                        </th>
                         <th className="th-cell text-right">Khối lượng</th>
                         <th className="th-cell text-right">Đơn giá</th>
                         <th className="th-cell text-right">Thành tiền</th>
                         {canSeeFinance && <th className="th-cell text-right">Còn nợ</th>}
-                        <th scope="col" className="th-cell">Thanh toán</th>
+                        <th scope="col" className="th-cell">
+                          Thanh toán
+                        </th>
                         <th className="th-cell text-right">In</th>
                       </tr>
                     </thead>
                     <tbody>
                       {myImports.map((i) => {
                         const remaining = computeRemainingWithLegacyStatus(
-                          i.total_amount, paidByImport[i.id] || 0, i.payment_status,
+                          i.total_amount,
+                          paidByImport[i.id] || 0,
+                          i.payment_status,
                         );
                         return (
                           <tr key={i.id} className="tr-hover">
                             <td className="td-cell font-mono text-xs">{formatNgay(i.date)}</td>
-                            <td className="td-cell text-right font-mono text-xs">{formatKg(i.quantity_kg)}</td>
-                            <td className="td-cell text-right font-mono text-xs">{formatTien(i.price_per_kg)}</td>
-                            <td className="td-cell text-right font-mono text-xs font-bold">{formatTien(i.total_amount)}</td>
+                            <td className="td-cell text-right font-mono text-xs">
+                              {formatKg(i.quantity_kg)}
+                            </td>
+                            <td className="td-cell text-right font-mono text-xs">
+                              {formatTien(i.price_per_kg)}
+                            </td>
+                            <td className="td-cell text-right font-mono text-xs font-bold">
+                              {formatTien(i.total_amount)}
+                            </td>
                             {canSeeFinance && (
-                              <td className={cn('td-cell text-right font-mono text-xs font-bold', remaining > 0 ? 'text-amber-600' : 'text-emerald-600')}>
+                              <td
+                                className={cn(
+                                  'td-cell text-right font-mono text-xs font-bold',
+                                  remaining > 0 ? 'text-amber-600' : 'text-emerald-600',
+                                )}
+                              >
                                 {remaining > 0 ? formatTien(remaining) : '—'}
                               </td>
                             )}
-                            <td className="td-cell"><StatusBadge status={i.payment_status} /></td>
+                            <td className="td-cell">
+                              <StatusBadge status={i.payment_status} />
+                            </td>
                             <td className="td-cell text-right">
-                              <button onClick={() => printPhieuNhap(i)} title="In phiếu nhập" className="icon-action text-[var(--text-muted)] hover:text-[var(--primary-600)]">
+                              <button
+                                onClick={() => printPhieuNhap(i)}
+                                title="In phiếu nhập"
+                                className="icon-action text-[var(--text-muted)] hover:text-[var(--primary-600)]"
+                              >
                                 <Printer size={15} />
                               </button>
                             </td>
@@ -250,34 +285,55 @@ export const DoiTacChiTietPage: React.FC = () => {
                     <caption className="sr-only">Lịch sử phiếu xuất</caption>
                     <thead>
                       <tr>
-                        <th scope="col" className="th-cell">Ngày</th>
+                        <th scope="col" className="th-cell">
+                          Ngày
+                        </th>
                         <th className="th-cell text-right">Số bao</th>
                         <th className="th-cell text-right">Khối lượng</th>
                         <th className="th-cell text-right">Thành tiền</th>
                         {canSeeFinance && <th className="th-cell text-right">Còn nợ</th>}
-                        <th scope="col" className="th-cell">Thanh toán</th>
+                        <th scope="col" className="th-cell">
+                          Thanh toán
+                        </th>
                         <th className="th-cell text-right">In</th>
                       </tr>
                     </thead>
                     <tbody>
                       {myExports.map((e) => {
                         const remaining = computeRemainingWithLegacyStatus(
-                          e.total_amount, paidByExport[e.id] || 0, e.payment_status,
+                          e.total_amount,
+                          paidByExport[e.id] || 0,
+                          e.payment_status,
                         );
                         return (
                           <tr key={e.id} className="tr-hover">
                             <td className="td-cell font-mono text-xs">{formatNgay(e.date)}</td>
                             <td className="td-cell text-right font-mono text-xs">{e.bags_count}</td>
-                            <td className="td-cell text-right font-mono text-xs">{formatKg(e.total_kg || 0)}</td>
-                            <td className="td-cell text-right font-mono text-xs font-bold">{formatTien(e.total_amount)}</td>
+                            <td className="td-cell text-right font-mono text-xs">
+                              {formatKg(e.total_kg || 0)}
+                            </td>
+                            <td className="td-cell text-right font-mono text-xs font-bold">
+                              {formatTien(e.total_amount)}
+                            </td>
                             {canSeeFinance && (
-                              <td className={cn('td-cell text-right font-mono text-xs font-bold', remaining > 0 ? 'text-rose-600' : 'text-emerald-600')}>
+                              <td
+                                className={cn(
+                                  'td-cell text-right font-mono text-xs font-bold',
+                                  remaining > 0 ? 'text-rose-600' : 'text-emerald-600',
+                                )}
+                              >
                                 {remaining > 0 ? formatTien(remaining) : '—'}
                               </td>
                             )}
-                            <td className="td-cell"><StatusBadge status={e.payment_status} /></td>
+                            <td className="td-cell">
+                              <StatusBadge status={e.payment_status} />
+                            </td>
                             <td className="td-cell text-right">
-                              <button onClick={() => printPhieuXuat(e)} title="In phiếu xuất" className="icon-action text-[var(--text-muted)] hover:text-[var(--primary-600)]">
+                              <button
+                                onClick={() => printPhieuXuat(e)}
+                                title="In phiếu xuất"
+                                className="icon-action text-[var(--text-muted)] hover:text-[var(--primary-600)]"
+                              >
                                 <Printer size={15} />
                               </button>
                             </td>

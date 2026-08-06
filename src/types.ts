@@ -9,7 +9,8 @@ export type UserRole = 'admin' | 'manager' | 'staff';
 export type ContactType = 'supplier' | 'customer' | 'partner';
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 export type ProcessingStatus = 'pending' | 'grinding' | 'done';
-export type ExpenseCategory = 'fuel' | 'blade' | 'oil' | 'labor' | 'parts' | 'transport' | 'maintenance' | 'other';
+export type ExpenseCategory =
+  'fuel' | 'blade' | 'oil' | 'labor' | 'parts' | 'transport' | 'maintenance' | 'other';
 export type AdvanceType = 'advance' | 'settlement' | 'ung' | 'hoan';
 export type EmployeeRole = 'grinder' | 'weigher' | 'driver' | 'manager' | 'staff';
 

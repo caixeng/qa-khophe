@@ -9,7 +9,11 @@ export interface InventorySnapshot {
 }
 
 /** Tồn kho thành phẩm = tổng đã xay ra - tổng đã xuất bán. */
-export function computeInventory(totalGroundKg: number, totalExportedKg: number, kgPerBag: number): InventorySnapshot {
+export function computeInventory(
+  totalGroundKg: number,
+  totalExportedKg: number,
+  kgPerBag: number,
+): InventorySnapshot {
   const currentStockKg = Math.max(0, totalGroundKg - totalExportedKg);
   const currentBags = kgPerBag > 0 ? Math.round(currentStockKg / kgPerBag) : 0;
   return { currentStockKg, currentBags };

@@ -18,7 +18,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
   onItemsPerPageChange,
 }) => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  
+
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
@@ -79,22 +79,22 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
           </button>
 
           <div className="hidden sm:flex items-center gap-1">
-            {getPageNumbers().map(page => (
+            {getPageNumbers().map((page) => (
               <button
                 key={page}
                 onClick={() => onPageChange(page)}
                 className={cn(
-                  "w-7 h-7 flex items-center justify-center rounded-lg transition-colors",
+                  'w-7 h-7 flex items-center justify-center rounded-lg transition-colors',
                   page === currentPage
-                    ? "bg-[var(--primary-500)] text-white"
-                    : "hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]"
+                    ? 'bg-[var(--primary-500)] text-white'
+                    : 'hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]',
                 )}
               >
                 {page}
               </button>
             ))}
           </div>
-          
+
           <div className="sm:hidden flex items-center px-2 text-[var(--text-secondary)]">
             {currentPage} / {totalPages || 1}
           </div>

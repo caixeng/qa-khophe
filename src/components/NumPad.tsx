@@ -11,12 +11,12 @@ export interface NumPadProps {
   className?: string;
 }
 
-export const NumPad: React.FC<NumPadProps> = ({ 
-  value: externalValue, 
-  onChange: externalOnChange, 
-  onSubmit, 
+export const NumPad: React.FC<NumPadProps> = ({
+  value: externalValue,
+  onChange: externalOnChange,
+  onSubmit,
   unit = 'kg',
-  className 
+  className,
 }) => {
   const [internalValue, setInternalValue] = useState('');
   const currentValue = externalValue !== undefined ? externalValue : internalValue;
@@ -54,7 +54,7 @@ export const NumPad: React.FC<NumPadProps> = ({
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'backspace'];
 
   return (
-    <div className={cn("w-full max-w-sm mx-auto flex flex-col gap-4", className)}>
+    <div className={cn('w-full max-w-sm mx-auto flex flex-col gap-4', className)}>
       {/* Display */}
       <div className="card p-4 flex flex-col items-center justify-center bg-[var(--bg-surface)] border-2 border-[var(--primary-500)] shadow-xs rounded-2xl">
         <div className="text-[11px] text-[var(--text-muted)] font-extrabold uppercase tracking-widest mb-1">
@@ -76,8 +76,10 @@ export const NumPad: React.FC<NumPadProps> = ({
             type="button"
             onClick={() => handlePress(key)}
             className={cn(
-              "h-14 sm:h-16 flex items-center justify-center rounded-2xl text-2xl font-bold font-mono bg-[var(--bg-subtle)] border border-[var(--border-color)] shadow-xs active:scale-90 transition-transform touch-manipulation cursor-pointer",
-              key === 'backspace' ? "text-rose-500 bg-rose-50 dark:bg-rose-950/30" : "text-[var(--text-primary)] hover:bg-[var(--primary-50)]/50"
+              'h-14 sm:h-16 flex items-center justify-center rounded-2xl text-2xl font-bold font-mono bg-[var(--bg-subtle)] border border-[var(--border-color)] shadow-xs active:scale-90 transition-transform touch-manipulation cursor-pointer',
+              key === 'backspace'
+                ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/30'
+                : 'text-[var(--text-primary)] hover:bg-[var(--primary-50)]/50',
             )}
           >
             {key === 'backspace' ? <Delete className="w-7 h-7" /> : key}
@@ -86,7 +88,7 @@ export const NumPad: React.FC<NumPadProps> = ({
       </div>
 
       {/* Submit Button */}
-      <button 
+      <button
         type="button"
         onClick={handleSubmit}
         disabled={!currentValue || currentValue === '0' || currentValue === '0.'}

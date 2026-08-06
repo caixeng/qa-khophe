@@ -12,7 +12,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   startDate,
   endDate,
   onChange,
-  className
+  className,
 }) => {
   const handlePreset = (daysBack: number, startOfSelected?: boolean) => {
     const today = new Date();
@@ -35,7 +35,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   };
 
   return (
-    <div className={cn("flex flex-col gap-2", className)}>
+    <div className={cn('flex flex-col gap-2', className)}>
       <div className="flex flex-col sm:flex-row gap-2">
         <input
           type="date"
@@ -51,11 +51,41 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         />
       </div>
       <div className="flex flex-wrap gap-1">
-        <button type="button" onClick={() => handlePreset(0)} className="btn-ghost px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)]">Hôm nay</button>
-        <button type="button" onClick={() => handlePreset(7)} className="btn-ghost px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)]">7 ngày</button>
-        <button type="button" onClick={() => handlePreset(30)} className="btn-ghost px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)]">30 ngày</button>
-        <button type="button" onClick={() => handlePreset(30, true)} className="btn-ghost px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)]">Tháng này</button>
-        <button type="button" onClick={() => handlePreset(31, true)} className="btn-ghost px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)]">Tháng trước</button>
+        <button
+          type="button"
+          onClick={() => handlePreset(0)}
+          className="btn-ghost px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)]"
+        >
+          Hôm nay
+        </button>
+        <button
+          type="button"
+          onClick={() => handlePreset(7)}
+          className="btn-ghost px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)]"
+        >
+          7 ngày
+        </button>
+        <button
+          type="button"
+          onClick={() => handlePreset(30)}
+          className="btn-ghost px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)]"
+        >
+          30 ngày
+        </button>
+        <button
+          type="button"
+          onClick={() => handlePreset(30, true)}
+          className="btn-ghost px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)]"
+        >
+          Tháng này
+        </button>
+        <button
+          type="button"
+          onClick={() => handlePreset(31, true)}
+          className="btn-ghost px-2 py-1 text-[11px] rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)]"
+        >
+          Tháng trước
+        </button>
       </div>
     </div>
   );

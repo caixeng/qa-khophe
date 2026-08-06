@@ -18,20 +18,24 @@ export function formatNgay(dateString: string | Date): string {
 }
 
 export function formatKg(kg: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1
-  }).format(kg) + ' kg';
+  return (
+    new Intl.NumberFormat('vi-VN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    }).format(kg) + ' kg'
+  );
 }
 
 export function formatPhanTram(pct: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 1
-  }).format(pct) + '%';
+  return (
+    new Intl.NumberFormat('vi-VN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    }).format(pct) + '%'
+  );
 }
 
-export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Quản trị viên',

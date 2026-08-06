@@ -13,7 +13,7 @@ interface SortConfig {
  */
 export function useTableControls<T = any>(
   data?: T[] | null,
-  config?: { searchFields?: (keyof T)[]; pageSize?: number }
+  config?: { searchFields?: (keyof T)[]; pageSize?: number },
 ) {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -44,7 +44,7 @@ export function useTableControls<T = any>(
       }
       // Fallback: search all string fields
       return Object.values(item as any).some(
-        (val) => typeof val === 'string' && val.toLowerCase().includes(lowerSearch)
+        (val) => typeof val === 'string' && val.toLowerCase().includes(lowerSearch),
       );
     });
   }, [data, debouncedQuery, config?.searchFields]);
@@ -80,10 +80,16 @@ export function useTableControls<T = any>(
     // Search
     searchQuery,
     debouncedQuery,
-    setSearchQuery: (q: string) => { setSearchQuery(q); setPage(1); },
+    setSearchQuery: (q: string) => {
+      setSearchQuery(q);
+      setPage(1);
+    },
     // Aliases for compatibility
     searchTerm: searchQuery,
-    setSearchTerm: (q: string) => { setSearchQuery(q); setPage(1); },
+    setSearchTerm: (q: string) => {
+      setSearchQuery(q);
+      setPage(1);
+    },
     // Pagination
     page,
     setPage,

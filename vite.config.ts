@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -16,7 +16,7 @@ export default defineConfig({
          * mạng 3G. Tách ra thì phần vendor nằm yên trong cache trình duyệt.
          */
         manualChunks(id: string) {
-          if (!id.includes('node_modules')) return
+          if (!id.includes('node_modules')) return;
 
           /**
            * xlsx (~425KB) CỐ Ý không được gom vào chunk nào.
@@ -26,18 +26,18 @@ export default defineConfig({
            * sẽ khiến nó được tải ngay từ lần mở app đầu tiên, xoá sạch tác dụng
            * của lazy-load. Trả về undefined để Rollup giữ nó ở chunk động riêng.
            */
-          if (id.includes('xlsx')) return
+          if (id.includes('xlsx')) return;
 
           if (id.includes('recharts') || id.includes('d3-') || id.includes('victory-vendor')) {
-            return 'vendor-charts'
+            return 'vendor-charts';
           }
-          if (id.includes('@supabase')) return 'vendor-supabase'
-          if (id.includes('react-router')) return 'vendor-router'
+          if (id.includes('@supabase')) return 'vendor-supabase';
+          if (id.includes('react-router')) return 'vendor-router';
           if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/')) {
-            return 'vendor-react'
+            return 'vendor-react';
           }
-          if (id.includes('lucide-react')) return 'vendor-icons'
-          return 'vendor-misc'
+          if (id.includes('lucide-react')) return 'vendor-icons';
+          return 'vendor-misc';
         },
       },
     },
@@ -49,4 +49,4 @@ export default defineConfig({
      */
     chunkSizeWarningLimit: 450,
   },
-})
+});

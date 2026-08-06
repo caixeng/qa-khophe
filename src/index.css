@@ -23,11 +23,11 @@
     --primary-900: #001f30;
 
     /* Theme Surfaces (Nature Warm Sand & Cream) */
-    --bg-app: #F0ECE1;
-    --bg-surface: #FCF9F2;
-    --bg-subtle: #F5EFE6;
-    --bg-muted: #EDE8DF;
-    --bg-elevated: #FDFAF4;
+    --bg-app: #f0ece1;
+    --bg-surface: #fcf9f2;
+    --bg-subtle: #f5efe6;
+    --bg-muted: #ede8df;
+    --bg-elevated: #fdfaf4;
 
     --border-color: #ece7de;
     --border-subtle: #e5dfd4;
@@ -109,7 +109,11 @@
   body {
     background-color: var(--bg-app);
     color: var(--text-primary);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      'Inter',
+      system-ui,
+      -apple-system,
+      sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -153,7 +157,9 @@
     border: 1px solid var(--border-color);
     border-radius: 12px;
     box-shadow: var(--shadow-card);
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    transition:
+      box-shadow 0.2s ease,
+      transform 0.2s ease;
   }
   .card:hover {
     box-shadow: var(--shadow-card-hover);
@@ -259,7 +265,7 @@
     transition: background-color 0.15s ease;
   }
   .tr-hover:hover {
-    background: var(--bg-subtle, rgba(0,0,0,0.02));
+    background: var(--bg-subtle, rgba(0, 0, 0, 0.02));
   }
 
   .badge {
@@ -331,7 +337,9 @@
     min-width: 44px;
     min-height: 44px;
     border-radius: 0.75rem;
-    transition: background-color 0.15s ease, color 0.15s ease;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
     cursor: pointer;
   }
 

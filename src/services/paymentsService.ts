@@ -16,10 +16,7 @@ export interface Payment {
 export const paymentsService = {
   /** Lấy toàn bộ payments cho một loại chứng từ (import/export), gom theo ref_id. */
   async getPaidByRefType(refType: PaymentRefType): Promise<Record<string, number>> {
-    const { data, error } = await supabase
-      .from('payments')
-      .select('ref_id, amount')
-      .eq('ref_type', refType);
+    const { data, error } = await supabase.from('payments').select('ref_id, amount').eq('ref_type', refType);
 
     if (error) throw new Error(error.message);
 
@@ -70,5 +67,5 @@ export const paymentsService = {
   async deletePayment(id: string): Promise<void> {
     const { error } = await supabase.from('payments').delete().eq('id', id);
     if (error) throw new Error(error.message);
-  }
+  },
 };

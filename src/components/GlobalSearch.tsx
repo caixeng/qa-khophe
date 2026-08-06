@@ -106,7 +106,9 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
             <p className="px-3 py-6 text-center text-xs text-ink-muted">Không có kết quả cho "{q}".</p>
           )}
           {!q && data && (
-            <p className="px-3 py-6 text-center text-xs text-ink-muted">Nhập từ khóa để tìm trên toàn hệ thống.</p>
+            <p className="px-3 py-6 text-center text-xs text-ink-muted">
+              Nhập từ khóa để tìm trên toàn hệ thống.
+            </p>
           )}
           {results.map((h, i) => (
             <button

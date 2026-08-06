@@ -23,7 +23,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
       action: () => {
         onClose();
         navigate('/phe?tab=nhap&open=true');
-      }
+      },
     },
     {
       title: 'Lô Xay phế',
@@ -36,7 +36,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
       action: () => {
         onClose();
         navigate('/phe?tab=xay&open=true');
-      }
+      },
     },
     {
       title: 'Xuất phế / Bán phế',
@@ -49,7 +49,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
       action: () => {
         onClose();
         navigate('/phe?tab=xuat&open=true');
-      }
+      },
     },
     {
       title: 'Ghi nhận Chi phí',
@@ -62,8 +62,8 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
       action: () => {
         onClose();
         navigate('/tai-chinh?tab=chiphi&open=true');
-      }
-    }
+      },
+    },
   ];
 
   return (
@@ -75,7 +75,9 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
             onClick={act.action}
             className={`flex items-center gap-4 p-4 rounded-2xl border ${act.borderColor} ${act.bgColor} active:scale-98 transition-all text-left shadow-xs cursor-pointer`}
           >
-            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${act.color} flex items-center justify-center text-white shadow-md shrink-0`}>
+            <div
+              className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${act.color} flex items-center justify-center text-white shadow-md shrink-0`}
+            >
               <act.icon size={22} />
             </div>
             <div className="flex-1 min-w-0">

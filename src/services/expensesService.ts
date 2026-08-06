@@ -3,14 +3,11 @@ import type { Expense, Advance } from '../types';
 
 export const expensesService = {
   async getExpenses(): Promise<Expense[]> {
-    const { data, error } = await supabase
-      .from('expenses')
-      .select('*')
-      .order('date', { ascending: false });
+    const { data, error } = await supabase.from('expenses').select('*').order('date', { ascending: false });
 
     if (error) throw new Error(error.message);
 
-    return (data || []).map(item => ({
+    return (data || []).map((item) => ({
       id: item.id,
       date: item.date,
       category: item.category || 'other',
@@ -44,10 +41,7 @@ export const expensesService = {
   },
 
   async getAdvances(): Promise<Advance[]> {
-    const { data, error } = await supabase
-      .from('advances')
-      .select('*')
-      .order('date', { ascending: false });
+    const { data, error } = await supabase.from('advances').select('*').order('date', { ascending: false });
 
     if (error) throw new Error(error.message);
     return data || [];
@@ -68,5 +62,5 @@ export const expensesService = {
 
     if (error) throw new Error(error.message);
     return data;
-  }
+  },
 };

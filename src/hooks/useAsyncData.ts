@@ -6,9 +6,9 @@ interface UseAsyncDataOptions {
 }
 
 export function useAsyncData<T>(
-  fetcher: () => Promise<T>, 
-  deps: any[] = [], 
-  options: UseAsyncDataOptions = {}
+  fetcher: () => Promise<T>,
+  deps: any[] = [],
+  options: UseAsyncDataOptions = {},
 ) {
   const { staleTime = 30000, refetchOnFocus = false } = options;
 
@@ -28,33 +28,36 @@ export function useAsyncData<T>(
     };
   }, []);
 
-  const fetchData = useCallback(async (force = false) => {
-    if (!isMounted.current) return;
+  const fetchData = useCallback(
+    async (force = false) => {
+      if (!isMounted.current) return;
 
-    // Check staleTime — bỏ qua khi force (vd: gọi refetch() sau khi thêm/sửa/xoá)
-    if (!force && hasData.current && Date.now() - lastFetched.current < staleTime) {
-      return;
-    }
+      // Check staleTime — bỏ qua khi force (vd: gọi refetch() sau khi thêm/sửa/xoá)
+      if (!force && hasData.current && Date.now() - lastFetched.current < staleTime) {
+        return;
+      }
 
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await fetcher();
-      if (isMounted.current) {
-        setData(result);
-        hasData.current = true;
-        lastFetched.current = Date.now();
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await fetcher();
+        if (isMounted.current) {
+          setData(result);
+          hasData.current = true;
+          lastFetched.current = Date.now();
+        }
+      } catch (err: any) {
+        if (isMounted.current) {
+          setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
+        }
+      } finally {
+        if (isMounted.current) {
+          setLoading(false);
+        }
       }
-    } catch (err: any) {
-      if (isMounted.current) {
-        setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
-      }
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, [fetcher, staleTime]);
+    },
+    [fetcher, staleTime],
+  );
 
   useEffect(() => {
     fetchData();

@@ -36,18 +36,19 @@ const variantStyles: Record<StatusVariant, string> = {
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status = '', variant, className }) => {
   const mapped = statusMap[status ? status.toLowerCase() : ''];
-  const displayLabel = mapped ? mapped.label : (status || '-');
+  const displayLabel = mapped ? mapped.label : status || '-';
   const displayVariant = variant || (mapped ? mapped.variant : 'neutral');
 
   return (
-    <span 
+    <span
       role="status"
       aria-label={displayLabel}
       className={cn(
-      "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
-      variantStyles[displayVariant],
-      className
-    )}>
+        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border',
+        variantStyles[displayVariant],
+        className,
+      )}
+    >
       {displayLabel}
     </span>
   );

@@ -21,5 +21,5 @@ export const settingsService = {
     } catch {
       return DEFAULT_KG_PER_BAG;
     }
-  }
+  },
 };

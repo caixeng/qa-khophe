@@ -19,7 +19,7 @@ export const MobileManagerInput: React.FC = () => {
       {isOpen && (
         <>
           <div className="fixed inset-0 bg-black/40 backdrop-blur-xs z-30" onClick={() => setIsOpen(false)} />
-          
+
           <div className="absolute bottom-16 right-0 flex flex-col items-end space-y-3 z-40 animate-fade-in-up">
             <button
               onClick={() => handleAction('/phe?tab=nhap')}
@@ -60,8 +60,8 @@ export const MobileManagerInput: React.FC = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "w-14 h-14 rounded-full bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] text-white flex items-center justify-center shadow-xl transition-all active:scale-90 cursor-pointer relative z-50",
-          isOpen ? "rotate-45 bg-rose-600" : ""
+          'w-14 h-14 rounded-full bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] text-white flex items-center justify-center shadow-xl transition-all active:scale-90 cursor-pointer relative z-50',
+          isOpen ? 'rotate-45 bg-rose-600' : '',
         )}
         title="Thao tác nhanh Quản Lý Xưởng"
       >

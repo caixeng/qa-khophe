@@ -31,24 +31,26 @@ export const SlidePanelProvider = ({ children }: { children: ReactNode }) => {
   return (
     <SlidePanelContext.Provider value={{ isOpen, openPanel, closePanel }}>
       {children}
-      
+
       {/* Backdrop */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity"
           onClick={closePanel}
         />
       )}
 
       {/* Panel */}
-      <div className={cn(
-        "fixed inset-y-0 right-0 w-full md:w-96 bg-[var(--bg-surface)] shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col",
-        isOpen ? "translate-x-0" : "translate-x-full"
-      )}>
+      <div
+        className={cn(
+          'fixed inset-y-0 right-0 w-full md:w-96 bg-[var(--bg-surface)] shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col',
+          isOpen ? 'translate-x-0' : 'translate-x-full',
+        )}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
           <h2 className="text-lg font-bold text-[var(--text-primary)]">{title}</h2>
-          <button 
+          <button
             onClick={closePanel}
             aria-label="Đóng"
             className="p-1.5 hover:bg-[var(--bg-subtle)] rounded-lg transition-colors"
@@ -56,11 +58,9 @@ export const SlidePanelProvider = ({ children }: { children: ReactNode }) => {
             <X size={20} className="text-[var(--text-secondary)]" />
           </button>
         </div>
-        
+
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {content}
-        </div>
+        <div className="flex-1 overflow-y-auto p-4">{content}</div>
       </div>
     </SlidePanelContext.Provider>
   );

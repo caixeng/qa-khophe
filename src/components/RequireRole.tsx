@@ -28,8 +28,8 @@ export const RequireRole: React.FC<{ allow: UserRole[]; children: React.ReactEle
       </div>
       <h2 className="text-lg font-bold text-[var(--text-primary)] mb-1">Bạn không có quyền xem mục này</h2>
       <p className="text-sm text-[var(--text-secondary)] max-w-md">
-        Mục này chỉ dành cho {allow.includes('manager') ? 'quản lý và quản trị viên' : 'quản trị viên'}.
-        Nếu bạn cần truy cập, hãy liên hệ quản trị viên để được cấp quyền.
+        Mục này chỉ dành cho {allow.includes('manager') ? 'quản lý và quản trị viên' : 'quản trị viên'}. Nếu
+        bạn cần truy cập, hãy liên hệ quản trị viên để được cấp quyền.
       </p>
     </div>
   );

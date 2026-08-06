@@ -31,23 +31,40 @@ interface XuatPhePageProps {
 export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   const { range, setRange } = useDateRange();
   // Lọc ngay ở truy vấn: chỉ kéo về phiếu trong kỳ đang xem.
-  const { data: exports, loading: expLoading, error: expError, refetch } = useAsyncList(
-    () => exportsService.getAll({ from: range.from, to: range.to }),
-    [range.from, range.to],
-  );
+  const {
+    data: exports,
+    loading: expLoading,
+    error: expError,
+    refetch,
+  } = useAsyncList(() => exportsService.getAll({ from: range.from, to: range.to }), [range.from, range.to]);
   const { data: contacts } = useAsyncList(contactsService.getAll, []);
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
 
   const kgPerBag = kgPerBagData ?? 900;
-  const customers = useMemo(() => contacts.filter((c) => c.type === 'customer' || c.type === 'partner'), [contacts]);
+  const customers = useMemo(
+    () => contacts.filter((c) => c.type === 'customer' || c.type === 'partner'),
+    [contacts],
+  );
 
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({
+    isOpen: false,
+    id: '',
+  });
   const [selectedDetail, setSelectedDetail] = useState<ExportType | null>(null);
 
   // Table controls
-  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, sortConfig, handleSort } = useTableControls();
+  const {
+    searchQuery,
+    setSearchQuery,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    setItemsPerPage,
+    sortConfig,
+    handleSort,
+  } = useTableControls();
 
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<ExportType>({
@@ -57,7 +74,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
       total_kg: 16200,
       price_per_kg: 6000,
       payment_status: 'unpaid',
-    }
+    },
   });
 
   const [searchParams] = useSearchParams();
@@ -126,8 +143,8 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
 
     setSaving(true);
     try {
-      const selectedCustomer = customers.find(c => c.id === data.contact_id);
-      const contactName = selectedCustomer ? selectedCustomer.name : (data.contact_name || 'Khách lẻ');
+      const selectedCustomer = customers.find((c) => c.id === data.contact_id);
+      const contactName = selectedCustomer ? selectedCustomer.name : data.contact_name || 'Khách lẻ';
 
       if (data.id) {
         await exportsService.update(data.id, {
@@ -186,8 +203,12 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <Truck size={24} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng khối lượng xuất</p>
-            <p className="text-xl font-mono font-black text-[var(--text-primary)]">{formatKg(stats.totalKg)}</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Tổng khối lượng xuất
+            </p>
+            <p className="text-xl font-mono font-black text-[var(--text-primary)]">
+              {formatKg(stats.totalKg)}
+            </p>
           </div>
         </div>
 
@@ -196,7 +217,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <Package size={24} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng số bao xuất</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Tổng số bao xuất
+            </p>
             <p className="text-xl font-mono font-black text-[var(--text-primary)]">{stats.totalBags} bao</p>
           </div>
         </div>
@@ -206,7 +229,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <TrendingUp size={24} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Doanh thu xuất phế</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Doanh thu xuất phế
+            </p>
             <p className="text-xl font-mono font-black text-emerald-600">{formatTien(stats.totalRevenue)}</p>
           </div>
         </div>
@@ -216,7 +241,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <DollarSign size={24} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Chưa thu (Công nợ)</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Chưa thu (Công nợ)
+            </p>
             <p className="text-xl font-mono font-black text-rose-600">{formatTien(stats.unpaidAmount)}</p>
           </div>
         </div>
@@ -240,13 +267,47 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
               <caption className="sr-only">Danh sách phiếu xuất phế</caption>
               <thead>
                 <tr>
-                  <SortableHeader sortKey="date" sortConfig={sortConfig} onSort={handleSort}>Ngày xuất</SortableHeader>
-                  <SortableHeader sortKey="contact_name" sortConfig={sortConfig} onSort={handleSort}>Khách mua (Đại lý)</SortableHeader>
-                  <SortableHeader sortKey="bags_count" sortConfig={sortConfig} onSort={handleSort} align="right">Số bao</SortableHeader>
-                  <SortableHeader sortKey="total_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Khối lượng (kg)</SortableHeader>
-                  <SortableHeader sortKey="price_per_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Giá/kg</SortableHeader>
-                  <SortableHeader sortKey="total_amount" sortConfig={sortConfig} onSort={handleSort} align="right">Tổng tiền</SortableHeader>
-                  <SortableHeader sortKey="payment_status" sortConfig={sortConfig} onSort={handleSort}>Thanh toán</SortableHeader>
+                  <SortableHeader sortKey="date" sortConfig={sortConfig} onSort={handleSort}>
+                    Ngày xuất
+                  </SortableHeader>
+                  <SortableHeader sortKey="contact_name" sortConfig={sortConfig} onSort={handleSort}>
+                    Khách mua (Đại lý)
+                  </SortableHeader>
+                  <SortableHeader
+                    sortKey="bags_count"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    align="right"
+                  >
+                    Số bao
+                  </SortableHeader>
+                  <SortableHeader
+                    sortKey="total_kg"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    align="right"
+                  >
+                    Khối lượng (kg)
+                  </SortableHeader>
+                  <SortableHeader
+                    sortKey="price_per_kg"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    align="right"
+                  >
+                    Giá/kg
+                  </SortableHeader>
+                  <SortableHeader
+                    sortKey="total_amount"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    align="right"
+                  >
+                    Tổng tiền
+                  </SortableHeader>
+                  <SortableHeader sortKey="payment_status" sortConfig={sortConfig} onSort={handleSort}>
+                    Thanh toán
+                  </SortableHeader>
                   <th className="th-cell text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -260,7 +321,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                       onClick={() => setSelectedDetail(item)}
                       title="Bấm để xem chi tiết phiếu xuất"
                     >
-                      <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(item.date)}</td>
+                      <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
+                        {formatNgay(item.date)}
+                      </td>
                       <td className="td-cell font-bold text-xs text-[var(--text-primary)]">
                         {item.contact_name || 'Khách bán lẻ'}
                       </td>
@@ -337,37 +400,55 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
               <div>
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">NGÀY XUẤT</span>
-                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{formatNgay(selectedDetail.date)}</span>
+                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">
+                  {formatNgay(selectedDetail.date)}
+                </span>
               </div>
               <div>
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">KHÁCH MUA</span>
-                <span className="font-bold text-sm text-[var(--text-primary)]">{selectedDetail.contact_name || 'Khách bán lẻ'}</span>
+                <span className="font-bold text-sm text-[var(--text-primary)]">
+                  {selectedDetail.contact_name || 'Khách bán lẻ'}
+                </span>
               </div>
               <div>
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">SỐ BAO XUẤT</span>
-                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{selectedDetail.bags_count || 0} bao</span>
+                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">
+                  {selectedDetail.bags_count || 0} bao
+                </span>
               </div>
               <div>
-                <span className="text-[var(--text-muted)] block font-semibold uppercase">KHỐI LƯỢNG (KG)</span>
-                <span className="font-mono font-bold text-sm text-blue-600">{formatKg(selectedDetail.total_kg || 0)}</span>
+                <span className="text-[var(--text-muted)] block font-semibold uppercase">
+                  KHỐI LƯỢNG (KG)
+                </span>
+                <span className="font-mono font-bold text-sm text-blue-600">
+                  {formatKg(selectedDetail.total_kg || 0)}
+                </span>
               </div>
               <div>
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">ĐƠN GIÁ BÁN</span>
-                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{formatTien(selectedDetail.price_per_kg)}/kg</span>
+                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">
+                  {formatTien(selectedDetail.price_per_kg)}/kg
+                </span>
               </div>
               <div>
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">THANH TOÁN</span>
                 <StatusBadge status={selectedDetail.payment_status} />
               </div>
               <div className="col-span-2 pt-2 border-t border-[var(--border-color)] flex justify-between items-center">
-                <span className="text-[var(--text-muted)] font-semibold uppercase">TỔNG GIÁ TRỊ ĐƠN XUẤT:</span>
-                <span className="font-mono font-black text-base text-[var(--primary-500)]">{formatTien(selectedDetail.total_amount)}</span>
+                <span className="text-[var(--text-muted)] font-semibold uppercase">
+                  TỔNG GIÁ TRỊ ĐƠN XUẤT:
+                </span>
+                <span className="font-mono font-black text-base text-[var(--primary-500)]">
+                  {formatTien(selectedDetail.total_amount)}
+                </span>
               </div>
             </div>
 
             {selectedDetail.notes && (
               <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-                <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">GHI CHÚ DỰ ÁN / XE</span>
+                <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">
+                  GHI CHÚ DỰ ÁN / XE
+                </span>
                 <p className="text-[var(--text-secondary)] italic">{selectedDetail.notes}</p>
               </div>
             )}
@@ -436,7 +517,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
               onChange={(e) => {
                 const cId = e.target.value;
                 handleChange('contact_id', cId);
-                const c = customers.find(x => x.id === cId);
+                const c = customers.find((x) => x.id === cId);
                 if (c) handleChange('contact_name', c.name);
                 // Tự điền giá đã thoả thuận với khách này; chỉ áp cho phiếu mới
                 // để không ghi đè giá đã chốt trên phiếu cũ đang sửa.
@@ -505,7 +586,10 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
           <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center text-xs">
             <span className="text-[var(--text-muted)] font-semibold">TỔNG GIÁ TRỊ XUẤT HÀNG:</span>
             <span className="font-mono font-black text-sm text-[var(--primary-500)]">
-              {formatTien((Number((formState.data as any)?.total_kg) || 0) * (Number(formState.data?.price_per_kg) || 0))}
+              {formatTien(
+                (Number((formState.data as any)?.total_kg) || 0) *
+                  (Number(formState.data?.price_per_kg) || 0),
+              )}
             </span>
           </div>
 

@@ -6,7 +6,8 @@ import { createContext, useContext } from 'react';
  */
 
 export type Theme = 'nature' | 'light' | 'dark';
-export type PrimaryColor = 'teal' | 'red' | 'blue' | 'emerald' | 'amber' | 'rose' | 'violet' | 'cyan' | 'indigo';
+export type PrimaryColor =
+  'teal' | 'red' | 'blue' | 'emerald' | 'amber' | 'rose' | 'violet' | 'cyan' | 'indigo';
 export type Density = 'comfortable' | 'compact' | 'dense';
 
 export interface PrimaryColorOption {

@@ -22,7 +22,13 @@ export const stockCountService = {
     return data || [];
   },
 
-  async create(entry: { date?: string; counted_bags: number; counted_kg: number; system_kg: number; notes?: string }): Promise<StockCount> {
+  async create(entry: {
+    date?: string;
+    counted_bags: number;
+    counted_kg: number;
+    system_kg: number;
+    notes?: string;
+  }): Promise<StockCount> {
     const { data, error } = await supabase
       .from('stock_counts')
       .insert({
@@ -37,5 +43,5 @@ export const stockCountService = {
 
     if (error) throw new Error(error.message);
     return data;
-  }
+  },
 };

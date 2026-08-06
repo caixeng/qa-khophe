@@ -42,21 +42,24 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
   return (
     <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end">
       {/* Backdrop mờ */}
-      <div 
+      <div
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in"
         onClick={onClose}
       />
 
       {/* Sheet Content */}
-      <div 
+      <div
         ref={sheetRef}
         className={cn(
-          "relative w-full bg-[var(--bg-surface)] rounded-t-3xl border-t border-[var(--border-color)] shadow-2xl z-10 flex flex-col overflow-hidden animate-slide-up pb-safe-area",
-          maxHeight
+          'relative w-full bg-[var(--bg-surface)] rounded-t-3xl border-t border-[var(--border-color)] shadow-2xl z-10 flex flex-col overflow-hidden animate-slide-up pb-safe-area',
+          maxHeight,
         )}
       >
         {/* Handle Bar vuốt trượt */}
-        <div className="w-full flex justify-center py-2.5 cursor-grab active:cursor-grabbing" onClick={onClose}>
+        <div
+          className="w-full flex justify-center py-2.5 cursor-grab active:cursor-grabbing"
+          onClick={onClose}
+        >
           <div className="w-12 h-1.5 rounded-full bg-[var(--border-color)] hover:bg-[var(--text-muted)] transition-colors" />
         </div>
 
@@ -74,9 +77,7 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
         )}
 
         {/* Sheet Body */}
-        <div className="flex-1 overflow-y-auto p-5">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto p-5">{children}</div>
       </div>
     </div>
   );

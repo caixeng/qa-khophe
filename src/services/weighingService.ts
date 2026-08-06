@@ -67,5 +67,5 @@ export const weighingService = {
     }
 
     return data;
-  }
+  },
 };

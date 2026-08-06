@@ -6,17 +6,29 @@ import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './contexts/auth';
 import { SlidePanelProvider } from './contexts/SlidePanelContext';
 import { AppLayout } from './layouts/AppLayout';
-const LoginPage = React.lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
-const DashboardPage = React.lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
-const DanhBaPage = React.lazy(() => import('./pages/DanhBaPage').then(m => ({ default: m.DanhBaPage })));
-const QuanLyPhePage = React.lazy(() => import('./pages/QuanLyPhePage').then(m => ({ default: m.QuanLyPhePage })));
-const TaiChinhPage = React.lazy(() => import('./pages/TaiChinhPage').then(m => ({ default: m.TaiChinhPage })));
-const TonKhoPage = React.lazy(() => import('./pages/TonKhoPage').then(m => ({ default: m.TonKhoPage })));
-const NhanVienPage = React.lazy(() => import('./pages/NhanVienPage').then(m => ({ default: m.NhanVienPage })));
-const BaoCaoPage = React.lazy(() => import('./pages/BaoCaoPage').then(m => ({ default: m.BaoCaoPage })));
-const CaiDatPage = React.lazy(() => import('./pages/CaiDatPage').then(m => ({ default: m.CaiDatPage })));
-const DoiTacChiTietPage = React.lazy(() => import('./pages/DoiTacChiTietPage').then(m => ({ default: m.DoiTacChiTietPage })));
-const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+const LoginPage = React.lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const DashboardPage = React.lazy(() =>
+  import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+);
+const DanhBaPage = React.lazy(() => import('./pages/DanhBaPage').then((m) => ({ default: m.DanhBaPage })));
+const QuanLyPhePage = React.lazy(() =>
+  import('./pages/QuanLyPhePage').then((m) => ({ default: m.QuanLyPhePage })),
+);
+const TaiChinhPage = React.lazy(() =>
+  import('./pages/TaiChinhPage').then((m) => ({ default: m.TaiChinhPage })),
+);
+const TonKhoPage = React.lazy(() => import('./pages/TonKhoPage').then((m) => ({ default: m.TonKhoPage })));
+const NhanVienPage = React.lazy(() =>
+  import('./pages/NhanVienPage').then((m) => ({ default: m.NhanVienPage })),
+);
+const BaoCaoPage = React.lazy(() => import('./pages/BaoCaoPage').then((m) => ({ default: m.BaoCaoPage })));
+const CaiDatPage = React.lazy(() => import('./pages/CaiDatPage').then((m) => ({ default: m.CaiDatPage })));
+const DoiTacChiTietPage = React.lazy(() =>
+  import('./pages/DoiTacChiTietPage').then((m) => ({ default: m.DoiTacChiTietPage })),
+);
+const NotFoundPage = React.lazy(() =>
+  import('./pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
+);
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RequireRole } from './components/RequireRole';
 
@@ -26,7 +38,9 @@ const LoadingScreen = () => (
       <img src="/vua_phe_logo2.jpg" alt="VUA PHẾ Logo" className="w-full h-full object-cover rounded-xl" />
     </div>
     <h2 className="text-xl font-black tracking-tight text-[var(--primary-500)]">VUA PHẾ</h2>
-    <p className="text-sm font-semibold text-[var(--text-muted)] mt-1 animate-pulse">Đang tải dữ liệu xưởng...</p>
+    <p className="text-sm font-semibold text-[var(--text-muted)] mt-1 animate-pulse">
+      Đang tải dữ liệu xưởng...
+    </p>
   </div>
 );
 
@@ -50,73 +64,79 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <ToastProvider>
-        <ThemeProvider>
-          <AuthProvider>
-            <SlidePanelProvider>
-              <React.Suspense fallback={<div className="flex h-screen items-center justify-center bg-[var(--bg-app)]"><div className="w-8 h-8 rounded-full border-4 border-[var(--primary-500)] border-t-transparent animate-spin"></div></div>}>
-                <Routes>
-                  <Route path="/login" element={<LoginPage />} />
-                  
-                  <Route 
-                    path="/" 
-                    element={
-                      <RequireAuth>
-                        <AppLayout />
-                      </RequireAuth>
-                    }
-                  >
-                    <Route index element={<DashboardPage />} />
-                    
-                    {/* Consolidated Module: Quản lý Phế */}
-                    <Route path="phe" element={<QuanLyPhePage />} />
-                    
-                    {/* Consolidated Module: Tài chính — chi phí, ứng lương, công nợ */}
-                    <Route
-                      path="tai-chinh"
-                      element={
-                        <RequireRole allow={['manager', 'admin']}>
-                          <TaiChinhPage />
-                        </RequireRole>
-                      }
-                    />
+          <ThemeProvider>
+            <AuthProvider>
+              <SlidePanelProvider>
+                <React.Suspense
+                  fallback={
+                    <div className="flex h-screen items-center justify-center bg-[var(--bg-app)]">
+                      <div className="w-8 h-8 rounded-full border-4 border-[var(--primary-500)] border-t-transparent animate-spin"></div>
+                    </div>
+                  }
+                >
+                  <Routes>
+                    <Route path="/login" element={<LoginPage />} />
 
-                    <Route path="ton-kho" element={<TonKhoPage />} />
                     <Route
-                      path="nhan-vien"
+                      path="/"
                       element={
-                        <RequireRole allow={['manager', 'admin']}>
-                          <NhanVienPage />
-                        </RequireRole>
+                        <RequireAuth>
+                          <AppLayout />
+                        </RequireAuth>
                       }
-                    />
-                    <Route path="danh-ba" element={<DanhBaPage />} />
-                    <Route path="danh-ba/:id" element={<DoiTacChiTietPage />} />
-                    <Route path="bao-cao" element={<BaoCaoPage />} />
-                    <Route
-                      path="cai-dat"
-                      element={
-                        <RequireRole allow={['admin']}>
-                          <CaiDatPage />
-                        </RequireRole>
-                      }
-                    />
+                    >
+                      <Route index element={<DashboardPage />} />
 
-                    {/* Direct Subroute Redirects */}
-                    <Route path="nhap-phe" element={<Navigate to="/phe?tab=nhap" replace />} />
-                    <Route path="xay-phe" element={<Navigate to="/phe?tab=xay" replace />} />
-                    <Route path="xuat-phe" element={<Navigate to="/phe?tab=xuat" replace />} />
-                    <Route path="can-phe" element={<Navigate to="/phe?tab=can" replace />} />
-                    <Route path="chi-phi" element={<Navigate to="/tai-chinh?tab=chiphi" replace />} />
-                    <Route path="cong-no" element={<Navigate to="/tai-chinh?tab=congno" replace />} />
-                  </Route>
+                      {/* Consolidated Module: Quản lý Phế */}
+                      <Route path="phe" element={<QuanLyPhePage />} />
 
-                  {/* Catch-all route for 404 Not Found */}
-                  <Route path="*" element={<NotFoundPage />} />
-                </Routes>
-              </React.Suspense>
-            </SlidePanelProvider>
-          </AuthProvider>
-        </ThemeProvider>
+                      {/* Consolidated Module: Tài chính — chi phí, ứng lương, công nợ */}
+                      <Route
+                        path="tai-chinh"
+                        element={
+                          <RequireRole allow={['manager', 'admin']}>
+                            <TaiChinhPage />
+                          </RequireRole>
+                        }
+                      />
+
+                      <Route path="ton-kho" element={<TonKhoPage />} />
+                      <Route
+                        path="nhan-vien"
+                        element={
+                          <RequireRole allow={['manager', 'admin']}>
+                            <NhanVienPage />
+                          </RequireRole>
+                        }
+                      />
+                      <Route path="danh-ba" element={<DanhBaPage />} />
+                      <Route path="danh-ba/:id" element={<DoiTacChiTietPage />} />
+                      <Route path="bao-cao" element={<BaoCaoPage />} />
+                      <Route
+                        path="cai-dat"
+                        element={
+                          <RequireRole allow={['admin']}>
+                            <CaiDatPage />
+                          </RequireRole>
+                        }
+                      />
+
+                      {/* Direct Subroute Redirects */}
+                      <Route path="nhap-phe" element={<Navigate to="/phe?tab=nhap" replace />} />
+                      <Route path="xay-phe" element={<Navigate to="/phe?tab=xay" replace />} />
+                      <Route path="xuat-phe" element={<Navigate to="/phe?tab=xuat" replace />} />
+                      <Route path="can-phe" element={<Navigate to="/phe?tab=can" replace />} />
+                      <Route path="chi-phi" element={<Navigate to="/tai-chinh?tab=chiphi" replace />} />
+                      <Route path="cong-no" element={<Navigate to="/tai-chinh?tab=congno" replace />} />
+                    </Route>
+
+                    {/* Catch-all route for 404 Not Found */}
+                    <Route path="*" element={<NotFoundPage />} />
+                  </Routes>
+                </React.Suspense>
+              </SlidePanelProvider>
+            </AuthProvider>
+          </ThemeProvider>
         </ToastProvider>
       </BrowserRouter>
     </ErrorBoundary>

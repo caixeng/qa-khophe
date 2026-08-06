@@ -28,20 +28,33 @@ interface XayPhePageProps {
 export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
   const { range, setRange } = useDateRange();
   // Lọc ngay ở truy vấn: chỉ kéo về phiếu trong kỳ đang xem.
-  const { data: grindingList, loading, error, refetch } = useAsyncList(
-    () => grindingService.getAll({ from: range.from, to: range.to }),
-    [range.from, range.to],
-  );
+  const {
+    data: grindingList,
+    loading,
+    error,
+    refetch,
+  } = useAsyncList(() => grindingService.getAll({ from: range.from, to: range.to }), [range.from, range.to]);
   const { data: importsList } = useAsyncList(importsService.getAll, []);
-
 
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({
+    isOpen: false,
+    id: '',
+  });
   const [selectedDetail, setSelectedDetail] = useState<Grinding | null>(null);
 
   // Table controls
-  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, sortConfig, handleSort } = useTableControls();
+  const {
+    searchQuery,
+    setSearchQuery,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    setItemsPerPage,
+    sortConfig,
+    handleSort,
+  } = useTableControls();
 
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Grinding>({
@@ -51,7 +64,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
       output_qty_kg: 0,
       bags_count: 0,
       worker: 'Hoa',
-    }
+    },
   });
 
   const [searchParams] = useSearchParams();
@@ -92,7 +105,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
     const totalOutput = grindingList.reduce((sum, item) => sum + (Number(item.output_qty_kg) || 0), 0);
     const totalLossKg = totalInput - totalOutput;
     const avgLossPct = totalInput > 0 ? (totalLossKg / totalInput) * 100 : 0;
-    const completedLots = grindingList.filter(g => (Number(g.output_qty_kg) || 0) > 0).length;
+    const completedLots = grindingList.filter((g) => (Number(g.output_qty_kg) || 0) > 0).length;
 
     return { totalInput, totalOutput, totalLossKg, avgLossPct, completedLots };
   }, [grindingList]);
@@ -171,8 +184,12 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <Scissors size={24} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng xay trong kỳ</p>
-            <p className="text-xl font-mono font-black text-[var(--text-primary)]">{formatKg(stats.totalInput)}</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Tổng xay trong kỳ
+            </p>
+            <p className="text-xl font-mono font-black text-[var(--text-primary)]">
+              {formatKg(stats.totalInput)}
+            </p>
           </div>
         </div>
 
@@ -181,7 +198,9 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <Factory size={24} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Đầu ra thành phẩm</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Đầu ra thành phẩm
+            </p>
             <p className="text-xl font-mono font-black text-emerald-600">{formatKg(stats.totalOutput)}</p>
           </div>
         </div>
@@ -191,7 +210,9 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <TrendingDown size={24} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng hao hụt</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Tổng hao hụt
+            </p>
             <p className="text-xl font-mono font-black text-rose-600">{formatKg(stats.totalLossKg)}</p>
           </div>
         </div>
@@ -201,8 +222,12 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <Scissors size={24} />
           </div>
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">% Hao hụt trung bình</p>
-            <p className="text-xl font-mono font-black text-[var(--primary-500)]">{formatPhanTram(stats.avgLossPct)}</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              % Hao hụt trung bình
+            </p>
+            <p className="text-xl font-mono font-black text-[var(--primary-500)]">
+              {formatPhanTram(stats.avgLossPct)}
+            </p>
           </div>
         </div>
       </div>
@@ -225,14 +250,50 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
               <caption className="sr-only">Danh sách phiếu xay phế</caption>
               <thead>
                 <tr>
-                  <SortableHeader sortKey="date" sortConfig={sortConfig} onSort={handleSort}>Ngày xay</SortableHeader>
-                  <th scope="col" className="th-cell">Lô phế nhập</th>
-                  <SortableHeader sortKey="input_qty_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Đầu vào (kg)</SortableHeader>
-                  <SortableHeader sortKey="output_qty_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Đầu ra (kg)</SortableHeader>
-                  <SortableHeader sortKey="loss_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Hao hụt (kg)</SortableHeader>
-                  <SortableHeader sortKey="loss_pct" sortConfig={sortConfig} onSort={handleSort} align="right">% Hao hụt</SortableHeader>
-                  <SortableHeader sortKey="bags_count" sortConfig={sortConfig} onSort={handleSort} align="right">Số bao</SortableHeader>
-                  <SortableHeader sortKey="worker" sortConfig={sortConfig} onSort={handleSort}>Thợ xay</SortableHeader>
+                  <SortableHeader sortKey="date" sortConfig={sortConfig} onSort={handleSort}>
+                    Ngày xay
+                  </SortableHeader>
+                  <th scope="col" className="th-cell">
+                    Lô phế nhập
+                  </th>
+                  <SortableHeader
+                    sortKey="input_qty_kg"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    align="right"
+                  >
+                    Đầu vào (kg)
+                  </SortableHeader>
+                  <SortableHeader
+                    sortKey="output_qty_kg"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    align="right"
+                  >
+                    Đầu ra (kg)
+                  </SortableHeader>
+                  <SortableHeader sortKey="loss_kg" sortConfig={sortConfig} onSort={handleSort} align="right">
+                    Hao hụt (kg)
+                  </SortableHeader>
+                  <SortableHeader
+                    sortKey="loss_pct"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    align="right"
+                  >
+                    % Hao hụt
+                  </SortableHeader>
+                  <SortableHeader
+                    sortKey="bags_count"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    align="right"
+                  >
+                    Số bao
+                  </SortableHeader>
+                  <SortableHeader sortKey="worker" sortConfig={sortConfig} onSort={handleSort}>
+                    Thợ xay
+                  </SortableHeader>
                   <th className="th-cell text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -240,7 +301,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                 {pageItems.map((item) => {
                   const inputKg = Number(item.input_qty_kg) || 0;
                   const outputKg = Number(item.output_qty_kg) || 0;
-                  const lossKg = item.loss_kg !== undefined ? item.loss_kg : (inputKg - outputKg);
+                  const lossKg = item.loss_kg !== undefined ? item.loss_kg : inputKg - outputKg;
                   const lossPct = item.loss_pct ?? (inputKg > 0 ? (lossKg / inputKg) * 100 : 0);
 
                   return (
@@ -250,7 +311,9 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                       onClick={() => setSelectedDetail(item)}
                       title="Bấm để xem chi tiết mẻ xay"
                     >
-                      <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(item.date)}</td>
+                      <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
+                        {formatNgay(item.date)}
+                      </td>
                       <td className="td-cell font-mono text-xs text-[var(--primary-500)] font-bold">
                         {item.import_id ? item.import_id.slice(0, 8) : 'Lô vãng lai'}
                       </td>
@@ -258,18 +321,28 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                         {formatKg(inputKg)}
                       </td>
                       <td className="td-cell text-right font-mono font-bold text-xs text-emerald-600">
-                        {outputKg > 0 ? formatKg(outputKg) : <span className="text-amber-500 font-normal italic">Đang xay...</span>}
+                        {outputKg > 0 ? (
+                          formatKg(outputKg)
+                        ) : (
+                          <span className="text-amber-500 font-normal italic">Đang xay...</span>
+                        )}
                       </td>
                       <td className="td-cell text-right font-mono text-xs">
-                        <span className={cn(lossKg > 50 ? "text-rose-600 font-bold" : "text-[var(--text-muted)]")}>
+                        <span
+                          className={cn(lossKg > 50 ? 'text-rose-600 font-bold' : 'text-[var(--text-muted)]')}
+                        >
                           {lossKg > 0 ? `-${formatKg(lossKg)}` : `${formatKg(Math.abs(lossKg))}`}
                         </span>
                       </td>
                       <td className="td-cell text-right font-mono text-xs">
-                        <span className={cn(
-                          "px-2 py-0.5 rounded-full font-bold text-[11px]",
-                          lossPct > 5 ? "bg-rose-100 text-rose-700 border border-rose-200" : "bg-emerald-100 text-emerald-700 border border-emerald-200"
-                        )}>
+                        <span
+                          className={cn(
+                            'px-2 py-0.5 rounded-full font-bold text-[11px]',
+                            lossPct > 5
+                              ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                              : 'bg-emerald-100 text-emerald-700 border border-emerald-200',
+                          )}
+                        >
                           {formatPhanTram(lossPct)}
                         </span>
                       </td>
@@ -326,85 +399,104 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
       </DataState>
 
       {/* Detail Modal */}
-      <Modal
-        isOpen={!!selectedDetail}
-        onClose={() => setSelectedDetail(null)}
-        title="Chi tiết phiếu xay phế"
-      >
-        {selectedDetail && (() => {
-          const inputKg = Number(selectedDetail.input_qty_kg) || 0;
-          const outputKg = Number(selectedDetail.output_qty_kg) || 0;
-          const lossKg = selectedDetail.loss_kg !== undefined ? selectedDetail.loss_kg : (inputKg - outputKg);
-          const lossPct = selectedDetail.loss_pct ?? (inputKg > 0 ? (lossKg / inputKg) * 100 : 0);
+      <Modal isOpen={!!selectedDetail} onClose={() => setSelectedDetail(null)} title="Chi tiết phiếu xay phế">
+        {selectedDetail &&
+          (() => {
+            const inputKg = Number(selectedDetail.input_qty_kg) || 0;
+            const outputKg = Number(selectedDetail.output_qty_kg) || 0;
+            const lossKg = selectedDetail.loss_kg !== undefined ? selectedDetail.loss_kg : inputKg - outputKg;
+            const lossPct = selectedDetail.loss_pct ?? (inputKg > 0 ? (lossKg / inputKg) * 100 : 0);
 
-          return (
-            <div className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-                <div>
-                  <span className="text-[var(--text-muted)] block font-semibold uppercase">NGÀY XAY</span>
-                  <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{formatNgay(selectedDetail.date)}</span>
+            return (
+              <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+                  <div>
+                    <span className="text-[var(--text-muted)] block font-semibold uppercase">NGÀY XAY</span>
+                    <span className="font-mono font-bold text-sm text-[var(--text-primary)]">
+                      {formatNgay(selectedDetail.date)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[var(--text-muted)] block font-semibold uppercase">
+                      LÔ PHẾ NHẬP
+                    </span>
+                    <span className="font-mono font-bold text-sm text-[var(--primary-500)]">
+                      {selectedDetail.import_id || 'Lô vãng lai'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[var(--text-muted)] block font-semibold uppercase">ĐẦU VÀO</span>
+                    <span className="font-mono font-bold text-sm text-[var(--text-primary)]">
+                      {formatKg(inputKg)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[var(--text-muted)] block font-semibold uppercase">
+                      ĐẦU RA THÀNH PHẨM
+                    </span>
+                    <span className="font-mono font-bold text-sm text-emerald-600">{formatKg(outputKg)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[var(--text-muted)] block font-semibold uppercase">HAO HỤT</span>
+                    <span className="font-mono font-bold text-sm text-rose-600">
+                      {formatKg(lossKg)} ({formatPhanTram(lossPct)})
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[var(--text-muted)] block font-semibold uppercase">
+                      SỐ BAO THÀNH PHẨM
+                    </span>
+                    <span className="font-mono font-bold text-sm text-[var(--text-primary)]">
+                      {selectedDetail.bags_count || 0} bao
+                    </span>
+                  </div>
+                  <div className="col-span-2 pt-2 border-t border-[var(--border-color)]">
+                    <span className="text-[var(--text-muted)] block font-semibold uppercase">
+                      THỢ PHỤ TRÁCH XAY
+                    </span>
+                    <span className="font-bold text-sm text-[var(--text-primary)]">
+                      {selectedDetail.worker || 'Hoa'}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[var(--text-muted)] block font-semibold uppercase">LÔ PHẾ NHẬP</span>
-                  <span className="font-mono font-bold text-sm text-[var(--primary-500)]">{selectedDetail.import_id || 'Lô vãng lai'}</span>
-                </div>
-                <div>
-                  <span className="text-[var(--text-muted)] block font-semibold uppercase">ĐẦU VÀO</span>
-                  <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{formatKg(inputKg)}</span>
-                </div>
-                <div>
-                  <span className="text-[var(--text-muted)] block font-semibold uppercase">ĐẦU RA THÀNH PHẨM</span>
-                  <span className="font-mono font-bold text-sm text-emerald-600">{formatKg(outputKg)}</span>
-                </div>
-                <div>
-                  <span className="text-[var(--text-muted)] block font-semibold uppercase">HAO HỤT</span>
-                  <span className="font-mono font-bold text-sm text-rose-600">{formatKg(lossKg)} ({formatPhanTram(lossPct)})</span>
-                </div>
-                <div>
-                  <span className="text-[var(--text-muted)] block font-semibold uppercase">SỐ BAO THÀNH PHẨM</span>
-                  <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{selectedDetail.bags_count || 0} bao</span>
-                </div>
-                <div className="col-span-2 pt-2 border-t border-[var(--border-color)]">
-                  <span className="text-[var(--text-muted)] block font-semibold uppercase">THỢ PHỤ TRÁCH XAY</span>
-                  <span className="font-bold text-sm text-[var(--text-primary)]">{selectedDetail.worker || 'Hoa'}</span>
+
+                {selectedDetail.notes && (
+                  <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+                    <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">
+                      GHI CHÚ
+                    </span>
+                    <p className="text-[var(--text-secondary)] italic">{selectedDetail.notes}</p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-4 border-t border-[var(--border-color)] gap-2">
+                  <button
+                    onClick={() => {
+                      const item = selectedDetail;
+                      setSelectedDetail(null);
+                      openModal(item);
+                    }}
+                    className="btn-primary flex items-center space-x-1.5 text-xs font-bold py-2 px-4 cursor-pointer"
+                  >
+                    <Edit size={15} />
+                    <span>Chỉnh sửa</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const id = selectedDetail.id;
+                      setSelectedDetail(null);
+                      handleDelete(id);
+                    }}
+                    className="btn-danger flex items-center space-x-1.5 text-xs font-bold py-2 px-4 cursor-pointer"
+                  >
+                    <Trash2 size={15} />
+                    <span>Xóa</span>
+                  </button>
                 </div>
               </div>
-
-              {selectedDetail.notes && (
-                <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-                  <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">GHI CHÚ</span>
-                  <p className="text-[var(--text-secondary)] italic">{selectedDetail.notes}</p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-4 border-t border-[var(--border-color)] gap-2">
-                <button
-                  onClick={() => {
-                    const item = selectedDetail;
-                    setSelectedDetail(null);
-                    openModal(item);
-                  }}
-                  className="btn-primary flex items-center space-x-1.5 text-xs font-bold py-2 px-4 cursor-pointer"
-                >
-                  <Edit size={15} />
-                  <span>Chỉnh sửa</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    const id = selectedDetail.id;
-                    setSelectedDetail(null);
-                    handleDelete(id);
-                  }}
-                  className="btn-danger flex items-center space-x-1.5 text-xs font-bold py-2 px-4 cursor-pointer"
-                >
-                  <Trash2 size={15} />
-                  <span>Xóa</span>
-                </button>
-              </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
       </Modal>
 
       {/* Form Modal */}
@@ -430,7 +522,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
               value={formState.data?.import_id || ''}
               onChange={(e) => {
                 const impId = e.target.value;
-                const imp = importsList.find(i => i.id === impId);
+                const imp = importsList.find((i) => i.id === impId);
                 handleChange('import_id', impId);
                 if (imp && imp.quantity_kg) {
                   handleChange('input_qty_kg' as any, imp.quantity_kg);

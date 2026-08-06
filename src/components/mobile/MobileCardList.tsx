@@ -33,14 +33,14 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
   }
 
   return (
-    <div className={cn("space-y-3 lg:hidden", className)}>
+    <div className={cn('space-y-3 lg:hidden', className)}>
       {items.map((item) => (
         <div
           key={item.id}
           onClick={item.onClick}
           className={cn(
-            "p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xs transition-all active:scale-[0.99] relative overflow-hidden",
-            item.onClick && "cursor-pointer hover:border-[var(--primary-400)]"
+            'p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xs transition-all active:scale-[0.99] relative overflow-hidden',
+            item.onClick && 'cursor-pointer hover:border-[var(--primary-400)]',
           )}
         >
           {/* Accent bar color on left border if defined */}
@@ -58,9 +58,7 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
                 {item.title}
               </h4>
               {item.subtitle && (
-                <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">
-                  {item.subtitle}
-                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{item.subtitle}</p>
               )}
             </div>
             {item.badge && <div className="shrink-0">{item.badge}</div>}

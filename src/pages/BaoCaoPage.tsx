@@ -13,7 +13,19 @@ import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
 import { grindingService } from '../services/grindingService';
 import { expensesService } from '../services/expensesService';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts';
 
 const COLORS = ['#00668c', '#059669', '#d97706', '#64748b', '#7c3aed', '#e11d48'];
 
@@ -41,7 +53,7 @@ export const BaoCaoPage: React.FC = () => {
   );
   const { data: expenses, loading: expesLoading } = useAsyncList(
     canSeeFinance ? expensesService.getExpenses : async () => [],
-    [canSeeFinance]
+    [canSeeFinance],
   );
 
   /**
@@ -74,7 +86,6 @@ export const BaoCaoPage: React.FC = () => {
       .sort((a, b) => b.lossPct - a.lossPct);
   }, [grinding]);
 
-
   const summary = useMemo(() => {
     const totalImportKg = imports.reduce((sum, i) => sum + (Number(i.quantity_kg) || 0), 0);
     const totalImportCost = imports.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
@@ -92,7 +103,7 @@ export const BaoCaoPage: React.FC = () => {
       totalExportKg,
       totalRevenue,
       totalOperatingCost,
-      estimatedProfit
+      estimatedProfit,
     };
   }, [imports, exports, expenses]);
 
@@ -122,12 +133,12 @@ export const BaoCaoPage: React.FC = () => {
   const dailyChartData = useMemo(() => {
     const datesMap: Record<string, { importKg: number; exportKg: number }> = {};
 
-    imports.forEach(i => {
+    imports.forEach((i) => {
       if (!datesMap[i.date]) datesMap[i.date] = { importKg: 0, exportKg: 0 };
       datesMap[i.date].importKg += Number(i.quantity_kg) || 0;
     });
 
-    exports.forEach(e => {
+    exports.forEach((e) => {
       if (!datesMap[e.date]) datesMap[e.date] = { importKg: 0, exportKg: 0 };
       datesMap[e.date].exportKg += Number(e.total_kg) || 0;
     });
@@ -171,13 +182,29 @@ export const BaoCaoPage: React.FC = () => {
 
       const importRows = [
         ['Ngày', 'Nhà cung cấp', 'Khối lượng (kg)', 'Đơn giá', 'Thành tiền', 'Thanh toán', 'Xử lý'],
-        ...imports.map((i) => [i.date, i.contact_name || 'Khách lẻ', i.quantity_kg, i.price_per_kg, i.total_amount, i.payment_status, i.processing_status]),
+        ...imports.map((i) => [
+          i.date,
+          i.contact_name || 'Khách lẻ',
+          i.quantity_kg,
+          i.price_per_kg,
+          i.total_amount,
+          i.payment_status,
+          i.processing_status,
+        ]),
       ];
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(importRows), 'Nhập phế');
 
       const exportRows = [
         ['Ngày', 'Khách hàng', 'Số bao', 'Khối lượng (kg)', 'Đơn giá', 'Thành tiền', 'Thanh toán'],
-        ...exports.map((e) => [e.date, e.contact_name || 'Khách lẻ', e.bags_count, e.total_kg, e.price_per_kg, e.total_amount, e.payment_status]),
+        ...exports.map((e) => [
+          e.date,
+          e.contact_name || 'Khách lẻ',
+          e.bags_count,
+          e.total_kg,
+          e.price_per_kg,
+          e.total_amount,
+          e.payment_status,
+        ]),
       ];
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(exportRows), 'Xuất phế');
 
@@ -218,7 +245,7 @@ export const BaoCaoPage: React.FC = () => {
             'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
             activeTab === 'tongquan'
               ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
           )}
         >
           Tổng quan sản lượng
@@ -229,7 +256,7 @@ export const BaoCaoPage: React.FC = () => {
             'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
             activeTab === 'nhapxuat'
               ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
           )}
         >
           Phân bổ nguồn phế
@@ -240,7 +267,7 @@ export const BaoCaoPage: React.FC = () => {
             'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
             activeTab === 'hieusuat'
               ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
           )}
         >
           Hiệu suất xay
@@ -252,7 +279,7 @@ export const BaoCaoPage: React.FC = () => {
               'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
               activeTab === 'taichinh'
                 ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
-                : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
             )}
           >
             Cơ cấu chi phí
@@ -264,14 +291,42 @@ export const BaoCaoPage: React.FC = () => {
         {activeTab === 'tongquan' && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <KpiCard title="Tổng nhập phế" value={formatKg(summary.totalImportKg)} subtitle={formatTien(summary.totalImportCost)} icon={Package} color="success" />
-              <KpiCard title="Tổng xuất phế" value={formatKg(summary.totalExportKg)} subtitle={formatTien(summary.totalRevenue)} icon={TrendingUp} color="info" />
-              {canSeeFinance && <KpiCard title="Chi phí vận hành" value={formatTien(summary.totalOperatingCost)} icon={DollarSign} color="danger" />}
-              {canSeeFinance && <KpiCard title="Lợi nhuận ước tính" value={formatTien(summary.estimatedProfit)} icon={DollarSign} color="primary" />}
+              <KpiCard
+                title="Tổng nhập phế"
+                value={formatKg(summary.totalImportKg)}
+                subtitle={formatTien(summary.totalImportCost)}
+                icon={Package}
+                color="success"
+              />
+              <KpiCard
+                title="Tổng xuất phế"
+                value={formatKg(summary.totalExportKg)}
+                subtitle={formatTien(summary.totalRevenue)}
+                icon={TrendingUp}
+                color="info"
+              />
+              {canSeeFinance && (
+                <KpiCard
+                  title="Chi phí vận hành"
+                  value={formatTien(summary.totalOperatingCost)}
+                  icon={DollarSign}
+                  color="danger"
+                />
+              )}
+              {canSeeFinance && (
+                <KpiCard
+                  title="Lợi nhuận ước tính"
+                  value={formatTien(summary.estimatedProfit)}
+                  icon={DollarSign}
+                  color="primary"
+                />
+              )}
             </div>
 
             <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl">
-              <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">Biểu đồ so sánh sản lượng Nhập vs Xuất theo ngày</h3>
+              <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">
+                Biểu đồ so sánh sản lượng Nhập vs Xuất theo ngày
+              </h3>
               <div className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailyChartData}>
@@ -291,11 +346,21 @@ export const BaoCaoPage: React.FC = () => {
 
         {activeTab === 'nhapxuat' && (
           <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl space-y-4">
-            <h3 className="text-sm font-bold text-[var(--text-primary)]">Tỷ lệ khối lượng phế nhập theo Nhà cung cấp</h3>
+            <h3 className="text-sm font-bold text-[var(--text-primary)]">
+              Tỷ lệ khối lượng phế nhập theo Nhà cung cấp
+            </h3>
             <div className="h-80 w-full flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={supplierDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={(entry) => `${entry.name}: ${formatKg(entry.value)}`}>
+                  <Pie
+                    data={supplierDistribution}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={(entry) => `${entry.name}: ${formatKg(entry.value)}`}
+                  >
                     {supplierDistribution.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
@@ -312,7 +377,8 @@ export const BaoCaoPage: React.FC = () => {
             <div>
               <h3 className="text-sm font-bold text-[var(--text-primary)]">Tỷ lệ hao hụt khi xay theo thợ</h3>
               <p className="text-xs text-[var(--text-muted)] mt-1">
-                Sắp xếp theo mức hao hụt giảm dần. Cùng một lô phế, chênh vài phần trăm hao hụt là chênh vài triệu đồng — dòng trên cùng là chỗ đáng xem lại trước tiên.
+                Sắp xếp theo mức hao hụt giảm dần. Cùng một lô phế, chênh vài phần trăm hao hụt là chênh vài
+                triệu đồng — dòng trên cùng là chỗ đáng xem lại trước tiên.
               </p>
             </div>
 
@@ -326,12 +392,24 @@ export const BaoCaoPage: React.FC = () => {
                   <caption className="sr-only">Hiệu suất xay theo thợ</caption>
                   <thead>
                     <tr>
-                      <th scope="col" className="th-cell">Thợ xay</th>
-                      <th scope="col" className="th-cell text-right">Số lô</th>
-                      <th scope="col" className="th-cell text-right">Đầu vào</th>
-                      <th scope="col" className="th-cell text-right">Ra thành phẩm</th>
-                      <th scope="col" className="th-cell text-right">Hao hụt</th>
-                      <th scope="col" className="th-cell text-right">Tỷ lệ hao</th>
+                      <th scope="col" className="th-cell">
+                        Thợ xay
+                      </th>
+                      <th scope="col" className="th-cell text-right">
+                        Số lô
+                      </th>
+                      <th scope="col" className="th-cell text-right">
+                        Đầu vào
+                      </th>
+                      <th scope="col" className="th-cell text-right">
+                        Ra thành phẩm
+                      </th>
+                      <th scope="col" className="th-cell text-right">
+                        Hao hụt
+                      </th>
+                      <th scope="col" className="th-cell text-right">
+                        Tỷ lệ hao
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -345,7 +423,11 @@ export const BaoCaoPage: React.FC = () => {
                         <td
                           className={cn(
                             'td-cell text-right font-mono text-xs font-bold',
-                            row.lossPct > 10 ? 'text-rose-600' : row.lossPct > 5 ? 'text-amber-600' : 'text-emerald-600'
+                            row.lossPct > 10
+                              ? 'text-rose-600'
+                              : row.lossPct > 5
+                                ? 'text-amber-600'
+                                : 'text-emerald-600',
                           )}
                         >
                           {row.lossPct.toFixed(1)}%
@@ -365,7 +447,15 @@ export const BaoCaoPage: React.FC = () => {
             <div className="h-80 w-full flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={expenseDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={(entry) => `${entry.name}: ${formatTien(entry.value)}`}>
+                  <Pie
+                    data={expenseDistribution}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    label={(entry) => `${entry.name}: ${formatTien(entry.value)}`}
+                  >
                     {expenseDistribution.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}

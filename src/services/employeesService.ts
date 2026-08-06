@@ -3,10 +3,7 @@ import type { Employee, Attendance } from '../types';
 
 export const employeesService = {
   async getAll(): Promise<Employee[]> {
-    const { data, error } = await supabase
-      .from('employees')
-      .select('*')
-      .order('name', { ascending: true });
+    const { data, error } = await supabase.from('employees').select('*').order('name', { ascending: true });
 
     if (error) throw new Error(error.message);
     return data || [];
@@ -53,7 +50,7 @@ export const employeesService = {
   async delete(id: string): Promise<void> {
     const { error } = await supabase.from('employees').delete().eq('id', id);
     if (error) throw new Error(error.message);
-  }
+  },
 };
 
 export const attendanceService = {
@@ -65,7 +62,7 @@ export const attendanceService = {
 
     if (error) throw new Error(error.message);
 
-    return (data || []).map(item => ({
+    return (data || []).map((item) => ({
       id: item.id,
       date: item.date,
       employee_id: item.employee_id,
@@ -136,5 +133,5 @@ export const attendanceService = {
   async deleteAttendance(id: string): Promise<void> {
     const { error } = await supabase.from('attendance').delete().eq('id', id);
     if (error) throw new Error(error.message);
-  }
+  },
 };

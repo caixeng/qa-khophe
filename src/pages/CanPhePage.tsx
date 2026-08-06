@@ -101,7 +101,6 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-
       {/* Active Weighing Session Header */}
       <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-5">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[var(--border-color)] pb-4 gap-3">
@@ -110,10 +109,14 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700">
                 {activeBags.length > 0 ? 'Phiên cân đang mở' : 'Chưa có phiên cân nào đang mở'}
               </span>
-              <span className="text-xs text-[var(--text-muted)] font-mono">{formatNgay(new Date().toISOString())}</span>
+              <span className="text-xs text-[var(--text-muted)] font-mono">
+                {formatNgay(new Date().toISOString())}
+              </span>
             </div>
             <h2 className="text-xl font-bold text-[var(--text-primary)] mt-1">
-              {activeBags.length > 0 ? `Đang cân (${activeBags.length} bao)` : 'Bấm "Mở NumPad" để bắt đầu cân bao mới'}
+              {activeBags.length > 0
+                ? `Đang cân (${activeBags.length} bao)`
+                : 'Bấm "Mở NumPad" để bắt đầu cân bao mới'}
             </h2>
           </div>
 
@@ -133,7 +136,9 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
               <Box size={16} className="text-[var(--primary-500)]" /> Quy định Trừ Bì Ba Lết (Pallet)
             </span>
             <span className="text-xs font-mono font-bold text-rose-600">
-              {tareWeight > 0 ? `Trừ bì: -${tareWeight} kg (${PALLET_TYPES[selectedPallet].name})` : 'Không trừ lết'}
+              {tareWeight > 0
+                ? `Trừ bì: -${tareWeight} kg (${PALLET_TYPES[selectedPallet].name})`
+                : 'Không trừ lết'}
             </span>
           </div>
 
@@ -146,14 +151,16 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
                   key={pType}
                   onClick={() => setSelectedPallet(pType)}
                   className={cn(
-                    "p-2.5 rounded-xl border text-left transition-all cursor-pointer",
+                    'p-2.5 rounded-xl border text-left transition-all cursor-pointer',
                     isSelected
-                      ? "bg-[var(--primary-50)] border-[var(--primary-500)] text-[var(--primary-600)] font-bold shadow-xs"
-                      : "bg-[var(--bg-surface)] border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
+                      ? 'bg-[var(--primary-50)] border-[var(--primary-500)] text-[var(--primary-600)] font-bold shadow-xs'
+                      : 'bg-[var(--bg-surface)] border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
                   )}
                 >
                   <p className="text-xs font-bold">{cfg.name}</p>
-                  <p className="text-[11px] font-mono opacity-80">{cfg.weightKg > 0 ? `-${cfg.weightKg} kg/lết (${cfg.symbol})` : '0 kg'}</p>
+                  <p className="text-[11px] font-mono opacity-80">
+                    {cfg.weightKg > 0 ? `-${cfg.weightKg} kg/lết (${cfg.symbol})` : '0 kg'}
+                  </p>
                 </button>
               );
             })}
@@ -181,22 +188,34 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
         {/* Real-time Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng số bao</p>
-            <p className="text-2xl font-mono font-black text-[var(--text-primary)] mt-1">{activeBags.length} bao</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Tổng số bao
+            </p>
+            <p className="text-2xl font-mono font-black text-[var(--text-primary)] mt-1">
+              {activeBags.length} bao
+            </p>
           </div>
 
           <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Tổng cân thô (Gross)</p>
-            <p className="text-2xl font-mono font-black text-[var(--text-primary)] mt-1">{formatKg(grossWeight)}</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Tổng cân thô (Gross)
+            </p>
+            <p className="text-2xl font-mono font-black text-[var(--text-primary)] mt-1">
+              {formatKg(grossWeight)}
+            </p>
           </div>
 
           <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Trừ bì lết (Tare)</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Trừ bì lết (Tare)
+            </p>
             <p className="text-2xl font-mono font-black text-rose-600 mt-1">-{tareWeight} kg</p>
           </div>
 
           <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">Thực phế (Net)</p>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+              Thực phế (Net)
+            </p>
             <p className="text-2xl font-mono font-black text-emerald-600 mt-1">{formatKg(netWeight)}</p>
           </div>
         </div>
@@ -205,12 +224,14 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
         <div className="space-y-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] flex justify-between items-center">
             <span>Danh sách bao đã cân ({activeBags.length} bao)</span>
-            <span className="font-mono text-emerald-600 font-bold">TB: {(netWeight / (activeBags.length || 1)).toFixed(1)} kg/bao</span>
+            <span className="font-mono text-emerald-600 font-bold">
+              TB: {(netWeight / (activeBags.length || 1)).toFixed(1)} kg/bao
+            </span>
           </h3>
           <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
             {activeBags.map((w, idx) => (
-              <span 
-                key={idx} 
+              <span
+                key={idx}
                 className="px-3 py-1.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-primary)] shadow-xs"
               >
                 #{activeBags.length - idx}: <span className="text-[var(--primary-500)]">{w} kg</span>
@@ -227,12 +248,22 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
           <span>Lịch sử các phiên cân phế</span>
         </h3>
 
-        <DataState loading={loading} error={error} isEmpty={sessions.length === 0} emptyTitle="Chưa có phiên cân nào">
+        <DataState
+          loading={loading}
+          error={error}
+          isEmpty={sessions.length === 0}
+          emptyTitle="Chưa có phiên cân nào"
+        >
           <div className="space-y-2">
             {sessions.map((s) => (
-              <div key={s.id} className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center gap-3">
+              <div
+                key={s.id}
+                className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center gap-3"
+              >
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-[var(--text-primary)]">{formatNgay(s.date)} - {s.material_type}</p>
+                  <p className="text-xs font-bold text-[var(--text-primary)]">
+                    {formatNgay(s.date)} - {s.material_type}
+                  </p>
                   <p className="text-[11px] text-[var(--text-muted)]">{s.total_bags} bao</p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">

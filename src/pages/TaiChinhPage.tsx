@@ -37,13 +37,13 @@ export const TaiChinhPage: React.FC = () => {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer",
+                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
                 isActive
-                  ? "bg-[var(--primary-500)] text-white shadow-xs"
-                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]"
+                  ? 'bg-[var(--primary-500)] text-white shadow-xs'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
               )}
             >
-              <Icon size={14} className={isActive ? "text-white" : tab.color} />
+              <Icon size={14} className={isActive ? 'text-white' : tab.color} />
               <span>{tab.label}</span>
             </button>
           );

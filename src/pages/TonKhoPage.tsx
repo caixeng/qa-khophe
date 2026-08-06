@@ -43,7 +43,7 @@ export const TonKhoPage: React.FC = () => {
       totalGround,
       totalExported,
       currentStockKg,
-      currentBags
+      currentBags,
     };
   }, [grinding, exports, kgPerBag]);
 
@@ -58,7 +58,7 @@ export const TonKhoPage: React.FC = () => {
           date: g.date,
           type: 'in',
           amount: outKg,
-          note: `Xay thành phẩm ${g.bags_count ? `(${g.bags_count} bao)` : ''}`
+          note: `Xay thành phẩm ${g.bags_count ? `(${g.bags_count} bao)` : ''}`,
         });
       }
     });
@@ -70,7 +70,7 @@ export const TonKhoPage: React.FC = () => {
         date: e.date,
         type: 'out',
         amount: -exportKg,
-        note: `Xuất bán ${e.contact_name || 'Khách'} (${e.bags_count || 0} bao)`
+        note: `Xuất bán ${e.contact_name || 'Khách'} (${e.bags_count || 0} bao)`,
       });
     });
 
@@ -134,13 +134,31 @@ export const TonKhoPage: React.FC = () => {
       <PageHeader
         title="Tồn Kho Bột Nhựa"
         subtitle="Theo dõi biến động tồn kho thực tế tính theo số bao và tổng khối lượng kg"
-        action={canCount ? { label: 'Kiểm kê kho', icon: ClipboardCheck, onClick: openCountModal } : undefined}
+        action={
+          canCount ? { label: 'Kiểm kê kho', icon: ClipboardCheck, onClick: openCountModal } : undefined
+        }
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KpiCard title="Tồn kho hiện tại" value={`${inventoryStats.currentBags} bao`} subtitle={`~${formatKg(inventoryStats.currentStockKg)}`} icon={Package} color="primary" />
-        <KpiCard title="Tổng xay ra (Nhập kho)" value={formatKg(inventoryStats.totalGround)} icon={TrendingUp} color="success" />
-        <KpiCard title="Tổng đã xuất bán" value={formatKg(inventoryStats.totalExported)} icon={TrendingDown} color="warning" />
+        <KpiCard
+          title="Tồn kho hiện tại"
+          value={`${inventoryStats.currentBags} bao`}
+          subtitle={`~${formatKg(inventoryStats.currentStockKg)}`}
+          icon={Package}
+          color="primary"
+        />
+        <KpiCard
+          title="Tổng xay ra (Nhập kho)"
+          value={formatKg(inventoryStats.totalGround)}
+          icon={TrendingUp}
+          color="success"
+        />
+        <KpiCard
+          title="Tổng đã xuất bán"
+          value={formatKg(inventoryStats.totalExported)}
+          icon={TrendingDown}
+          color="warning"
+        />
       </div>
 
       {/* Chart */}
@@ -153,7 +171,13 @@ export const TonKhoPage: React.FC = () => {
               <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} />
               <YAxis stroke="var(--text-muted)" fontSize={12} />
               <Tooltip formatter={(value: any) => [formatKg(Number(value) || 0), 'Tồn kho']} />
-              <Line type="monotone" dataKey="Tồn kho (kg)" stroke="var(--primary-500)" strokeWidth={3} dot={{ r: 6 }} />
+              <Line
+                type="monotone"
+                dataKey="Tồn kho (kg)"
+                stroke="var(--primary-500)"
+                strokeWidth={3}
+                dot={{ r: 6 }}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -166,13 +190,19 @@ export const TonKhoPage: React.FC = () => {
         <DataState loading={loading} error={error} isEmpty={historyEvents.length === 0}>
           <div className="space-y-2">
             {historyEvents.map((evt) => (
-              <div key={evt.id} className="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center">
+              <div
+                key={evt.id}
+                className="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center"
+              >
                 <div>
                   <p className="text-xs font-bold text-[var(--text-primary)]">{evt.note}</p>
                   <p className="text-[11px] text-[var(--text-muted)] font-mono">{formatNgay(evt.date)}</p>
                 </div>
-                <span className={`font-mono font-bold text-xs ${evt.type === 'in' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {evt.type === 'in' ? '+' : ''}{formatKg(evt.amount)}
+                <span
+                  className={`font-mono font-bold text-xs ${evt.type === 'in' ? 'text-emerald-600' : 'text-rose-600'}`}
+                >
+                  {evt.type === 'in' ? '+' : ''}
+                  {formatKg(evt.amount)}
                 </span>
               </div>
             ))}
@@ -186,16 +216,24 @@ export const TonKhoPage: React.FC = () => {
           <h3 className="text-base font-bold text-[var(--text-primary)]">Lịch sử kiểm kê kho</h3>
           <div className="space-y-2">
             {stockCounts.map((c) => (
-              <div key={c.id} className="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center gap-3">
+              <div
+                key={c.id}
+                className="p-3.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center gap-3"
+              >
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-[var(--text-primary)]">{formatNgay(c.date)} — {c.counted_bags} bao thực tế</p>
+                  <p className="text-xs font-bold text-[var(--text-primary)]">
+                    {formatNgay(c.date)} — {c.counted_bags} bao thực tế
+                  </p>
                   <p className="text-[11px] text-[var(--text-muted)] font-mono">
                     Đếm: {formatKg(c.counted_kg)} · Hệ thống: {formatKg(c.system_kg)}
                   </p>
                   {c.notes && <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{c.notes}</p>}
                 </div>
-                <span className={`font-mono font-bold text-xs shrink-0 ${c.diff_kg === 0 ? 'text-[var(--text-muted)]' : c.diff_kg > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {c.diff_kg > 0 ? '+' : ''}{formatKg(c.diff_kg)}
+                <span
+                  className={`font-mono font-bold text-xs shrink-0 ${c.diff_kg === 0 ? 'text-[var(--text-muted)]' : c.diff_kg > 0 ? 'text-emerald-600' : 'text-rose-600'}`}
+                >
+                  {c.diff_kg > 0 ? '+' : ''}
+                  {formatKg(c.diff_kg)}
                 </span>
               </div>
             ))}
@@ -208,7 +246,9 @@ export const TonKhoPage: React.FC = () => {
         <form onSubmit={handleSaveCount} className="space-y-4">
           <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center text-xs">
             <span className="text-[var(--text-muted)] font-semibold">Tồn kho theo hệ thống:</span>
-            <span className="font-mono font-black text-sm text-[var(--primary-500)]">{formatKg(inventoryStats.currentStockKg)}</span>
+            <span className="font-mono font-black text-sm text-[var(--primary-500)]">
+              {formatKg(inventoryStats.currentStockKg)}
+            </span>
           </div>
 
           <FormField label="Số bao đếm được thực tế" required>
@@ -238,7 +278,9 @@ export const TonKhoPage: React.FC = () => {
 
           <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center text-xs">
             <span className="text-[var(--text-muted)] font-semibold">Chênh lệch:</span>
-            <span className={`font-mono font-black text-sm ${countedKg - inventoryStats.currentStockKg === 0 ? 'text-[var(--text-muted)]' : countedKg - inventoryStats.currentStockKg > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            <span
+              className={`font-mono font-black text-sm ${countedKg - inventoryStats.currentStockKg === 0 ? 'text-[var(--text-muted)]' : countedKg - inventoryStats.currentStockKg > 0 ? 'text-emerald-600' : 'text-rose-600'}`}
+            >
               {formatKg(countedKg - inventoryStats.currentStockKg)}
             </span>
           </div>

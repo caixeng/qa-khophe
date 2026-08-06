@@ -45,7 +45,10 @@ function openAndPrint(html: string) {
 }
 
 function esc(s: string | undefined | null): string {
-  return (s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } as Record<string, string>)[c]!);
+  return (s ?? '').replace(
+    /[&<>"]/g,
+    (c) => (({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }) as Record<string, string>)[c]!,
+  );
 }
 
 /** In phiếu nhập phế liệu. */

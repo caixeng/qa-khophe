@@ -30,25 +30,37 @@ interface NhapPhePageProps {
 export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
   const { range, setRange } = useDateRange();
   // Lọc ngay ở truy vấn: chỉ kéo về phiếu trong kỳ đang xem, không phải cả lịch sử.
-  const { data: imports, loading, error, refetch } = useAsyncList(
-    () => importsService.getAll({ from: range.from, to: range.to }),
-    [range.from, range.to],
-  );
+  const {
+    data: imports,
+    loading,
+    error,
+    refetch,
+  } = useAsyncList(() => importsService.getAll({ from: range.from, to: range.to }), [range.from, range.to]);
   const { data: contacts } = useAsyncList(contactsService.getAll, []);
 
-
   const suppliers = useMemo(() => {
-    return contacts.filter(c => c.type === 'supplier' || !c.type);
+    return contacts.filter((c) => c.type === 'supplier' || !c.type);
   }, [contacts]);
 
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({
+    isOpen: false,
+    id: '',
+  });
   const [selectedDetail, setSelectedDetail] = useState<Import | null>(null);
 
   // Table Controls
-  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, sortConfig, handleSort } =
-    useTableControls();
+  const {
+    searchQuery,
+    setSearchQuery,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    setItemsPerPage,
+    sortConfig,
+    handleSort,
+  } = useTableControls();
 
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Import>({
@@ -59,7 +71,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
       price_per_kg: 4000,
       payment_status: 'paid',
       processing_status: 'pending',
-    }
+    },
   });
 
   const [searchParams] = useSearchParams();
@@ -133,14 +145,14 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
 
     setSaving(true);
     try {
-      const selectedContact = suppliers.find(s => s.id === data.contact_id);
-      const contactName = selectedContact ? selectedContact.name : (data.contact_name || 'Khách lẻ');
+      const selectedContact = suppliers.find((s) => s.id === data.contact_id);
+      const contactName = selectedContact ? selectedContact.name : data.contact_name || 'Khách lẻ';
 
       if (data.id) {
         await importsService.update(data.id, {
           ...data,
           contact_name: contactName,
-          total_amount: qty * price
+          total_amount: qty * price,
         });
         toast.success('Đã cập nhật phiếu nhập');
       } else {
@@ -194,7 +206,9 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           </div>
           <div>
             <p className="text-xs text-[var(--text-muted)] font-semibold uppercase">Tổng nhập trong kỳ</p>
-            <p className="text-xl font-bold font-mono text-[var(--text-primary)]">{formatKg(stats.totalKg)}</p>
+            <p className="text-xl font-bold font-mono text-[var(--text-primary)]">
+              {formatKg(stats.totalKg)}
+            </p>
           </div>
         </div>
 
@@ -239,7 +253,12 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
         totalCount={filteredData.length}
       />
 
-      <DataState loading={loading} error={error} isEmpty={filteredData.length === 0} emptyTitle="Chưa có phiếu nhập phế">
+      <DataState
+        loading={loading}
+        error={error}
+        isEmpty={filteredData.length === 0}
+        emptyTitle="Chưa có phiếu nhập phế"
+      >
         {/* Table */}
         <div className="erp-table-container hidden lg:block">
           <div className="overflow-x-auto">
@@ -247,13 +266,42 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
               <caption className="sr-only">Danh sách phiếu nhập phế</caption>
               <thead>
                 <tr>
-                  <SortableHeader sortKey="date" sortConfig={sortConfig} onSort={handleSort}>Ngày nhập</SortableHeader>
-                  <SortableHeader sortKey="contact_name" sortConfig={sortConfig} onSort={handleSort}>Người bán (NCC)</SortableHeader>
-                  <SortableHeader sortKey="quantity_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Số lượng (kg)</SortableHeader>
-                  <SortableHeader sortKey="price_per_kg" sortConfig={sortConfig} onSort={handleSort} align="right">Giá/kg</SortableHeader>
-                  <SortableHeader sortKey="total_amount" sortConfig={sortConfig} onSort={handleSort} align="right">Tổng tiền</SortableHeader>
-                  <SortableHeader sortKey="payment_status" sortConfig={sortConfig} onSort={handleSort}>Thanh toán</SortableHeader>
-                  <SortableHeader sortKey="processing_status" sortConfig={sortConfig} onSort={handleSort}>Xử lý</SortableHeader>
+                  <SortableHeader sortKey="date" sortConfig={sortConfig} onSort={handleSort}>
+                    Ngày nhập
+                  </SortableHeader>
+                  <SortableHeader sortKey="contact_name" sortConfig={sortConfig} onSort={handleSort}>
+                    Người bán (NCC)
+                  </SortableHeader>
+                  <SortableHeader
+                    sortKey="quantity_kg"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    align="right"
+                  >
+                    Số lượng (kg)
+                  </SortableHeader>
+                  <SortableHeader
+                    sortKey="price_per_kg"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    align="right"
+                  >
+                    Giá/kg
+                  </SortableHeader>
+                  <SortableHeader
+                    sortKey="total_amount"
+                    sortConfig={sortConfig}
+                    onSort={handleSort}
+                    align="right"
+                  >
+                    Tổng tiền
+                  </SortableHeader>
+                  <SortableHeader sortKey="payment_status" sortConfig={sortConfig} onSort={handleSort}>
+                    Thanh toán
+                  </SortableHeader>
+                  <SortableHeader sortKey="processing_status" sortConfig={sortConfig} onSort={handleSort}>
+                    Xử lý
+                  </SortableHeader>
                   <th className="th-cell text-right">Thao tác</th>
                 </tr>
               </thead>
@@ -265,8 +313,12 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                     onClick={() => setSelectedDetail(item)}
                     title="Bấm để xem chi tiết phiếu nhập"
                   >
-                    <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(item.date)}</td>
-                    <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{item.contact_name || 'Khách lẻ'}</td>
+                    <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
+                      {formatNgay(item.date)}
+                    </td>
+                    <td className="td-cell font-bold text-xs text-[var(--text-primary)]">
+                      {item.contact_name || 'Khách lẻ'}
+                    </td>
                     <td className="td-cell text-right font-mono font-bold text-xs text-[var(--text-primary)]">
                       {formatKg(item.quantity_kg)}
                     </td>
@@ -339,33 +391,49 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
               <div>
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">Ngày nhập</span>
-                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{formatNgay(selectedDetail.date)}</span>
+                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">
+                  {formatNgay(selectedDetail.date)}
+                </span>
               </div>
               <div>
-                <span className="text-[var(--text-muted)] block font-semibold uppercase">Người bán (NCC)</span>
-                <span className="font-bold text-sm text-[var(--text-primary)]">{selectedDetail.contact_name || 'Khách lẻ'}</span>
+                <span className="text-[var(--text-muted)] block font-semibold uppercase">
+                  Người bán (NCC)
+                </span>
+                <span className="font-bold text-sm text-[var(--text-primary)]">
+                  {selectedDetail.contact_name || 'Khách lẻ'}
+                </span>
               </div>
               <div>
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">Khối lượng</span>
-                <span className="font-mono font-bold text-sm text-emerald-600">{formatKg(selectedDetail.quantity_kg)}</span>
+                <span className="font-mono font-bold text-sm text-emerald-600">
+                  {formatKg(selectedDetail.quantity_kg)}
+                </span>
               </div>
               <div>
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">Đơn giá</span>
-                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">{formatTien(selectedDetail.price_per_kg)}/kg</span>
+                <span className="font-mono font-bold text-sm text-[var(--text-primary)]">
+                  {formatTien(selectedDetail.price_per_kg)}/kg
+                </span>
               </div>
               <div className="col-span-2 pt-2 border-t border-[var(--border-color)] flex justify-between items-center">
                 <span className="text-[var(--text-muted)] font-semibold uppercase">TỔNG TIỀN PHIẾU:</span>
-                <span className="font-mono font-black text-base text-[var(--primary-500)]">{formatTien(selectedDetail.total_amount)}</span>
+                <span className="font-mono font-black text-base text-[var(--primary-500)]">
+                  {formatTien(selectedDetail.total_amount)}
+                </span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-                <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">THANH TOÁN</span>
+                <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">
+                  THANH TOÁN
+                </span>
                 <StatusBadge status={selectedDetail.payment_status} />
               </div>
               <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-                <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">TRẠNG THÁI XAY</span>
+                <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">
+                  TRẠNG THÁI XAY
+                </span>
                 <StatusBadge status={selectedDetail.processing_status} />
               </div>
             </div>
@@ -490,7 +558,9 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center text-xs">
             <span className="text-[var(--text-muted)] font-semibold">TỔNG TIỀN PHIẾU NHẬP:</span>
             <span className="font-mono font-black text-sm text-[var(--primary-500)]">
-              {formatTien((Number(formState.data?.quantity_kg) || 0) * (Number(formState.data?.price_per_kg) || 0))}
+              {formatTien(
+                (Number(formState.data?.quantity_kg) || 0) * (Number(formState.data?.price_per_kg) || 0),
+              )}
             </span>
           </div>
 

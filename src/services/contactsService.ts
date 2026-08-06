@@ -105,7 +105,9 @@ export const contactsService = {
           address: contact.address || null,
           notes: contact.notes || null,
           is_active: contact.is_active ?? true,
-          ...(hasPricingColumn === false ? {} : { default_price_per_kg: contact.default_price_per_kg ?? null }),
+          ...(hasPricingColumn === false
+            ? {}
+            : { default_price_per_kg: contact.default_price_per_kg ?? null }),
         })
         .select(SELECT_COLUMNS)
         .single<ContactRow>(),
@@ -130,7 +132,9 @@ export const contactsService = {
           address: contact.address || null,
           notes: contact.notes || null,
           is_active: contact.is_active ?? true,
-          ...(hasPricingColumn === false ? {} : { default_price_per_kg: contact.default_price_per_kg ?? null }),
+          ...(hasPricingColumn === false
+            ? {}
+            : { default_price_per_kg: contact.default_price_per_kg ?? null }),
         })
         .eq('id', id)
         .select(SELECT_COLUMNS)

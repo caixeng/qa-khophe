@@ -2,9 +2,25 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  Home, Users, Package, BarChart3, Settings,
-  Menu, ChevronLeft, ChevronRight, LogOut, Recycle, Wallet,
-  ChevronDown, Sun, Leaf, Moon, Check, UserCheck, Search, Plus
+  Home,
+  Users,
+  Package,
+  BarChart3,
+  Settings,
+  Menu,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Recycle,
+  Wallet,
+  ChevronDown,
+  Sun,
+  Leaf,
+  Moon,
+  Check,
+  UserCheck,
+  Search,
+  Plus,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/auth';
@@ -48,7 +64,7 @@ export const AppLayout = () => {
   const { theme, setTheme, primaryColor, setPrimaryColor, density, setDensity } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -84,21 +100,28 @@ export const AppLayout = () => {
 
   return (
     <div className="flex h-screen w-full bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden">
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-[var(--bg-surface)] focus:text-[var(--text-primary)] top-0 left-0">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-[var(--bg-surface)] focus:text-[var(--text-primary)] top-0 left-0"
+      >
         Chuyển tới nội dung chính
       </a>
-      
+
       {/* DESKTOP SIDEBAR */}
-      <aside 
+      <aside
         className={cn(
-          "hidden lg:flex flex-col bg-[var(--bg-surface)] border-r border-[var(--border-color)] transition-all duration-300 z-20 shadow-sm relative",
-          collapsed ? "w-[72px]" : "w-60"
+          'hidden lg:flex flex-col bg-[var(--bg-surface)] border-r border-[var(--border-color)] transition-all duration-300 z-20 shadow-sm relative',
+          collapsed ? 'w-[72px]' : 'w-60',
         )}
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-[var(--border-color)]">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-9 h-9 rounded-xl bg-[var(--primary-500)] p-0.5 shadow-md shrink-0 overflow-hidden ring-1 ring-[var(--primary-400)]/30">
-              <img src="/vua_phe_logo2.jpg" alt="VUA PHẾ Logo" className="w-full h-full object-cover rounded-lg" />
+              <img
+                src="/vua_phe_logo2.jpg"
+                alt="VUA PHẾ Logo"
+                className="w-full h-full object-cover rounded-lg"
+              />
             </div>
             {!collapsed && (
               <div className="flex flex-col min-w-0">
@@ -111,45 +134,58 @@ export const AppLayout = () => {
               </div>
             )}
           </div>
-          <button 
+          <button
             onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? "Mở rộng menu" : "Thu gọn menu"}
+            aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
             className="p-1.5 hover:bg-[var(--bg-subtle)] rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] shadow-sm transition-all absolute -right-3 top-5"
           >
             {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
           </button>
         </div>
 
-        <nav role="navigation" aria-label="Menu chính" className="flex-1 overflow-y-auto py-4 px-2 space-y-1.5">
+        <nav
+          role="navigation"
+          aria-label="Menu chính"
+          className="flex-1 overflow-y-auto py-4 px-2 space-y-1.5"
+        >
           {visibleMenuItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               title={collapsed ? item.label : undefined}
               className={() => {
-                const isCurrent = item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
+                const isCurrent =
+                  item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
                 return cn(
-                  "flex items-center px-3.5 py-3 rounded-xl transition-all font-bold text-[13px] group relative",
-                  isCurrent 
-                    ? "bg-[var(--primary-50)] text-[var(--primary-600)] shadow-xs font-bold" 
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]"
+                  'flex items-center px-3.5 py-3 rounded-xl transition-all font-bold text-[13px] group relative',
+                  isCurrent
+                    ? 'bg-[var(--primary-50)] text-[var(--primary-600)] shadow-xs font-bold'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
                 );
               }}
             >
-              <item.icon className={cn("shrink-0 transition-transform group-hover:scale-110", collapsed ? "mx-auto" : "mr-3")} size={18} />
+              <item.icon
+                className={cn(
+                  'shrink-0 transition-transform group-hover:scale-110',
+                  collapsed ? 'mx-auto' : 'mr-3',
+                )}
+                size={18}
+              />
               {!collapsed && <span>{item.label}</span>}
             </NavLink>
           ))}
         </nav>
 
         <div className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-subtle)]/50">
-          <div className={cn("flex items-center gap-3", collapsed ? "justify-center" : "")}>
+          <div className={cn('flex items-center gap-3', collapsed ? 'justify-center' : '')}>
             <div className="w-8 h-8 rounded-full bg-[var(--primary-500)] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
               {user?.name?.charAt(0) || 'A'}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-bold truncate text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
+                <p className="text-[13px] font-bold truncate text-[var(--text-primary)]">
+                  {user?.name || 'Người dùng'}
+                </p>
                 <p className="text-[11px] text-[var(--text-muted)] truncate">{user?.email || '—'}</p>
               </div>
             )}
@@ -166,7 +202,11 @@ export const AppLayout = () => {
               <Breadcrumb />
             </div>
             <div className="sm:hidden flex items-center gap-2">
-              <img src="/vua_phe_logo2.jpg" alt="VUA PHẾ Logo" className="w-7 h-7 rounded-lg object-cover ring-1 ring-[var(--primary-400)]/30" />
+              <img
+                src="/vua_phe_logo2.jpg"
+                alt="VUA PHẾ Logo"
+                className="w-7 h-7 rounded-lg object-cover ring-1 ring-[var(--primary-400)]/30"
+              />
               <span className="font-black text-base text-[var(--primary-500)]">VUA PHẾ</span>
             </div>
           </div>
@@ -194,7 +234,7 @@ export const AppLayout = () => {
 
             {/* User Profile & Quick Settings Menu (Dropdown) */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => setShowDropdown(!showDropdown)}
                 aria-label="Menu người dùng"
                 className="flex items-center gap-2 hover:bg-[var(--bg-subtle)] p-1.5 pr-2.5 rounded-xl border border-transparent hover:border-[var(--border-color)] transition-all cursor-pointer"
@@ -217,12 +257,14 @@ export const AppLayout = () => {
                 <>
                   {/* Backdrop to close */}
                   <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
-                  
+
                   {/* CIC-IBST Style User Popover Menu */}
                   <div className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] p-4 shadow-xl z-50 animate-fade-in text-left">
                     {/* User info header */}
                     <div className="pb-3 border-b border-[var(--border-color)]">
-                      <p className="text-[13px] font-bold text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
+                      <p className="text-[13px] font-bold text-[var(--text-primary)]">
+                        {user?.name || 'Người dùng'}
+                      </p>
                       <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{user?.email || '—'}</p>
                     </div>
 
@@ -234,7 +276,9 @@ export const AppLayout = () => {
 
                       {/* 1. Giao diện nền */}
                       <div className="space-y-1.5">
-                        <div className="text-[11px] font-semibold text-[var(--text-secondary)]">Giao diện nền</div>
+                        <div className="text-[11px] font-semibold text-[var(--text-secondary)]">
+                          Giao diện nền
+                        </div>
                         <div className="flex items-center gap-1 rounded-xl bg-[var(--bg-subtle)] p-1 border border-[var(--border-color)]">
                           {THEME_OPTIONS.map(({ id, label, icon: Icon }) => (
                             <button
@@ -242,10 +286,10 @@ export const AppLayout = () => {
                               type="button"
                               onClick={() => setTheme(id)}
                               className={cn(
-                                "flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                                'flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
                                 theme === id
-                                  ? "bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]"
-                                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                  ? 'bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]'
+                                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
                               )}
                             >
                               <Icon size={12} />
@@ -257,7 +301,9 @@ export const AppLayout = () => {
 
                       {/* 2. Màu sắc chủ đạo */}
                       <div className="space-y-1.5">
-                        <div className="text-[11px] font-semibold text-[var(--text-secondary)]">Màu sắc chủ đạo</div>
+                        <div className="text-[11px] font-semibold text-[var(--text-secondary)]">
+                          Màu sắc chủ đạo
+                        </div>
                         <div className="grid grid-cols-9 gap-1.5 justify-items-center rounded-xl bg-[var(--bg-subtle)] p-2 border border-[var(--border-color)]">
                           {PRIMARY_COLORS.map(({ id, name, hex }) => {
                             const active = primaryColor === id;
@@ -268,12 +314,14 @@ export const AppLayout = () => {
                                 onClick={() => setPrimaryColor(id)}
                                 title={name}
                                 className={cn(
-                                  "w-5 h-5 rounded-full flex items-center justify-center transition-transform hover:scale-110 cursor-pointer",
-                                  active && "scale-110 ring-2 ring-offset-2 ring-offset-[var(--bg-surface)]"
+                                  'w-5 h-5 rounded-full flex items-center justify-center transition-transform hover:scale-110 cursor-pointer',
+                                  active && 'scale-110 ring-2 ring-offset-2 ring-offset-[var(--bg-surface)]',
                                 )}
                                 style={{
                                   backgroundColor: hex,
-                                  boxShadow: active ? `0 0 0 2px var(--bg-surface), 0 0 0 3.5px ${hex}` : undefined
+                                  boxShadow: active
+                                    ? `0 0 0 2px var(--bg-surface), 0 0 0 3.5px ${hex}`
+                                    : undefined,
                                 }}
                               >
                                 {active && <Check size={10} className="text-white" strokeWidth={3} />}
@@ -282,13 +330,18 @@ export const AppLayout = () => {
                           })}
                         </div>
                         <p className="text-[11px] text-[var(--text-muted)] mt-1">
-                          Đang chọn: <span className="font-bold text-[var(--primary-500)]">{PRIMARY_COLORS.find(c => c.id === primaryColor)?.name}</span>
+                          Đang chọn:{' '}
+                          <span className="font-bold text-[var(--primary-500)]">
+                            {PRIMARY_COLORS.find((c) => c.id === primaryColor)?.name}
+                          </span>
                         </p>
                       </div>
 
                       {/* 3. Mật độ hiển thị */}
                       <div className="space-y-1.5 pt-1">
-                        <div className="text-[11px] font-semibold text-[var(--text-secondary)]">Mật độ hiển thị</div>
+                        <div className="text-[11px] font-semibold text-[var(--text-secondary)]">
+                          Mật độ hiển thị
+                        </div>
                         <div className="grid grid-cols-3 gap-1 rounded-xl bg-[var(--bg-subtle)] p-1 border border-[var(--border-color)]">
                           {(['comfortable', 'compact', 'dense'] as Density[]).map((d) => (
                             <button
@@ -296,10 +349,10 @@ export const AppLayout = () => {
                               type="button"
                               onClick={() => setDensity(d)}
                               className={cn(
-                                "py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center",
+                                'py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center',
                                 density === d
-                                  ? "bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]"
-                                  : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                  ? 'bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]'
+                                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
                               )}
                             >
                               {d === 'comfortable' ? '100%' : d === 'compact' ? '90%' : '80%'}
@@ -311,7 +364,7 @@ export const AppLayout = () => {
 
                     {/* Logout Button */}
                     <div className="pt-2">
-                      <button 
+                      <button
                         onClick={handleLogout}
                         className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 transition-colors cursor-pointer"
                       >
@@ -336,13 +389,21 @@ export const AppLayout = () => {
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav role="navigation" aria-label="Menu di động" className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-surface)]/95 backdrop-blur-md border-t border-[var(--border-color)] flex justify-between items-center h-16 px-2 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] pb-safe-area">
+      <nav
+        role="navigation"
+        aria-label="Menu di động"
+        className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-surface)]/95 backdrop-blur-md border-t border-[var(--border-color)] flex justify-between items-center h-16 px-2 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] pb-safe-area"
+      >
         <NavLink
           to="/"
-          className={({ isActive }) => cn(
-            "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95",
-            isActive ? "text-[var(--primary-600)] font-black" : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
-          )}
+          className={({ isActive }) =>
+            cn(
+              'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95',
+              isActive
+                ? 'text-[var(--primary-600)] font-black'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium',
+            )
+          }
         >
           <Home size={20} />
           <span className="text-[11px] truncate">Trang chủ</span>
@@ -350,10 +411,14 @@ export const AppLayout = () => {
 
         <NavLink
           to="/phe"
-          className={({ isActive }) => cn(
-            "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95",
-            isActive ? "text-[var(--primary-600)] font-black" : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
-          )}
+          className={({ isActive }) =>
+            cn(
+              'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95',
+              isActive
+                ? 'text-[var(--primary-600)] font-black'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium',
+            )
+          }
         >
           <Recycle size={20} />
           <span className="text-[11px] truncate">QL Phế</span>
@@ -372,10 +437,14 @@ export const AppLayout = () => {
 
         <NavLink
           to="/ton-kho"
-          className={({ isActive }) => cn(
-            "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95",
-            isActive ? "text-[var(--primary-600)] font-black" : "text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium"
-          )}
+          className={({ isActive }) =>
+            cn(
+              'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95',
+              isActive
+                ? 'text-[var(--primary-600)] font-black'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium',
+            )
+          }
         >
           <Package size={20} />
           <span className="text-[11px] truncate">Tồn kho</span>

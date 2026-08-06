@@ -1,6 +1,19 @@
 import * as React from 'react';
 import { useState, useMemo } from 'react';
-import { Plus, Edit, Trash2, Users, Calendar, DollarSign, Phone, UserCheck, HardHat, Truck, Scale, ShieldCheck } from 'lucide-react';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Users,
+  Calendar,
+  DollarSign,
+  Phone,
+  UserCheck,
+  HardHat,
+  Truck,
+  Scale,
+  ShieldCheck,
+} from 'lucide-react';
 import { cn, formatTien, formatNgay } from '../lib/utils';
 import { computePayroll } from '../lib/payroll';
 import { PageHeader } from '../components/PageHeader';
@@ -21,8 +34,16 @@ import type { Employee, Attendance, EmployeeRole, PaymentStatus } from '../types
 const roleLabels: Record<EmployeeRole, { label: string; icon: React.ElementType; color: string }> = {
   grinder: { label: 'Thợ xay phế', icon: HardHat, color: 'bg-amber-100 text-amber-900 border-amber-200' },
   weigher: { label: 'Thợ cân phế', icon: Scale, color: 'bg-blue-100 text-blue-900 border-blue-200' },
-  driver: { label: 'Tài xế giao hàng', icon: Truck, color: 'bg-emerald-100 text-emerald-900 border-emerald-200' },
-  manager: { label: 'Quản lý xưởng', icon: ShieldCheck, color: 'bg-purple-100 text-purple-900 border-purple-200' },
+  driver: {
+    label: 'Tài xế giao hàng',
+    icon: Truck,
+    color: 'bg-emerald-100 text-emerald-900 border-emerald-200',
+  },
+  manager: {
+    label: 'Quản lý xưởng',
+    icon: ShieldCheck,
+    color: 'bg-purple-100 text-purple-900 border-purple-200',
+  },
   staff: { label: 'Nhân viên xưởng', icon: Users, color: 'bg-slate-100 text-slate-900 border-slate-200' },
 };
 
@@ -31,27 +52,51 @@ export const NhanVienPage: React.FC = () => {
   const { toast } = useToast();
   const [savingEmp, setSavingEmp] = useState(false);
   const [savingAtt, setSavingAtt] = useState(false);
-  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string; type: 'employee' | 'attendance' }>({ isOpen: false, id: '', type: 'employee' });
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    id: string;
+    type: 'employee' | 'attendance';
+  }>({ isOpen: false, id: '', type: 'employee' });
 
-  const { data: employees, loading: empLoading, error: empError, refetch: refetchEmp } = useAsyncList(employeesService.getAll, []);
-  const { data: attendanceList, loading: attLoading, error: attError, refetch: refetchAtt } = useAsyncList(attendanceService.getAttendance, []);
+  const {
+    data: employees,
+    loading: empLoading,
+    error: empError,
+    refetch: refetchEmp,
+  } = useAsyncList(employeesService.getAll, []);
+  const {
+    data: attendanceList,
+    loading: attLoading,
+    error: attError,
+    refetch: refetchAtt,
+  } = useAsyncList(attendanceService.getAttendance, []);
 
-
-  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } = useTableControls();
+  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } =
+    useTableControls();
 
   // Employee Form State
-  const { formState: empForm, openModal: openEmpModal, closeModal: closeEmpModal, handleChange: handleEmpChange } = useCrudForm<Employee>({
+  const {
+    formState: empForm,
+    openModal: openEmpModal,
+    closeModal: closeEmpModal,
+    handleChange: handleEmpChange,
+  } = useCrudForm<Employee>({
     initialData: {
       name: '',
       role: 'grinder',
       daily_salary: 350000,
       phone: '',
       status: 'active',
-    }
+    },
   });
 
   // Attendance Form State
-  const { formState: attForm, openModal: openAttModal, closeModal: closeAttModal, handleChange: handleAttChange } = useCrudForm<Attendance>({
+  const {
+    formState: attForm,
+    openModal: openAttModal,
+    closeModal: closeAttModal,
+    handleChange: handleAttChange,
+  } = useCrudForm<Attendance>({
     initialData: {
       date: new Date().toISOString().split('T')[0],
       work_shift: 1,
@@ -59,28 +104,32 @@ export const NhanVienPage: React.FC = () => {
       daily_pay: 350000,
       advance_pay: 0,
       payment_status: 'unpaid',
-    }
+    },
   });
 
   // Filtered lists
   const filteredEmployees = useMemo(() => {
     if (!searchQuery) return employees;
     const q = searchQuery.toLowerCase();
-    return employees.filter(e => e.name.toLowerCase().includes(q) || (e.phone && e.phone.includes(q)));
+    return employees.filter((e) => e.name.toLowerCase().includes(q) || (e.phone && e.phone.includes(q)));
   }, [employees, searchQuery]);
 
   const filteredAttendance = useMemo(() => {
     if (!searchQuery) return attendanceList;
     const q = searchQuery.toLowerCase();
-    return attendanceList.filter(a => a.employee_name.toLowerCase().includes(q) || a.date.includes(q));
+    return attendanceList.filter((a) => a.employee_name.toLowerCase().includes(q) || a.date.includes(q));
   }, [attendanceList, searchQuery]);
 
   // Attendance Statistics
   const attStats = useMemo(() => {
     const totalShifts = attendanceList.reduce((sum, a) => sum + (Number(a.work_shift) || 0), 0);
     const totalPayroll = attendanceList.reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
-    const totalPaid = attendanceList.filter(a => a.payment_status === 'paid').reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
-    const totalUnpaid = attendanceList.filter(a => a.payment_status === 'unpaid').reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
+    const totalPaid = attendanceList
+      .filter((a) => a.payment_status === 'paid')
+      .reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
+    const totalUnpaid = attendanceList
+      .filter((a) => a.payment_status === 'unpaid')
+      .reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
 
     return { totalShifts, totalPayroll, totalPaid, totalUnpaid };
   }, [attendanceList]);
@@ -150,9 +199,9 @@ export const NhanVienPage: React.FC = () => {
 
     setSavingAtt(true);
     try {
-      const emp = employees.find(x => x.id === data.employee_id);
-      const empName = emp ? emp.name : (data.employee_name || 'Công nhân');
-      const dailyPay = emp ? emp.daily_salary : (data.daily_pay || 350000);
+      const emp = employees.find((x) => x.id === data.employee_id);
+      const empName = emp ? emp.name : data.employee_name || 'Công nhân';
+      const dailyPay = emp ? emp.daily_salary : data.daily_pay || 350000;
 
       if (data.id) {
         await attendanceService.updateAttendance(data.id, {
@@ -209,10 +258,34 @@ export const NhanVienPage: React.FC = () => {
 
       {/* KPI Cards for Payroll */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Tổng số nhân sự" value={`${employees.length} người`} subtitle={`${employees.filter(e => e.status === 'active').length} đang làm việc`} icon={UserCheck} color="primary" />
-        <KpiCard title="Tổng ngày công" value={`${attStats.totalShifts} công`} subtitle="Ghi nhận tháng này" icon={Calendar} color="info" />
-        <KpiCard title="Tổng quỹ lương" value={formatTien(attStats.totalPayroll)} subtitle="Lương thực lĩnh" icon={DollarSign} color="success" />
-        <KpiCard title="Lương chưa trả" value={formatTien(attStats.totalUnpaid)} subtitle="Cần thanh toán" icon={DollarSign} color="warning" />
+        <KpiCard
+          title="Tổng số nhân sự"
+          value={`${employees.length} người`}
+          subtitle={`${employees.filter((e) => e.status === 'active').length} đang làm việc`}
+          icon={UserCheck}
+          color="primary"
+        />
+        <KpiCard
+          title="Tổng ngày công"
+          value={`${attStats.totalShifts} công`}
+          subtitle="Ghi nhận tháng này"
+          icon={Calendar}
+          color="info"
+        />
+        <KpiCard
+          title="Tổng quỹ lương"
+          value={formatTien(attStats.totalPayroll)}
+          subtitle="Lương thực lĩnh"
+          icon={DollarSign}
+          color="success"
+        />
+        <KpiCard
+          title="Lương chưa trả"
+          value={formatTien(attStats.totalUnpaid)}
+          subtitle="Cần thanh toán"
+          icon={DollarSign}
+          color="warning"
+        />
       </div>
 
       {/* CIC-IBST Pill Tabs */}
@@ -223,10 +296,13 @@ export const NhanVienPage: React.FC = () => {
             'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
             activeTab === 'employees'
               ? 'bg-[var(--primary-500)] text-white shadow-xs'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
-          <Users size={14} className={activeTab === 'employees' ? 'text-white' : 'text-[var(--text-muted)]'} />
+          <Users
+            size={14}
+            className={activeTab === 'employees' ? 'text-white' : 'text-[var(--text-muted)]'}
+          />
           <span>Danh sách nhân viên ({employees.length})</span>
         </button>
         <button
@@ -235,10 +311,13 @@ export const NhanVienPage: React.FC = () => {
             'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
             activeTab === 'attendance'
               ? 'bg-[var(--primary-500)] text-white shadow-xs'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
-          <Calendar size={14} className={activeTab === 'attendance' ? 'text-white' : 'text-[var(--text-muted)]'} />
+          <Calendar
+            size={14}
+            className={activeTab === 'attendance' ? 'text-white' : 'text-[var(--text-muted)]'}
+          />
           <span>Chấm công & Tính lương ({attendanceList.length})</span>
         </button>
         <button
@@ -247,17 +326,22 @@ export const NhanVienPage: React.FC = () => {
             'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
             activeTab === 'payroll'
               ? 'bg-[var(--primary-500)] text-white shadow-xs'
-              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
-          <DollarSign size={14} className={activeTab === 'payroll' ? 'text-white' : 'text-[var(--text-muted)]'} />
+          <DollarSign
+            size={14}
+            className={activeTab === 'payroll' ? 'text-white' : 'text-[var(--text-muted)]'}
+          />
           <span>Bảng lương tháng</span>
         </button>
       </div>
 
       {/* Table Toolbar */}
       <TableToolbar
-        placeholder={activeTab === 'employees' ? "Tìm theo tên hoặc SĐT..." : "Tìm theo tên công nhân hoặc ngày..."}
+        placeholder={
+          activeTab === 'employees' ? 'Tìm theo tên hoặc SĐT...' : 'Tìm theo tên công nhân hoặc ngày...'
+        }
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         totalCount={activeTab === 'employees' ? filteredEmployees.length : filteredAttendance.length}
@@ -272,64 +356,94 @@ export const NhanVienPage: React.FC = () => {
                 <caption className="sr-only">Danh sách hồ sơ nhân viên</caption>
                 <thead>
                   <tr>
-                    <th scope="col" className="th-cell">Tên nhân viên</th>
-                    <th scope="col" className="th-cell">Chức vụ</th>
+                    <th scope="col" className="th-cell">
+                      Tên nhân viên
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Chức vụ
+                    </th>
                     <th className="th-cell text-right">Lương công (đ/ngày)</th>
-                    <th scope="col" className="th-cell">Số điện thoại</th>
-                    <th scope="col" className="th-cell">Trạng thái</th>
-                    <th scope="col" className="th-cell">Ghi chú</th>
+                    <th scope="col" className="th-cell">
+                      Số điện thoại
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Trạng thái
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Ghi chú
+                    </th>
                     <th className="th-cell text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((emp) => {
-                    const roleInfo = roleLabels[emp.role] || roleLabels.staff;
-                    const RoleIcon = roleInfo.icon;
-                    return (
-                      <tr key={emp.id} className="tr-hover">
-                        <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{emp.name}</td>
-                        <td className="td-cell">
-                          <span className={cn("px-2.5 py-1 rounded-full text-[11px] font-bold border flex items-center gap-1.5 w-fit", roleInfo.color)}>
-                            <RoleIcon size={12} />
-                            <span>{roleInfo.label}</span>
-                          </span>
-                        </td>
-                        <td className="td-cell text-right font-mono font-bold text-xs text-[var(--primary-500)]">
-                          {formatTien(emp.daily_salary)}
-                        </td>
-                        <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
-                          {emp.phone ? <span className="flex items-center gap-1"><Phone size={12} />{emp.phone}</span> : '—'}
-                        </td>
-                        <td className="td-cell">
-                          <span className={cn(
-                            "px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider",
-                            emp.status === 'active' ? "bg-emerald-100 text-emerald-900" : "bg-slate-100 text-slate-900"
-                          )}>
-                            {emp.status === 'active' ? 'Đang làm việc' : 'Đã nghỉ'}
-                          </span>
-                        </td>
-                        <td className="td-cell text-xs text-[var(--text-muted)] max-w-xs truncate">{emp.notes || '—'}</td>
-                        <td className="td-cell text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button
-                              onClick={() => openEmpModal(emp)}
-                              className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
-                              title="Sửa"
+                  {filteredEmployees
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((emp) => {
+                      const roleInfo = roleLabels[emp.role] || roleLabels.staff;
+                      const RoleIcon = roleInfo.icon;
+                      return (
+                        <tr key={emp.id} className="tr-hover">
+                          <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{emp.name}</td>
+                          <td className="td-cell">
+                            <span
+                              className={cn(
+                                'px-2.5 py-1 rounded-full text-[11px] font-bold border flex items-center gap-1.5 w-fit',
+                                roleInfo.color,
+                              )}
                             >
-                              <Edit size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteEmployee(emp.id)}
-                              className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
-                              title="Xóa"
+                              <RoleIcon size={12} />
+                              <span>{roleInfo.label}</span>
+                            </span>
+                          </td>
+                          <td className="td-cell text-right font-mono font-bold text-xs text-[var(--primary-500)]">
+                            {formatTien(emp.daily_salary)}
+                          </td>
+                          <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
+                            {emp.phone ? (
+                              <span className="flex items-center gap-1">
+                                <Phone size={12} />
+                                {emp.phone}
+                              </span>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                          <td className="td-cell">
+                            <span
+                              className={cn(
+                                'px-2 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider',
+                                emp.status === 'active'
+                                  ? 'bg-emerald-100 text-emerald-900'
+                                  : 'bg-slate-100 text-slate-900',
+                              )}
                             >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                              {emp.status === 'active' ? 'Đang làm việc' : 'Đã nghỉ'}
+                            </span>
+                          </td>
+                          <td className="td-cell text-xs text-[var(--text-muted)] max-w-xs truncate">
+                            {emp.notes || '—'}
+                          </td>
+                          <td className="td-cell text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <button
+                                onClick={() => openEmpModal(emp)}
+                                className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
+                                title="Sửa"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteEmployee(emp.id)}
+                                className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
+                                title="Xóa"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -353,58 +467,74 @@ export const NhanVienPage: React.FC = () => {
                 <caption className="sr-only">Bảng chấm công nhân viên</caption>
                 <thead>
                   <tr>
-                    <th scope="col" className="th-cell">Ngày chấm công</th>
-                    <th scope="col" className="th-cell">Tên công nhân</th>
+                    <th scope="col" className="th-cell">
+                      Ngày chấm công
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Tên công nhân
+                    </th>
                     <th className="th-cell text-right">Số công</th>
                     <th className="th-cell text-right">Đơn giá/ngày</th>
                     <th className="th-cell text-right">Tạm ứng</th>
                     <th className="th-cell text-right">Thực lĩnh</th>
-                    <th scope="col" className="th-cell">Trạng thái thanh toán</th>
-                    <th scope="col" className="th-cell">Ghi chú công</th>
+                    <th scope="col" className="th-cell">
+                      Trạng thái thanh toán
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Ghi chú công
+                    </th>
                     <th className="th-cell text-right">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredAttendance.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((att) => (
-                    <tr key={att.id} className="tr-hover">
-                      <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(att.date)}</td>
-                      <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{att.employee_name}</td>
-                      <td className="td-cell text-right font-mono font-bold text-xs text-[var(--primary-500)]">
-                        {att.work_shift} công
-                      </td>
-                      <td className="td-cell text-right font-mono text-xs text-[var(--text-secondary)]">
-                        {formatTien(att.daily_pay)}
-                      </td>
-                      <td className="td-cell text-right font-mono text-xs text-rose-600">
-                        {att.advance_pay ? `-${formatTien(att.advance_pay)}` : '0 đ'}
-                      </td>
-                      <td className="td-cell text-right font-mono font-black text-xs text-emerald-600">
-                        {formatTien(att.net_pay)}
-                      </td>
-                      <td className="td-cell">
-                        <StatusBadge status={att.payment_status} />
-                      </td>
-                      <td className="td-cell text-xs text-[var(--text-muted)] max-w-xs truncate">{att.notes || '—'}</td>
-                      <td className="td-cell text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => openAttModal(att)}
-                            className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
-                            title="Sửa"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteAttendance(att.id)}
-                            className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
-                            title="Xóa"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredAttendance
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((att) => (
+                      <tr key={att.id} className="tr-hover">
+                        <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
+                          {formatNgay(att.date)}
+                        </td>
+                        <td className="td-cell font-bold text-xs text-[var(--text-primary)]">
+                          {att.employee_name}
+                        </td>
+                        <td className="td-cell text-right font-mono font-bold text-xs text-[var(--primary-500)]">
+                          {att.work_shift} công
+                        </td>
+                        <td className="td-cell text-right font-mono text-xs text-[var(--text-secondary)]">
+                          {formatTien(att.daily_pay)}
+                        </td>
+                        <td className="td-cell text-right font-mono text-xs text-rose-600">
+                          {att.advance_pay ? `-${formatTien(att.advance_pay)}` : '0 đ'}
+                        </td>
+                        <td className="td-cell text-right font-mono font-black text-xs text-emerald-600">
+                          {formatTien(att.net_pay)}
+                        </td>
+                        <td className="td-cell">
+                          <StatusBadge status={att.payment_status} />
+                        </td>
+                        <td className="td-cell text-xs text-[var(--text-muted)] max-w-xs truncate">
+                          {att.notes || '—'}
+                        </td>
+                        <td className="td-cell text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => openAttModal(att)}
+                              className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
+                              title="Sửa"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAttendance(att.id)}
+                              className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
+                              title="Xóa"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -452,8 +582,12 @@ export const NhanVienPage: React.FC = () => {
 
             {payroll.rows.length === 0 ? (
               <div className="card bg-[var(--bg-surface)] py-12 text-center">
-                <p className="text-sm text-[var(--text-secondary)]">Chưa có lượt chấm công nào trong tháng này.</p>
-                <p className="mt-1 text-xs text-[var(--text-muted)]">Chọn tháng khác hoặc chấm công ở tab bên cạnh.</p>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Chưa có lượt chấm công nào trong tháng này.
+                </p>
+                <p className="mt-1 text-xs text-[var(--text-muted)]">
+                  Chọn tháng khác hoặc chấm công ở tab bên cạnh.
+                </p>
               </div>
             ) : (
               <div className="erp-table-container">
@@ -462,7 +596,9 @@ export const NhanVienPage: React.FC = () => {
                     <caption className="sr-only">Bảng lương tháng {payrollMonth}</caption>
                     <thead>
                       <tr>
-                        <th scope="col" className="th-cell">Nhân viên</th>
+                        <th scope="col" className="th-cell">
+                          Nhân viên
+                        </th>
                         <th className="th-cell text-right">Số công</th>
                         <th className="th-cell text-right">Lương gộp</th>
                         <th className="th-cell text-right">Đã ứng</th>
@@ -482,7 +618,12 @@ export const NhanVienPage: React.FC = () => {
                           <td className="td-cell text-right font-mono text-xs font-bold text-[var(--primary-600)]">
                             {formatTien(r.net)}
                           </td>
-                          <td className={cn('td-cell text-right font-mono text-xs font-bold', r.unpaid > 0 ? 'text-rose-600' : 'text-emerald-600')}>
+                          <td
+                            className={cn(
+                              'td-cell text-right font-mono text-xs font-bold',
+                              r.unpaid > 0 ? 'text-rose-600' : 'text-emerald-600',
+                            )}
+                          >
                             {r.unpaid > 0 ? formatTien(r.unpaid) : 'Đã trả đủ'}
                           </td>
                         </tr>
@@ -492,10 +633,18 @@ export const NhanVienPage: React.FC = () => {
                       <tr className="bg-[var(--bg-subtle)] font-bold">
                         <td className="td-cell text-xs uppercase">Tổng cộng</td>
                         <td className="td-cell text-right font-mono text-xs">{payroll.totals.shifts}</td>
-                        <td className="td-cell text-right font-mono text-xs">{formatTien(payroll.totals.gross)}</td>
-                        <td className="td-cell text-right font-mono text-xs text-amber-600">{formatTien(payroll.totals.advance)}</td>
-                        <td className="td-cell text-right font-mono text-xs text-[var(--primary-600)]">{formatTien(payroll.totals.net)}</td>
-                        <td className="td-cell text-right font-mono text-xs text-rose-600">{formatTien(payroll.totals.unpaid)}</td>
+                        <td className="td-cell text-right font-mono text-xs">
+                          {formatTien(payroll.totals.gross)}
+                        </td>
+                        <td className="td-cell text-right font-mono text-xs text-amber-600">
+                          {formatTien(payroll.totals.advance)}
+                        </td>
+                        <td className="td-cell text-right font-mono text-xs text-[var(--primary-600)]">
+                          {formatTien(payroll.totals.net)}
+                        </td>
+                        <td className="td-cell text-right font-mono text-xs text-rose-600">
+                          {formatTien(payroll.totals.unpaid)}
+                        </td>
                       </tr>
                     </tfoot>
                   </table>
@@ -625,7 +774,7 @@ export const NhanVienPage: React.FC = () => {
               onChange={(e) => {
                 const empId = e.target.value;
                 handleAttChange('employee_id', empId);
-                const selected = employees.find(x => x.id === empId);
+                const selected = employees.find((x) => x.id === empId);
                 if (selected) {
                   handleAttChange('employee_name', selected.name);
                   handleAttChange('daily_pay', selected.daily_salary);
@@ -685,7 +834,13 @@ export const NhanVienPage: React.FC = () => {
           <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center text-xs">
             <span className="text-[var(--text-muted)] font-semibold">TỔNG THỰC LĨNH LƯƠNG:</span>
             <span className="font-mono font-black text-sm text-emerald-600">
-              {formatTien(Math.max(0, ((Number(attForm.data?.work_shift) || 1) * (Number(attForm.data?.daily_pay) || 350000)) - (Number(attForm.data?.advance_pay) || 0)))}
+              {formatTien(
+                Math.max(
+                  0,
+                  (Number(attForm.data?.work_shift) || 1) * (Number(attForm.data?.daily_pay) || 350000) -
+                    (Number(attForm.data?.advance_pay) || 0),
+                ),
+              )}
             </span>
           </div>
 
@@ -730,9 +885,10 @@ export const NhanVienPage: React.FC = () => {
         onClose={() => setConfirmState({ isOpen: false, id: '', type: 'employee' })}
         onConfirm={confirmState.type === 'employee' ? confirmDeleteEmployee : confirmDeleteAttendance}
         title={confirmState.type === 'employee' ? 'Xóa hồ sơ nhân viên' : 'Xóa lượt chấm công'}
-        message={confirmState.type === 'employee'
-          ? 'Bạn có chắc chắn muốn xóa hồ sơ nhân viên này? Hành động này không thể hoàn tác.'
-          : 'Bạn có chắc chắn muốn xóa lượt chấm công này? Hành động này không thể hoàn tác.'
+        message={
+          confirmState.type === 'employee'
+            ? 'Bạn có chắc chắn muốn xóa hồ sơ nhân viên này? Hành động này không thể hoàn tác.'
+            : 'Bạn có chắc chắn muốn xóa lượt chấm công này? Hành động này không thể hoàn tác.'
         }
         variant="danger"
         confirmText="Xóa"

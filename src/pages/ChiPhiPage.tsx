@@ -1,7 +1,22 @@
 import * as React from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Fuel, PenTool as Tool, Droplets, HardHat, Wrench, Truck, Settings, FileText, DollarSign, Wallet, ArrowDownRight, ArrowUpRight, Trash2 } from 'lucide-react';
+import {
+  Plus,
+  Fuel,
+  PenTool as Tool,
+  Droplets,
+  HardHat,
+  Wrench,
+  Truck,
+  Settings,
+  FileText,
+  DollarSign,
+  Wallet,
+  ArrowDownRight,
+  ArrowUpRight,
+  Trash2,
+} from 'lucide-react';
 import { cn, formatTien, formatNgay } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
 import { Modal, FormField } from '../components/Modal';
@@ -29,14 +44,25 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType; c
 
 export const ChiPhiPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'chiphi' | 'ungtien'>('chiphi');
-  const { data: expenses, loading: expLoading, error: expError, refetch: refetchExp } = useAsyncList(expensesService.getExpenses, []);
-  const { data: advances, loading: advLoading, error: advError } = useAsyncList(expensesService.getAdvances, []);
-
+  const {
+    data: expenses,
+    loading: expLoading,
+    error: expError,
+    refetch: refetchExp,
+  } = useAsyncList(expensesService.getExpenses, []);
+  const {
+    data: advances,
+    loading: advLoading,
+    error: advError,
+  } = useAsyncList(expensesService.getAdvances, []);
 
   const { searchQuery, setSearchQuery } = useTableControls();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({
+    isOpen: false,
+    id: '',
+  });
 
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Expense>({
     initialData: {
@@ -44,8 +70,8 @@ export const ChiPhiPage: React.FC = () => {
       category: 'fuel',
       amount: 0,
       description: '',
-      notes: ''
-    }
+      notes: '',
+    },
   });
 
   const [searchParams] = useSearchParams();
@@ -65,7 +91,7 @@ export const ChiPhiPage: React.FC = () => {
   const filteredExpenses = useMemo(() => {
     if (!searchQuery) return expenses;
     const q = searchQuery.toLowerCase();
-    return expenses.filter(e => {
+    return expenses.filter((e) => {
       const catLabel = categoryConfig[e.category]?.label.toLowerCase() || '';
       return (
         (e.description && e.description.toLowerCase().includes(q)) ||
@@ -76,12 +102,22 @@ export const ChiPhiPage: React.FC = () => {
   }, [expenses, searchQuery]);
 
   const totalExpense = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-  const totalFuel = expenses.filter(e => e.category === 'fuel').reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-  const totalBlade = expenses.filter(e => e.category === 'blade').reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-  const totalOther = expenses.filter(e => !['fuel', 'blade'].includes(e.category)).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const totalFuel = expenses
+    .filter((e) => e.category === 'fuel')
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const totalBlade = expenses
+    .filter((e) => e.category === 'blade')
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+  const totalOther = expenses
+    .filter((e) => !['fuel', 'blade'].includes(e.category))
+    .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
-  const totalUng = advances.filter(a => a.type === 'advance' || (a.type as string) === 'ung').reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
-  const totalHoan = advances.filter(a => a.type === 'settlement' || (a.type as string) === 'hoan').reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
+  const totalUng = advances
+    .filter((a) => a.type === 'advance' || (a.type as string) === 'ung')
+    .reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
+  const totalHoan = advances
+    .filter((a) => a.type === 'settlement' || (a.type as string) === 'hoan')
+    .reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
   const totalConLai = totalUng - totalHoan;
 
   const handleSaveExpense = async (e: React.FormEvent) => {
@@ -133,10 +169,10 @@ export const ChiPhiPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <PageHeader 
-        title="Chi Phí & Ứng Tiền" 
+      <PageHeader
+        title="Chi Phí & Ứng Tiền"
         subtitle="Quản lý các khoản chi phát sinh tại xưởng và theo dõi ứng tiền"
-        action={{ label: 'Thêm chi phí', icon: Plus, onClick: () => openModal() }} 
+        action={{ label: 'Thêm chi phí', icon: Plus, onClick: () => openModal() }}
       />
 
       {/* Tabs */}
@@ -144,8 +180,10 @@ export const ChiPhiPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('chiphi')}
           className={cn(
-            "pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer",
-            activeTab === 'chiphi' ? "border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl" : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            'pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer',
+            activeTab === 'chiphi'
+              ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
           )}
         >
           Chi phí xưởng ({expenses.length})
@@ -153,8 +191,10 @@ export const ChiPhiPage: React.FC = () => {
         <button
           onClick={() => setActiveTab('ungtien')}
           className={cn(
-            "pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer",
-            activeTab === 'ungtien' ? "border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl" : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            'pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer',
+            activeTab === 'ungtien'
+              ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
+              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
           )}
         >
           Sổ ứng tiền ({advances.length})
@@ -165,26 +205,55 @@ export const ChiPhiPage: React.FC = () => {
         <div className="space-y-6">
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard title="Tổng chi tháng" value={formatTien(totalExpense)} icon={Wallet} trend={-12} color="danger" />
+            <KpiCard
+              title="Tổng chi tháng"
+              value={formatTien(totalExpense)}
+              icon={Wallet}
+              trend={-12}
+              color="danger"
+            />
             <KpiCard title="Xăng xe" value={formatTien(totalFuel)} icon={Fuel} color="warning" />
             <KpiCard title="Dao cắt" value={formatTien(totalBlade)} icon={Tool} color="info" />
-            <KpiCard title="Khác (Dầu, phụ tùng...)" value={formatTien(totalOther)} icon={FileText} color="primary" />
+            <KpiCard
+              title="Khác (Dầu, phụ tùng...)"
+              value={formatTien(totalOther)}
+              icon={FileText}
+              color="primary"
+            />
           </div>
 
-          <TableToolbar searchQuery={searchQuery} onSearchChange={setSearchQuery} placeholder="Tìm khoản chi..." totalCount={filteredExpenses.length} />
+          <TableToolbar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            placeholder="Tìm khoản chi..."
+            totalCount={filteredExpenses.length}
+          />
 
-          <DataState loading={expLoading} error={expError} isEmpty={filteredExpenses.length === 0} emptyTitle="Chưa có khoản chi phí nào">
+          <DataState
+            loading={expLoading}
+            error={expError}
+            isEmpty={filteredExpenses.length === 0}
+            emptyTitle="Chưa có khoản chi phí nào"
+          >
             <div className="erp-table-container">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <caption className="sr-only">Danh sách khoản chi phí</caption>
                   <thead>
                     <tr>
-                      <th scope="col" className="th-cell">Ngày</th>
-                      <th scope="col" className="th-cell">Danh mục</th>
+                      <th scope="col" className="th-cell">
+                        Ngày
+                      </th>
+                      <th scope="col" className="th-cell">
+                        Danh mục
+                      </th>
                       <th className="th-cell text-right">Số tiền</th>
-                      <th scope="col" className="th-cell">Mô tả</th>
-                      <th scope="col" className="th-cell">Ghi chú</th>
+                      <th scope="col" className="th-cell">
+                        Mô tả
+                      </th>
+                      <th scope="col" className="th-cell">
+                        Ghi chú
+                      </th>
                       <th className="th-cell text-right">Thao tác</th>
                     </tr>
                   </thead>
@@ -194,17 +263,21 @@ export const ChiPhiPage: React.FC = () => {
                       const Icon = cfg.icon;
                       return (
                         <tr key={exp.id} className="tr-hover">
-                          <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(exp.date)}</td>
+                          <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
+                            {formatNgay(exp.date)}
+                          </td>
                           <td className="td-cell">
                             <div className="flex items-center space-x-2">
-                              <Icon className={cn("w-4 h-4", cfg.color)} />
+                              <Icon className={cn('w-4 h-4', cfg.color)} />
                               <span className="font-bold text-xs">{cfg.label}</span>
                             </div>
                           </td>
                           <td className="td-cell text-right font-mono font-bold text-xs text-rose-600">
                             {formatTien(exp.amount)}
                           </td>
-                          <td className="td-cell text-xs text-[var(--text-primary)]">{exp.description || '—'}</td>
+                          <td className="td-cell text-xs text-[var(--text-primary)]">
+                            {exp.description || '—'}
+                          </td>
                           <td className="td-cell text-xs text-[var(--text-muted)]">{exp.notes || '—'}</td>
                           <td className="td-cell text-right">
                             <button
@@ -229,38 +302,71 @@ export const ChiPhiPage: React.FC = () => {
       {activeTab === 'ungtien' && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <KpiCard title="Tổng ứng vốn" value={formatTien(totalUng)} icon={ArrowDownRight} color="warning" />
-            <KpiCard title="Tổng hoàn ứng" value={formatTien(totalHoan)} icon={ArrowUpRight} color="success" />
+            <KpiCard
+              title="Tổng ứng vốn"
+              value={formatTien(totalUng)}
+              icon={ArrowDownRight}
+              color="warning"
+            />
+            <KpiCard
+              title="Tổng hoàn ứng"
+              value={formatTien(totalHoan)}
+              icon={ArrowUpRight}
+              color="success"
+            />
             <KpiCard title="Vốn còn lại" value={formatTien(totalConLai)} icon={DollarSign} color="primary" />
           </div>
 
-          <DataState loading={advLoading} error={advError} isEmpty={advances.length === 0} emptyTitle="Chưa có thông tin ứng tiền">
+          <DataState
+            loading={advLoading}
+            error={advError}
+            isEmpty={advances.length === 0}
+            emptyTitle="Chưa có thông tin ứng tiền"
+          >
             <div className="erp-table-container">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <caption className="sr-only">Danh sách khoản ứng tiền</caption>
                   <thead>
                     <tr>
-                      <th scope="col" className="th-cell">Ngày</th>
-                      <th scope="col" className="th-cell">Loại</th>
-                      <th scope="col" className="th-cell">Người giao/nhận</th>
+                      <th scope="col" className="th-cell">
+                        Ngày
+                      </th>
+                      <th scope="col" className="th-cell">
+                        Loại
+                      </th>
+                      <th scope="col" className="th-cell">
+                        Người giao/nhận
+                      </th>
                       <th className="th-cell text-right">Số tiền</th>
-                      <th scope="col" className="th-cell">Ghi chú</th>
+                      <th scope="col" className="th-cell">
+                        Ghi chú
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {advances.map((adv) => (
                       <tr key={adv.id} className="tr-hover">
-                        <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">{formatNgay(adv.date)}</td>
+                        <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
+                          {formatNgay(adv.date)}
+                        </td>
                         <td className="td-cell">
-                          <span className={cn(
-                            "px-2 py-0.5 rounded-full text-[11px] font-bold border",
-                            adv.type === 'advance' || (adv.type as string) === 'ung' ? "bg-amber-100 text-amber-700 border-amber-200" : "bg-emerald-100 text-emerald-700 border-emerald-200"
-                          )}>
-                            {adv.type === 'advance' || (adv.type as string) === 'ung' ? 'Ứng tiền' : 'Hoàn ứng'}
+                          <span
+                            className={cn(
+                              'px-2 py-0.5 rounded-full text-[11px] font-bold border',
+                              adv.type === 'advance' || (adv.type as string) === 'ung'
+                                ? 'bg-amber-100 text-amber-700 border-amber-200'
+                                : 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                            )}
+                          >
+                            {adv.type === 'advance' || (adv.type as string) === 'ung'
+                              ? 'Ứng tiền'
+                              : 'Hoàn ứng'}
                           </span>
                         </td>
-                        <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{adv.person || 'Chủ xưởng'}</td>
+                        <td className="td-cell font-bold text-xs text-[var(--text-primary)]">
+                          {adv.person || 'Chủ xưởng'}
+                        </td>
                         <td className="td-cell text-right font-mono font-bold text-xs text-[var(--primary-500)]">
                           {formatTien(adv.amount)}
                         </td>
@@ -295,7 +401,9 @@ export const ChiPhiPage: React.FC = () => {
               onChange={(e) => handleChange('category', e.target.value)}
             >
               {Object.entries(categoryConfig).map(([key, cfg]) => (
-                <option key={key} value={key}>{cfg.label}</option>
+                <option key={key} value={key}>
+                  {cfg.label}
+                </option>
               ))}
             </select>
           </FormField>
@@ -337,7 +445,11 @@ export const ChiPhiPage: React.FC = () => {
             <button type="button" onClick={closeModal} className="btn-secondary">
               Hủy
             </button>
-            <button type="submit" disabled={saving} className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed">
+            <button
+              type="submit"
+              disabled={saving}
+              className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            >
               {saving ? 'Đang lưu...' : 'Lưu chi phí'}
             </button>
           </div>

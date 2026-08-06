@@ -49,10 +49,7 @@ describe('computePayroll', () => {
   it('hai người trùng tên vẫn là hai dòng lương riêng', () => {
     // Nếu gom theo tên, hai anh cùng tên "Hoa" sẽ bị trả gộp vào một người.
     const r = computePayroll(
-      [
-        att({ employee_id: 'e1', employee_name: 'Hoa' }),
-        att({ employee_id: 'e2', employee_name: 'Hoa' }),
-      ],
+      [att({ employee_id: 'e1', employee_name: 'Hoa' }), att({ employee_id: 'e2', employee_name: 'Hoa' })],
       '2026-08',
     );
 
@@ -86,10 +83,7 @@ describe('computePayroll', () => {
   });
 
   it('cộng riêng tiền đã ứng', () => {
-    const r = computePayroll(
-      [att({ employee_id: 'e1', advance_pay: 200_000, net_pay: 150_000 })],
-      '2026-08',
-    );
+    const r = computePayroll([att({ employee_id: 'e1', advance_pay: 200_000, net_pay: 150_000 })], '2026-08');
 
     expect(r.rows[0].advance).toBe(200_000);
     expect(r.rows[0].gross).toBe(350_000);

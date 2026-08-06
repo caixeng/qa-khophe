@@ -8,28 +8,29 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const removeToast = useCallback((id: string) => {
-    setToasts((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, isRemoving: true } : t))
-    );
+    setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, isRemoving: true } : t)));
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 300); // Wait for fade-out animation
   }, []);
 
-  const addToast = useCallback((type: ToastType, message: string) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => {
-      const newToasts = [{ id, type, message, isRemoving: false }, ...prev];
-      if (newToasts.length > 3) {
-        return newToasts.slice(0, 3);
-      }
-      return newToasts;
-    });
+  const addToast = useCallback(
+    (type: ToastType, message: string) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      setToasts((prev) => {
+        const newToasts = [{ id, type, message, isRemoving: false }, ...prev];
+        if (newToasts.length > 3) {
+          return newToasts.slice(0, 3);
+        }
+        return newToasts;
+      });
 
-    setTimeout(() => {
-      removeToast(id);
-    }, 4000);
-  }, [removeToast]);
+      setTimeout(() => {
+        removeToast(id);
+      }, 4000);
+    },
+    [removeToast],
+  );
 
   const toast = {
     success: (msg: string) => addToast('success', msg),
@@ -48,7 +49,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             className={cn(
               'pointer-events-auto flex items-start gap-3 p-4 rounded-xl shadow-lg border bg-[var(--bg-surface)] w-[320px] transition-all duration-300',
               t.isRemoving ? 'opacity-0 translate-x-8' : 'opacity-100 translate-x-0',
-              'animate-[slide-in-right_0.3s_ease-out]'
+              'animate-[slide-in-right_0.3s_ease-out]',
             )}
             style={{
               borderColor: 'var(--border-color)',
@@ -60,10 +61,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               {t.type === 'warning' && <AlertTriangle className="w-5 h-5 text-amber-500" />}
               {t.type === 'info' && <Info className="w-5 h-5 text-blue-500" />}
             </div>
-            
-            <div className="flex-1 text-sm font-medium text-[var(--text-primary)]">
-              {t.message}
-            </div>
+
+            <div className="flex-1 text-sm font-medium text-[var(--text-primary)]">{t.message}</div>
 
             <button
               onClick={() => removeToast(t.id)}
@@ -77,4 +76,3 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </ToastContext.Provider>
   );
 };
-

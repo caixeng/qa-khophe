@@ -33,7 +33,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         setTimeout(() => {
           if (modalRef.current) {
             const focusableElements = modalRef.current.querySelectorAll(
-              'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+              'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
             );
             const firstElement = focusableElements[0] as HTMLElement;
             if (firstElement) {
@@ -58,7 +58,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   const handleTabKey = (e: React.KeyboardEvent) => {
     if (e.key !== 'Tab' || !modalRef.current) return;
     const focusableElements = modalRef.current.querySelectorAll(
-      'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
     );
     const firstElement = focusableElements[0] as HTMLElement;
     const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
@@ -81,26 +81,26 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" 
-        onClick={onClose} 
-      />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose} />
 
       {/* Modal Card */}
-      <div 
+      <div
         ref={modalRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
         onKeyDown={handleTabKey}
         className={cn(
-        "card bg-[var(--bg-surface)] w-full max-w-lg shadow-xl relative z-10 animate-fade-in flex flex-col max-h-[90vh]",
-        className
-      )}>
+          'card bg-[var(--bg-surface)] w-full max-w-lg shadow-xl relative z-10 animate-fade-in flex flex-col max-h-[90vh]',
+          className,
+        )}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
-          <h2 id="modal-title" className="text-lg font-bold text-[var(--text-primary)]">{title}</h2>
-          <button 
+          <h2 id="modal-title" className="text-lg font-bold text-[var(--text-primary)]">
+            {title}
+          </h2>
+          <button
             onClick={onClose}
             aria-label="Đóng"
             className="p-1 hover:bg-[var(--bg-subtle)] rounded-md transition-colors cursor-pointer"
@@ -110,9 +110,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         </div>
 
         {/* Body */}
-        <div className="p-4 overflow-y-auto">
-          {children}
-        </div>
+        <div className="p-4 overflow-y-auto">{children}</div>
 
         {/* Footer */}
         {footer && (
@@ -135,14 +133,14 @@ export interface FormFieldProps {
   className?: string;
 }
 
-export const FormField: React.FC<FormFieldProps> = ({ 
-  label, 
-  error, 
+export const FormField: React.FC<FormFieldProps> = ({
+  label,
+  error,
   required,
   children,
-  options, 
-  as = 'input', 
-  className
+  options,
+  as = 'input',
+  className,
 }) => {
   return (
     <div className="mb-4">
@@ -155,14 +153,24 @@ export const FormField: React.FC<FormFieldProps> = ({
       ) : as === 'select' ? (
         <select className={cn('input-field w-full', error && 'border-red-500 focus:ring-red-500', className)}>
           <option value="">-- Chọn --</option>
-          {options?.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          {options?.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
           ))}
         </select>
       ) : as === 'textarea' ? (
-        <textarea className={cn('input-field w-full min-h-[100px]', error && 'border-red-500 focus:ring-red-500', className)} />
+        <textarea
+          className={cn(
+            'input-field w-full min-h-[100px]',
+            error && 'border-red-500 focus:ring-red-500',
+            className,
+          )}
+        />
       ) : (
-        <input className={cn('input-field w-full', error && 'border-red-500 focus:ring-red-500', className)} />
+        <input
+          className={cn('input-field w-full', error && 'border-red-500 focus:ring-red-500', className)}
+        />
       )}
 
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}

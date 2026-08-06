@@ -17,12 +17,10 @@ export const Breadcrumb: React.FC = () => {
   const location = useLocation();
   const paths = location.pathname.split('/').filter(Boolean);
 
-  const breadcrumbs = [
-    { path: '/', label: PATH_LABELS['/'] }
-  ];
+  const breadcrumbs = [{ path: '/', label: PATH_LABELS['/'] }];
 
   let currentPath = '';
-  paths.forEach(segment => {
+  paths.forEach((segment) => {
     currentPath += `/${segment}`;
     if (PATH_LABELS[currentPath]) {
       breadcrumbs.push({ path: currentPath, label: PATH_LABELS[currentPath] });
@@ -45,24 +43,26 @@ export const Breadcrumb: React.FC = () => {
                   <span className="hidden sm:inline">{crumb.label}</span>
                 </span>
               ) : (
-                <Link to={crumb.path} className="text-[var(--text-muted)] hover:text-[var(--primary-500)] flex items-center gap-1.5 transition-colors">
+                <Link
+                  to={crumb.path}
+                  className="text-[var(--text-muted)] hover:text-[var(--primary-500)] flex items-center gap-1.5 transition-colors"
+                >
                   <Home size={14} />
                   <span className="hidden sm:inline">{crumb.label}</span>
                 </Link>
               )
+            ) : isLast ? (
+              <span className="text-[var(--text-primary)] font-bold">{crumb.label}</span>
             ) : (
-              isLast ? (
-                <span className="text-[var(--text-primary)] font-bold">{crumb.label}</span>
-              ) : (
-                <Link to={crumb.path} className="text-[var(--text-muted)] hover:text-[var(--primary-500)] transition-colors">
-                  {crumb.label}
-                </Link>
-              )
+              <Link
+                to={crumb.path}
+                className="text-[var(--text-muted)] hover:text-[var(--primary-500)] transition-colors"
+              >
+                {crumb.label}
+              </Link>
             )}
-            
-            {!isLast && (
-              <ChevronRight size={12} className="text-[var(--text-muted)]" />
-            )}
+
+            {!isLast && <ChevronRight size={12} className="text-[var(--text-muted)]" />}
           </React.Fragment>
         );
       })}

@@ -45,34 +45,31 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     isPos = trend >= 0;
   } else if (trend && typeof trend === 'object') {
     trendVal = Math.abs(trend.value);
-    isPos = trend.isPositive ?? (trend.value >= 0);
+    isPos = trend.isPositive ?? trend.value >= 0;
   }
 
   return (
     <div
       role="region"
       aria-label={title}
-      className={cn(
-        'card p-5 relative overflow-hidden animate-fade-in-up',
-        className
-      )}
+      className={cn('card p-5 relative overflow-hidden animate-fade-in-up', className)}
     >
       <div className={cn('absolute left-0 top-0 bottom-0 w-1', colorMap[color].split(' ')[2])} />
-      
+
       <div className="flex justify-between items-start">
         <div>
           <p className="text-sm font-medium text-[var(--text-secondary)] mb-1">{title}</p>
           <h3 className="text-2xl font-bold font-mono text-[var(--text-primary)]">{value}</h3>
-          
-          {subtitle && (
-            <p className="text-xs text-[var(--text-tertiary)] mt-1">{subtitle}</p>
-          )}
+
+          {subtitle && <p className="text-xs text-[var(--text-tertiary)] mt-1">{subtitle}</p>}
 
           {trendVal !== null && (
-            <div className={cn(
-              "flex items-center text-xs font-medium mt-2",
-              isPos ? "text-emerald-600" : "text-rose-600"
-            )}>
+            <div
+              className={cn(
+                'flex items-center text-xs font-medium mt-2',
+                isPos ? 'text-emerald-600' : 'text-rose-600',
+              )}
+            >
               {isPos ? (
                 <ArrowUpRight className="w-3 h-3 mr-1" />
               ) : (
@@ -82,7 +79,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
             </div>
           )}
         </div>
-        
+
         <div className={cn('p-3 rounded-full flex items-center justify-center', iconBgMap[color])}>
           {React.isValidElement(Icon) ? (
             Icon

@@ -1,9 +1,19 @@
 import * as React from 'react';
 import { NavLink } from 'react-router-dom';
 import { MobileBottomSheet } from './MobileBottomSheet';
-import { 
-  Users, Package, BarChart3, Settings, 
-  LogOut, Recycle, Wallet, UserCheck, Sun, Leaf, Moon, Check 
+import {
+  Users,
+  Package,
+  BarChart3,
+  Settings,
+  LogOut,
+  Recycle,
+  Wallet,
+  UserCheck,
+  Sun,
+  Leaf,
+  Moon,
+  Check,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
 import { useTheme, PRIMARY_COLORS, type Theme } from '../../contexts/theme';
@@ -35,7 +45,7 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
   const { theme, setTheme, primaryColor, setPrimaryColor } = useTheme();
 
   const isManagerOrAdmin = user?.role === 'manager' || user?.role === 'admin';
-  const visibleItems = MENU_ITEMS.filter(item => !item.managerOnly || isManagerOrAdmin);
+  const visibleItems = MENU_ITEMS.filter((item) => !item.managerOnly || isManagerOrAdmin);
 
   return (
     <MobileBottomSheet isOpen={isOpen} onClose={onClose} title="Danh mục & Cài đặt">
@@ -46,10 +56,16 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
             {user?.name?.charAt(0) || 'A'}
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-sm text-[var(--text-primary)] truncate">{user?.name || 'Người dùng'}</h4>
+            <h4 className="font-bold text-sm text-[var(--text-primary)] truncate">
+              {user?.name || 'Người dùng'}
+            </h4>
             <p className="text-xs text-[var(--text-muted)] truncate">{user?.email || '—'}</p>
             <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-[var(--primary-50)] text-[var(--primary-600)]">
-              {user?.role === 'admin' ? 'Quản trị viên' : user?.role === 'manager' ? 'Giám đốc / Quản lý' : 'Nhân viên xưởng'}
+              {user?.role === 'admin'
+                ? 'Quản trị viên'
+                : user?.role === 'manager'
+                  ? 'Giám đốc / Quản lý'
+                  : 'Nhân viên xưởng'}
             </span>
           </div>
         </div>
@@ -60,17 +76,19 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
             Menu chức năng
           </h5>
           <div className="grid grid-cols-2 gap-2.5">
-            {visibleItems.map(item => (
+            {visibleItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 onClick={onClose}
-                className={({ isActive }) => cn(
-                  "flex items-center gap-3 p-3 rounded-2xl border transition-all text-xs font-bold active:scale-98",
-                  isActive
-                    ? "bg-[var(--primary-50)] border-[var(--primary-500)] text-[var(--primary-600)] shadow-xs"
-                    : "bg-[var(--bg-surface)] border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]"
-                )}
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center gap-3 p-3 rounded-2xl border transition-all text-xs font-bold active:scale-98',
+                    isActive
+                      ? 'bg-[var(--primary-50)] border-[var(--primary-500)] text-[var(--primary-600)] shadow-xs'
+                      : 'bg-[var(--bg-surface)] border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]',
+                  )
+                }
               >
                 <div className="w-8 h-8 rounded-xl bg-[var(--bg-subtle)] flex items-center justify-center text-[var(--primary-500)] shrink-0">
                   <item.icon size={18} />
@@ -86,7 +104,7 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
           <h5 className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] px-1">
             Giao diện ứng dụng
           </h5>
-          
+
           {/* Theme Mode */}
           <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
             {THEME_OPTIONS.map(({ id, label, icon: Icon }) => (
@@ -95,10 +113,10 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
                 type="button"
                 onClick={() => setTheme(id)}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95",
+                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95',
                   theme === id
-                    ? "bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    ? 'bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
                 )}
               >
                 <Icon size={14} />
@@ -118,8 +136,8 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
                   onClick={() => setPrimaryColor(id)}
                   title={name}
                   className={cn(
-                    "w-7 h-7 rounded-full flex items-center justify-center transition-transform active:scale-90",
-                    active && "scale-110 ring-2 ring-offset-2 ring-offset-[var(--bg-surface)]"
+                    'w-7 h-7 rounded-full flex items-center justify-center transition-transform active:scale-90',
+                    active && 'scale-110 ring-2 ring-offset-2 ring-offset-[var(--bg-surface)]',
                   )}
                   style={{ backgroundColor: hex }}
                 >

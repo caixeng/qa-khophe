@@ -1,7 +1,5 @@
 import * as React from 'react';
-import {
-  TrendingUp, Package, DollarSign, AlertTriangle, ArrowUpRight, CheckCircle2
-} from 'lucide-react';
+import { TrendingUp, Package, DollarSign, AlertTriangle, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { formatTien, formatKg, formatNgay } from '../../lib/utils';
 import type { Import } from '../../types';
 
@@ -42,34 +40,50 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
         <div className="card p-3.5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-xs">
           <div className="flex items-center space-x-2 text-emerald-600 mb-1">
             <TrendingUp size={16} />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Doanh thu xuất</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              Doanh thu xuất
+            </span>
           </div>
-          <p className="text-base font-black font-mono text-[var(--text-primary)]">{formatTien(summary.totalRevenue)}</p>
+          <p className="text-base font-black font-mono text-[var(--text-primary)]">
+            {formatTien(summary.totalRevenue)}
+          </p>
         </div>
 
         {summary.estimatedProfit !== null && (
           <div className="card p-3.5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-xs">
             <div className="flex items-center space-x-2 text-[var(--primary-500)] mb-1">
               <DollarSign size={16} />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Lợi nhuận gộp</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                Lợi nhuận gộp
+              </span>
             </div>
-            <p className="text-base font-black font-mono text-[var(--primary-500)]">{formatTien(summary.estimatedProfit)}</p>
+            <p className="text-base font-black font-mono text-[var(--primary-500)]">
+              {formatTien(summary.estimatedProfit)}
+            </p>
           </div>
         )}
 
         <div className="card p-3.5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-xs">
           <div className="flex items-center space-x-2 text-blue-600 mb-1">
             <Package size={16} />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Tồn kho phế</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              Tồn kho phế
+            </span>
           </div>
-          <p className="text-base font-black font-mono text-[var(--text-primary)]">{formatKg(summary.inventoryKg)}</p>
-          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">~{summary.inventoryBags} bao thành phẩm</p>
+          <p className="text-base font-black font-mono text-[var(--text-primary)]">
+            {formatKg(summary.inventoryKg)}
+          </p>
+          <p className="text-[10px] text-[var(--text-muted)] mt-0.5">
+            ~{summary.inventoryBags} bao thành phẩm
+          </p>
         </div>
 
         <div className="card p-3.5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-xs">
           <div className="flex items-center space-x-2 text-rose-600 mb-1">
             <ArrowUpRight size={16} />
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Nợ phải thu</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              Nợ phải thu
+            </span>
           </div>
           <p className="text-base font-black font-mono text-rose-600">{formatTien(summary.receivables)}</p>
         </div>
@@ -93,9 +107,14 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
           <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 flex items-start space-x-3">
             <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-bold text-amber-800 dark:text-amber-300">{summary.pendingImports.length} lô phế chưa xay</p>
+              <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
+                {summary.pendingImports.length} lô phế chưa xay
+              </p>
               <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
-                {summary.pendingImports.slice(0, 2).map(i => `${i.contact_name || 'Khách'} (${formatKg(i.quantity_kg || 0)})`).join(' & ')}
+                {summary.pendingImports
+                  .slice(0, 2)
+                  .map((i) => `${i.contact_name || 'Khách'} (${formatKg(i.quantity_kg || 0)})`)
+                  .join(' & ')}
                 {summary.pendingImports.length > 2 && ' ...'}
               </p>
             </div>
@@ -106,8 +125,12 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
           <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 flex items-start space-x-3">
             <ArrowUpRight size={18} className="text-rose-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-bold text-rose-800 dark:text-rose-300">Công nợ phải thu: {formatTien(summary.totalUnpaidReceivables)}</p>
-              <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-0.5">Xem chi tiết tại trang Tài chính &gt; Công nợ.</p>
+              <p className="text-xs font-bold text-rose-800 dark:text-rose-300">
+                Công nợ phải thu: {formatTien(summary.totalUnpaidReceivables)}
+              </p>
+              <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-0.5">
+                Xem chi tiết tại trang Tài chính &gt; Công nợ.
+              </p>
             </div>
           </div>
         )}

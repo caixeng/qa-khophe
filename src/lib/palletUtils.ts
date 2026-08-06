@@ -31,7 +31,11 @@ export function calculatePalletTare(type: PalletType, quantity: number = 1): num
 /**
   Tính khối lượng phế thực tế sau khi trừ bì lết
  */
-export function calculateNetScrapWeight(grossWeightKg: number, type: PalletType, quantity: number = 1): number {
+export function calculateNetScrapWeight(
+  grossWeightKg: number,
+  type: PalletType,
+  quantity: number = 1,
+): number {
   const tareWeight = calculatePalletTare(type, quantity);
   return Math.max(0, grossWeightKg - tareWeight);
 }

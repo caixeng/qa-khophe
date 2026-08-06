@@ -24,14 +24,26 @@ export const DanhBaPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ContactType>('supplier');
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({ isOpen: false, id: '' });
+  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({
+    isOpen: false,
+    id: '',
+  });
 
   // Table controls
-  const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage, sortConfig, handleSort } = useTableControls();
+  const {
+    searchQuery,
+    setSearchQuery,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    setItemsPerPage,
+    sortConfig,
+    handleSort,
+  } = useTableControls();
 
   // CRUD Form
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Contact>({
-    initialData: { type: 'supplier', name: '', phone: '', address: '', notes: '' }
+    initialData: { type: 'supplier', name: '', phone: '', address: '', notes: '' },
   });
 
   // Filter data
@@ -147,7 +159,7 @@ export const DanhBaPage: React.FC = () => {
                 'flex items-center space-x-2 border-b-2 px-4 py-3 text-xs font-bold transition-all cursor-pointer',
                 activeTab === tabType
                   ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
-                  : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                  : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
               )}
             >
               <span>{labels[tabType]}</span>
@@ -156,7 +168,7 @@ export const DanhBaPage: React.FC = () => {
                   'rounded-full px-2 py-0.5 text-[11px] font-mono font-bold',
                   activeTab === tabType
                     ? 'bg-[var(--primary-500)] text-white'
-                    : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]'
+                    : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]',
                 )}
               >
                 {count}
@@ -174,7 +186,12 @@ export const DanhBaPage: React.FC = () => {
         totalCount={filteredData.length}
       />
 
-      <DataState loading={loading} error={error} isEmpty={filteredData.length === 0} emptyTitle="Chưa có liên hệ nào">
+      <DataState
+        loading={loading}
+        error={error}
+        isEmpty={filteredData.length === 0}
+        emptyTitle="Chưa có liên hệ nào"
+      >
         {/* Desktop Table */}
         <div className="erp-table-container hidden lg:block">
           <div className="overflow-x-auto">
@@ -182,10 +199,18 @@ export const DanhBaPage: React.FC = () => {
               <caption className="sr-only">Danh bạ đối tác</caption>
               <thead>
                 <tr>
-                  <SortableHeader sortKey="name" sortConfig={sortConfig} onSort={handleSort}>Tên liên hệ</SortableHeader>
-                  <SortableHeader sortKey="phone" sortConfig={sortConfig} onSort={handleSort}>Số điện thoại</SortableHeader>
-                  <th scope="col" className="th-cell">Địa chỉ / Ghi chú</th>
-                  <SortableHeader sortKey="status" sortConfig={sortConfig} onSort={handleSort}>Trạng thái</SortableHeader>
+                  <SortableHeader sortKey="name" sortConfig={sortConfig} onSort={handleSort}>
+                    Tên liên hệ
+                  </SortableHeader>
+                  <SortableHeader sortKey="phone" sortConfig={sortConfig} onSort={handleSort}>
+                    Số điện thoại
+                  </SortableHeader>
+                  <th scope="col" className="th-cell">
+                    Địa chỉ / Ghi chú
+                  </th>
+                  <SortableHeader sortKey="status" sortConfig={sortConfig} onSort={handleSort}>
+                    Trạng thái
+                  </SortableHeader>
                   <th className="th-cell text-right">Hành động</th>
                 </tr>
               </thead>
@@ -223,8 +248,12 @@ export const DanhBaPage: React.FC = () => {
                           <span>{contact.address}</span>
                         </div>
                       )}
-                      {contact.notes && <span className="italic text-[var(--text-muted)]">{contact.notes}</span>}
-                      {!contact.address && !contact.notes && <span className="text-[var(--text-muted)]">—</span>}
+                      {contact.notes && (
+                        <span className="italic text-[var(--text-muted)]">{contact.notes}</span>
+                      )}
+                      {!contact.address && !contact.notes && (
+                        <span className="text-[var(--text-muted)]">—</span>
+                      )}
                     </td>
                     <td className="td-cell">
                       <StatusBadge status={contact.status || 'active'} />
@@ -257,7 +286,10 @@ export const DanhBaPage: React.FC = () => {
         {/* Mobile Card List */}
         <div className="lg:hidden space-y-3">
           {pageItems.map((contact) => (
-            <div key={contact.id} className="p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xs space-y-3">
+            <div
+              key={contact.id}
+              className="p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xs space-y-3"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-[var(--primary-50)] text-[var(--primary-600)] flex items-center justify-center font-bold shrink-0">
@@ -381,7 +413,9 @@ export const DanhBaPage: React.FC = () => {
             />
           </FormField>
 
-          <FormField label={activeTab === 'supplier' ? 'Giá nhập mặc định (đ/kg)' : 'Giá xuất mặc định (đ/kg)'}>
+          <FormField
+            label={activeTab === 'supplier' ? 'Giá nhập mặc định (đ/kg)' : 'Giá xuất mặc định (đ/kg)'}
+          >
             <input
               type="number"
               inputMode="decimal"
@@ -391,7 +425,10 @@ export const DanhBaPage: React.FC = () => {
               placeholder="Bỏ trống nếu dùng giá chung"
               value={formState.data?.default_price_per_kg ?? ''}
               onChange={(e) =>
-                handleChange('default_price_per_kg', e.target.value === '' ? undefined : Number(e.target.value))
+                handleChange(
+                  'default_price_per_kg',
+                  e.target.value === '' ? undefined : Number(e.target.value),
+                )
               }
             />
             <p className="mt-1 text-[11px] text-[var(--text-muted)]">
