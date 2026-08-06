@@ -24,3 +24,6 @@ scratch/
 *.njsproj
 *.sln
 *.sw?
+
+# Supabase personal access token — KHÔNG BAO GIỜ commit
+.supabase-token

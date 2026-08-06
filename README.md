@@ -41,12 +41,29 @@ npm run format:check  # prettier --check .
 
 > **Không đăng nhập được?** Ứng dụng chỉ chấp nhận tài khoản Supabase Auth thật, và tài khoản đó phải có một dòng tương ứng trong bảng `users`. Nếu đăng nhập đúng mật khẩu mà báo *"chưa được cấp quyền trong hệ thống"*, nghĩa là bước 4 chưa làm cho email đó.
 
-### Kiểm tra nhanh trạng thái bảo mật
+### Chạy migration bằng script (thay cho việc dán tay vào SQL Editor)
+
+Thêm `SUPABASE_ACCESS_TOKEN=sbp_...` vào `.env` (lấy tại [account/tokens](https://supabase.com/dashboard/account/tokens)), rồi:
+
+```bash
+node scripts/run_migration.mjs --check                                  # chỉ đọc, không sửa gì
+node scripts/run_migration.mjs supabase/migrations/009_contact_pricing.sql
+```
+
+`--check` chạy các truy vấn chẩn đoán: policy còn mở toang, phiếu xay sai vật lý (sản lượng ra > lượng vào), phiếu nhập nghi trùng, và trạng thái cột `default_price_per_kg`.
+
+> Token này có **toàn quyền trên mọi project Supabase** của tài khoản, không giới hạn riêng project này. Dùng xong nên **Revoke** ngay. Anon key trong `.env` không thay thế được vì nó không chạy được DDL.
+
+### Trạng thái đã áp dụng trên DB thật
+
+Tính tới **06/08/2026**: migration `001`–`009` đã chạy xong trên project `ageezcxrthqmmacnrqpf`. Kiểm tra xác nhận không còn policy `USING(true)` nào và không có phiếu nhập trùng.
+
+**Còn tồn:** 2 phiếu xay có sản lượng ra lớn hơn lượng vào (29/06 lệch +17 kg — khớp ghi chú sổ tay, nhiều khả năng sai số cân; 01/07 lệch **+1.397 kg** — cần đối chiếu sổ tay để sửa). Dữ liệu mới đã bị chặn bởi validation ở `grindingService` và CHECK trong migration `006`.
 
 ```sql
--- Không được trả về dòng nào:
-SELECT tablename, policyname FROM pg_policies
-WHERE schemaname = 'public' AND (qual = 'true' OR with_check = 'true');
+-- Tìm lại các dòng sai:
+SELECT id, date, worker, input_qty_kg, output_qty_kg
+FROM grinding WHERE deleted_at IS NULL AND output_qty_kg > input_qty_kg ORDER BY date;
 ```
 
 ## Phân quyền
