@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase';
 import type { Grinding } from '../types';
+import { loadLocalData, saveLocalData } from '../lib/storage';
 
-let LOCAL_GRINDING: Grinding[] = [];
+let LOCAL_GRINDING: Grinding[] = loadLocalData('khophe_grinding', []);
 
 export const grindingService = {
   async getAll(): Promise<Grinding[]> {
@@ -27,10 +28,12 @@ export const grindingService = {
           created_at: item.created_at,
         }));
         LOCAL_GRINDING = fetched;
+        saveLocalData('khophe_grinding', LOCAL_GRINDING);
         return fetched;
       }
     } catch {}
 
+    LOCAL_GRINDING = loadLocalData('khophe_grinding', LOCAL_GRINDING);
     return LOCAL_GRINDING;
   },
 
@@ -88,6 +91,7 @@ export const grindingService = {
     }
 
     LOCAL_GRINDING.unshift(newItem);
+    saveLocalData('khophe_grinding', LOCAL_GRINDING);
     return newItem;
   },
 
@@ -106,6 +110,7 @@ export const grindingService = {
         loss_kg: lossKg,
         loss_pct: inputKg ? Number(((lossKg / inputKg) * 100).toFixed(1)) : 0,
       };
+      saveLocalData('khophe_grinding', LOCAL_GRINDING);
     }
 
     try {
@@ -126,6 +131,7 @@ export const grindingService = {
 
   async delete(id: string): Promise<void> {
     LOCAL_GRINDING = LOCAL_GRINDING.filter(g => g.id !== id);
+    saveLocalData('khophe_grinding', LOCAL_GRINDING);
     try {
       await supabase
         .from('grinding')

@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase';
 import type { Export } from '../types';
+import { loadLocalData, saveLocalData } from '../lib/storage';
 
-let LOCAL_EXPORTS: Export[] = [];
+let LOCAL_EXPORTS: Export[] = loadLocalData('khophe_exports', []);
 
 export const exportsService = {
   async getAll(): Promise<Export[]> {
@@ -28,10 +29,12 @@ export const exportsService = {
           created_at: item.created_at,
         }));
         LOCAL_EXPORTS = fetched;
+        saveLocalData('khophe_exports', LOCAL_EXPORTS);
         return fetched;
       }
     } catch {}
 
+    LOCAL_EXPORTS = loadLocalData('khophe_exports', LOCAL_EXPORTS);
     return LOCAL_EXPORTS;
   },
 
@@ -91,6 +94,7 @@ export const exportsService = {
     }
 
     LOCAL_EXPORTS.unshift(newItem);
+    saveLocalData('khophe_exports', LOCAL_EXPORTS);
     return newItem;
   },
 
@@ -108,6 +112,7 @@ export const exportsService = {
         price_per_kg: price,
         total_amount: total,
       };
+      saveLocalData('khophe_exports', LOCAL_EXPORTS);
     }
 
     try {
@@ -128,6 +133,7 @@ export const exportsService = {
 
   async delete(id: string): Promise<void> {
     LOCAL_EXPORTS = LOCAL_EXPORTS.filter(e => e.id !== id);
+    saveLocalData('khophe_exports', LOCAL_EXPORTS);
     try {
       await supabase
         .from('exports')

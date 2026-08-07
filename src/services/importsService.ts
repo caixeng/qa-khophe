@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase';
 import type { Import } from '../types';
+import { loadLocalData, saveLocalData } from '../lib/storage';
 
-export let ALL_NOTEBOOK_IMPORTS: Import[] = [
+const INITIAL_NOTEBOOK_IMPORTS: Import[] = [
   { id: 'imp-1', date: '2026-06-28', contact_name: 'Em Hoàn', material_type: 'Tấm nhựa nano', quantity_kg: 1395, price_per_kg: 4000, total_amount: 5580000, payment_status: 'paid', processing_status: 'done', notes: 'R Hoàn (Xay 29/06: 1.412kg, +17kg)' },
   { id: 'imp-2', date: '2026-06-29', contact_name: 'Nga', material_type: 'Tấm nhựa nano', quantity_kg: 2280, price_per_kg: 4000, total_amount: 9120000, payment_status: 'paid', processing_status: 'done', notes: 'R Nga (Xay 29-30/06: 2.248kg, -32kg)' },
   { id: 'imp-3', date: '2026-06-29', contact_name: 'Em Hoàn', material_type: 'Tấm nhựa nano', quantity_kg: 2505, price_per_kg: 4000, total_amount: 10020000, payment_status: 'paid', processing_status: 'done', notes: 'R Hoàn (Xay 30/06: 2.496kg, -9kg)' },
@@ -38,6 +39,8 @@ export let ALL_NOTEBOOK_IMPORTS: Import[] = [
   { id: 'imp-30', date: '2026-08-05', contact_name: 'Chị Hoan', material_type: 'Tấm nhựa nano', quantity_kg: 1280, price_per_kg: 4000, total_amount: 5120000, payment_status: 'unpaid', processing_status: 'pending', notes: 'chưa Hoan' }
 ];
 
+export let ALL_NOTEBOOK_IMPORTS: Import[] = loadLocalData('khophe_imports', INITIAL_NOTEBOOK_IMPORTS);
+
 export const importsService = {
   async getAll(): Promise<Import[]> {
     try {
@@ -47,10 +50,11 @@ export const importsService = {
         .order('date', { ascending: false });
 
       if (error || !data || data.length === 0) {
+        ALL_NOTEBOOK_IMPORTS = loadLocalData('khophe_imports', INITIAL_NOTEBOOK_IMPORTS);
         return ALL_NOTEBOOK_IMPORTS;
       }
 
-      return data.map(item => ({
+      const mapped = data.map(item => ({
         id: item.id,
         date: item.date,
         contact_id: item.contact_id,
@@ -64,7 +68,12 @@ export const importsService = {
         notes: item.notes,
         created_at: item.created_at,
       }));
+
+      ALL_NOTEBOOK_IMPORTS = mapped;
+      saveLocalData('khophe_imports', ALL_NOTEBOOK_IMPORTS);
+      return mapped;
     } catch {
+      ALL_NOTEBOOK_IMPORTS = loadLocalData('khophe_imports', INITIAL_NOTEBOOK_IMPORTS);
       return ALL_NOTEBOOK_IMPORTS;
     }
   },
@@ -125,6 +134,7 @@ export const importsService = {
     }
 
     ALL_NOTEBOOK_IMPORTS.unshift(createdItem);
+    saveLocalData('khophe_imports', ALL_NOTEBOOK_IMPORTS);
     return createdItem;
   },
 
@@ -143,6 +153,7 @@ export const importsService = {
         price_per_kg: price,
         total_amount: total,
       };
+      saveLocalData('khophe_imports', ALL_NOTEBOOK_IMPORTS);
     }
 
     try {
@@ -164,6 +175,7 @@ export const importsService = {
 
   async delete(id: string): Promise<void> {
     ALL_NOTEBOOK_IMPORTS = ALL_NOTEBOOK_IMPORTS.filter(i => i.id !== id);
+    saveLocalData('khophe_imports', ALL_NOTEBOOK_IMPORTS);
     try {
       await supabase
         .from('imports')
