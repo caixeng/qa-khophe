@@ -16,6 +16,7 @@ import { PaginationBar } from '../components/PaginationBar';
 import { exportsService } from '../services/exportsService';
 import { contactsService } from '../services/contactsService';
 import { settingsService } from '../services/settingsService';
+import { sortByDateDesc } from '../lib/storage';
 import { printPhieuXuat } from '../lib/print';
 import type { Export as ExportType, PaymentStatus } from '../types';
 
@@ -69,8 +70,10 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
     }
   }, [searchParams]);
 
+import { sortByDateDesc } from '../lib/storage';
+
   const filteredData = useMemo(() => {
-    return exports.filter((item) => {
+    const list = exports.filter((item) => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return (
@@ -79,6 +82,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
         (item.notes || '').toLowerCase().includes(q)
       );
     });
+    return sortByDateDesc(list);
   }, [exports, searchQuery]);
 
   // Stats
