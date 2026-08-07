@@ -21,6 +21,7 @@ import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useDateRange } from '../hooks/useDateRange';
 import { importsService } from '../services/importsService';
 import { contactsService } from '../services/contactsService';
+import { sortByDateDesc } from '../lib/storage';
 import type { Import, PaymentStatus, ProcessingStatus } from '../types';
 
 interface NhapPhePageProps {
@@ -93,7 +94,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
   }, [searchParams, openModal]);
 
   const filteredData = useMemo(() => {
-    return imports.filter((item) => {
+    const list = imports.filter((item) => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       const contactName = item.contact_name || '';
@@ -104,6 +105,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
         item.notes?.toLowerCase().includes(q)
       );
     });
+    return sortByDateDesc(list);
   }, [imports, searchQuery]);
 
   // Calculated Stats

@@ -19,6 +19,7 @@ import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useDateRange } from '../hooks/useDateRange';
 import { grindingService } from '../services/grindingService';
 import { importsService } from '../services/importsService';
+import { sortByDateDesc } from '../lib/storage';
 import type { Grinding } from '../types';
 
 interface XayPhePageProps {
@@ -86,7 +87,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
   }, [searchParams, openModal]);
 
   const filteredData = useMemo(() => {
-    return grindingList.filter((item) => {
+    const list = grindingList.filter((item) => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       const opName = item.worker || '';
@@ -97,6 +98,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
         (item.import_id || '').toLowerCase().includes(q)
       );
     });
+    return sortByDateDesc(list);
   }, [grindingList, searchQuery]);
 
   // Statistics
