@@ -595,9 +595,9 @@ export const NhanVienPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleMarkAllFull}
-                  className="btn-secondary text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-xs font-extrabold flex items-center gap-1.5 py-1.5 px-3 cursor-pointer"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm flex items-center gap-1.5 py-2 px-3.5 rounded-xl border border-emerald-500 cursor-pointer active:scale-95 transition-all"
                 >
-                  <Zap size={14} /> ⚡ Chấm đủ tất cả (1 Công)
+                  <Zap size={14} className="fill-white" /> ⚡ Chấm đủ tất cả (1 Công)
                 </button>
               )}
 

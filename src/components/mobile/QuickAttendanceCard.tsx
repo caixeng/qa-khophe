@@ -56,20 +56,20 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
         <div className="flex items-center gap-2.5 min-w-0">
           <div
             className={cn(
-              'w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0',
-              isFull && 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300',
-              isHalf && 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300',
-              isOff && 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-              isCustom && 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+              'w-10 h-10 rounded-2xl flex items-center justify-center font-black text-white shrink-0 shadow-sm transition-colors',
+              isFull && 'bg-emerald-600',
+              isHalf && 'bg-amber-500',
+              isOff && 'bg-slate-600',
+              isCustom && 'bg-blue-600',
             )}
           >
-            <User size={18} />
+            <User size={20} className="text-white" />
           </div>
           <div className="min-w-0">
             <h3 className="font-extrabold text-sm text-[var(--text-primary)] truncate">
               {employee.name}
             </h3>
-            <p className="text-[11px] font-mono text-[var(--text-muted)]">
+            <p className="text-xs font-mono font-extrabold text-[var(--primary-600)] dark:text-[var(--primary-400)]">
               {formatTien(employee.daily_salary)}/ngày
             </p>
           </div>
@@ -79,12 +79,12 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
         {hasExtra && (
           <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0">
             {state.overtime_hours > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 flex items-center gap-1">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-600 text-white flex items-center gap-1">
                 <Clock size={10} /> +{state.overtime_hours}h
               </span>
             )}
             {state.advance_pay > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 flex items-center gap-1">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white flex items-center gap-1">
                 <DollarSign size={10} /> Ứng -{formatTien(state.advance_pay)}
               </span>
             )}
@@ -101,7 +101,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
             'h-11 rounded-xl text-xs font-black transition-all flex flex-col items-center justify-center cursor-pointer border',
             isFull
               ? 'bg-emerald-600 text-white border-emerald-600 shadow-md scale-[1.02]'
-              : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-transparent hover:bg-emerald-100 hover:text-emerald-800',
+              : 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-emerald-50 hover:text-emerald-800 dark:hover:bg-emerald-950/40',
           )}
         >
           <span>🟢 1 Công</span>
@@ -115,7 +115,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
             'h-11 rounded-xl text-xs font-black transition-all flex flex-col items-center justify-center cursor-pointer border',
             isHalf
               ? 'bg-amber-500 text-white border-amber-500 shadow-md scale-[1.02]'
-              : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-transparent hover:bg-amber-100 hover:text-amber-800',
+              : 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-amber-50 hover:text-amber-800 dark:hover:bg-amber-950/40',
           )}
         >
           <span>🟡 0.5 Công</span>
@@ -129,7 +129,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
             'h-11 rounded-xl text-xs font-black transition-all flex flex-col items-center justify-center cursor-pointer border',
             isOff
               ? 'bg-slate-700 text-white border-slate-700 shadow-md scale-[1.02]'
-              : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-transparent hover:bg-slate-200 hover:text-slate-800',
+              : 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800',
           )}
         >
           <span>🔴 0 Công</span>
@@ -143,7 +143,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
             'h-11 rounded-xl text-xs font-black transition-all flex flex-col items-center justify-center cursor-pointer border',
             showCustom || isCustom
               ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-              : 'bg-[var(--bg-subtle)] text-[var(--text-secondary)] border-transparent hover:bg-blue-100 hover:text-blue-800',
+              : 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-blue-50 hover:text-blue-800 dark:hover:bg-blue-950/40',
           )}
         >
           <span className="flex items-center gap-0.5">
