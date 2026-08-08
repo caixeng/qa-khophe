@@ -823,26 +823,26 @@ export const NhanVienPage: React.FC = () => {
                   Tổng công: <b className="font-mono text-[var(--text-primary)]">{payroll.totals.shifts}</b>
                 </span>
                 <span className="text-[var(--text-muted)]">
-                  Thực lĩnh: <b className="font-mono text-emerald-600">{formatTien(payroll.totals.net)}</b>
+                  Tổng gộp: <b className="font-mono text-[var(--text-primary)]">{formatTien(payroll.totals.gross)}</b>
                 </span>
                 <span className="text-[var(--text-muted)]">
-                  Còn phải trả: <b className="font-mono text-rose-600">{formatTien(payroll.totals.unpaid)}</b>
+                  Đã ứng: <b className="font-mono text-amber-600">-{formatTien(payroll.totals.advance)}</b>
+                </span>
+                <span className="text-[var(--text-muted)]">
+                  Thực lĩnh còn nợ: <b className="font-mono text-rose-600">{formatTien(payroll.totals.unpaid)}</b>
                 </span>
               </div>
             </div>
 
             {/* Banner Giải Thích Công Thức Lương */}
-            <div className="p-3.5 rounded-xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5">
+            <div className="p-3.5 rounded-xl bg-[var(--primary-50)] dark:bg-[var(--primary-950)]/40 border border-[var(--primary-200)] dark:border-[var(--primary-800)] text-xs text-[var(--text-primary)] flex items-start gap-2.5 shadow-xs">
               <span className="text-base shrink-0">💡</span>
               <div className="space-y-1 leading-relaxed">
-                <p className="font-bold">
-                  Công thức tính lương tháng: <span className="text-emerald-700 dark:text-emerald-400 font-mono">Thực Lĩnh = Lương Gộp − Đã Tạm Ứng</span>
+                <p className="font-extrabold text-[var(--text-primary)]">
+                  Công thức tính: <span className="text-[var(--primary-600)] dark:text-[var(--primary-400)] font-mono font-black">Thực Lĩnh Còn Nợ = Lương Gộp − Đã Tạm Ứng</span>
                 </p>
-                <p className="text-[11px] opacity-90">
-                  • <b>Lương Gộp:</b> Tổng tiền công làm ra trong tháng (Chưa trừ ứng). | • <b>Đã Ứng:</b> Tiền nhân viên đã ứng trước trong tháng.
-                </p>
-                <p className="text-[11px] opacity-90">
-                  • <b>Còn Phải Trả:</b> Số tiền xưởng chưa thanh toán nốt. Khi bạn bấm <b>[✓ Trả nốt]</b>, cột Còn phải trả sẽ chuyển về <b>0đ (🟢 Đã trả đủ)</b>.
+                <p className="text-[11px] text-[var(--text-secondary)] font-medium">
+                  Ví dụ: Công làm 7.050.000đ − Đã ứng 5.000.000đ = <b className="text-rose-600 dark:text-rose-400">Còn nợ nốt 2.050.000đ</b>. Khi bạn bấm nút <b>[✓ Trả nốt]</b>, số tiền nợ sẽ chuyển thành <b className="text-emerald-600 dark:text-emerald-400">🟢 Đã trả đủ (0đ)</b>.
                 </p>
               </div>
             </div>
@@ -868,12 +868,11 @@ export const NhanVienPage: React.FC = () => {
                         </th>
                         <th className="th-cell text-right">Số công</th>
                         <th className="th-cell text-right">Lương gộp</th>
-                        <th className="th-cell text-right">Đã ứng</th>
+                        <th className="th-cell text-right">Đã tạm ứng</th>
                         <th className="th-cell text-right font-extrabold text-[var(--primary-600)]">
-                          <div>Thực lĩnh</div>
+                          <div>Thực lĩnh còn nợ</div>
                           <div className="text-[10px] font-normal text-[var(--text-muted)]">(Gộp − Ứng)</div>
                         </th>
-                        <th className="th-cell text-right">Còn phải trả</th>
                         <th className="th-cell text-right">Thao tác</th>
                       </tr>
                     </thead>
@@ -888,16 +887,16 @@ export const NhanVienPage: React.FC = () => {
                           <td className="td-cell text-right font-mono text-xs font-bold text-amber-600">
                             {r.advance > 0 ? `-${formatTien(r.advance)}` : '—'}
                           </td>
-                          <td className="td-cell text-right font-mono text-xs font-black text-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/20">
-                            {formatTien(r.net)}
-                          </td>
-                          <td
-                            className={cn(
-                              'td-cell text-right font-mono text-xs font-bold',
-                              r.unpaid > 0 ? 'text-rose-600' : 'text-emerald-600',
+                          <td className="td-cell text-right font-mono text-xs font-black">
+                            {r.unpaid > 0 ? (
+                              <span className="text-rose-600 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800/40">
+                                {formatTien(r.unpaid)}
+                              </span>
+                            ) : (
+                              <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/40 font-bold">
+                                🟢 Đã trả đủ (0 đ)
+                              </span>
                             )}
-                          >
-                            {r.unpaid > 0 ? formatTien(r.unpaid) : '🟢 Đã trả đủ (0 đ)'}
                           </td>
                           <td className="td-cell text-right">
                             {r.unpaid > 0 && r.employee_id ? (
@@ -924,12 +923,9 @@ export const NhanVienPage: React.FC = () => {
                           {formatTien(payroll.totals.gross)}
                         </td>
                         <td className="td-cell text-right font-mono text-xs text-amber-600">
-                          {formatTien(payroll.totals.advance)}
+                          -{formatTien(payroll.totals.advance)}
                         </td>
-                        <td className="td-cell text-right font-mono text-xs text-emerald-600 font-black">
-                          {formatTien(payroll.totals.net)}
-                        </td>
-                        <td className="td-cell text-right font-mono text-xs text-rose-600">
+                        <td className="td-cell text-right font-mono text-xs text-rose-600 font-black">
                           {formatTien(payroll.totals.unpaid)}
                         </td>
                         <td className="td-cell"></td>
