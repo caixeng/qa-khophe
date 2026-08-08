@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { runQuery, ServiceError, MAX_ROWS, type DateRangeFilter } from '../lib/serviceError';
 import type { Export } from '../types';
+import { today } from '../lib/date';
 
 type ExportRow = {
   id: string;
@@ -65,7 +66,7 @@ export const exportsService = {
       supabase
         .from('exports')
         .insert({
-          date: item.date || new Date().toISOString().split('T')[0],
+          date: item.date || today(),
           contact_id: item.contact_id || null,
           bags_count: Number(item.bags_count) || 0,
           total_kg: kg,

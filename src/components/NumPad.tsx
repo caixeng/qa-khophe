@@ -9,6 +9,14 @@ export interface NumPadProps {
   onSubmit: (val: string) => void;
   unit?: string;
   className?: string;
+  /**
+   * Giá trị khởi tạo cho chế độ KHÔNG kiểm soát (không truyền `value`) — dùng
+   * khi cần mở NumPad để SỬA một số đã có sẵn (vd: sửa cân nặng 1 bao đã cân)
+   * nhưng vẫn để người dùng gõ tiếp tự do sau đó. Chỉ đọc lúc mount; đổi giá
+   * trị này ở lần render sau không có tác dụng — dùng kèm `key` ở nơi gọi để
+   * ép mount lại khi cần sửa mục khác.
+   */
+  defaultValue?: string;
 }
 
 export const NumPad: React.FC<NumPadProps> = ({
@@ -17,8 +25,9 @@ export const NumPad: React.FC<NumPadProps> = ({
   onSubmit,
   unit = 'kg',
   className,
+  defaultValue = '',
 }) => {
-  const [internalValue, setInternalValue] = useState('');
+  const [internalValue, setInternalValue] = useState(defaultValue);
   const currentValue = externalValue !== undefined ? externalValue : internalValue;
 
   const updateValue = (val: string) => {

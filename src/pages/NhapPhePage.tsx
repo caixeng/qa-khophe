@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Edit, Trash2, Package, Clock, DollarSign, Printer } from 'lucide-react';
 import { formatTien, formatNgay, formatKg } from '../lib/utils';
 import { Modal, FormField } from '../components/Modal';
+import { AttachmentUploader } from '../components/AttachmentUploader';
 import { printPhieuNhap } from '../lib/print';
 import { StatusBadge } from '../components/StatusBadge';
 import { TableToolbar } from '../components/TableToolbar';
@@ -23,6 +24,7 @@ import { importsService } from '../services/importsService';
 import { contactsService } from '../services/contactsService';
 import { sortByDateDesc } from '../lib/storage';
 import type { Import, PaymentStatus, ProcessingStatus } from '../types';
+import { today } from '../lib/date';
 
 interface NhapPhePageProps {
   actionRef?: React.MutableRefObject<(() => void) | null>;
@@ -66,7 +68,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Import>({
     initialData: {
-      date: new Date().toISOString().split('T')[0],
+      date: today(),
       material_type: 'Tấm nhựa nano',
       quantity_kg: 0,
       price_per_kg: 4000,
@@ -159,7 +161,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
         toast.success('Đã cập nhật phiếu nhập');
       } else {
         await importsService.create({
-          date: data.date || new Date().toISOString().split('T')[0],
+          date: data.date || today(),
           contact_id: data.contact_id || undefined,
           contact_name: contactName,
           material_type: data.material_type || 'Tấm nhựa nano',
@@ -446,6 +448,10 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                 <p className="text-[var(--text-secondary)] italic">{selectedDetail.notes}</p>
               </div>
             )}
+
+            <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+              <AttachmentUploader refType="import" refId={selectedDetail.id} />
+            </div>
 
             <div className="flex items-center justify-between pt-4 border-t border-[var(--border-color)] gap-2">
               <div className="flex items-center space-x-2">

@@ -16,6 +16,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Trash2,
+  Paperclip,
 } from 'lucide-react';
 import { cn, formatTien, formatNgay } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
@@ -24,12 +25,14 @@ import { TableToolbar } from '../components/TableToolbar';
 import { KpiCard } from '../components/KpiCard';
 import { DataState } from '../components/DataState';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { AttachmentUploader } from '../components/AttachmentUploader';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
 import { useToast } from '../contexts/toast';
 import { expensesService } from '../services/expensesService';
 import type { Expense, Advance } from '../types';
+import { today } from '../lib/date';
 
 const categoryConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   fuel: { label: 'Xăng', icon: Fuel, color: 'text-orange-500' },
@@ -66,10 +69,15 @@ export const ChiPhiPage: React.FC = () => {
     id: string;
     type: 'expense' | 'advance';
   }>({ isOpen: false, id: '', type: 'expense' });
+  const [attachTarget, setAttachTarget] = useState<{
+    type: 'expense' | 'advance';
+    id: string;
+    label: string;
+  } | null>(null);
 
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Expense>({
     initialData: {
-      date: new Date().toISOString().split('T')[0],
+      date: today(),
       category: 'fuel',
       amount: 0,
       description: '',
@@ -84,7 +92,7 @@ export const ChiPhiPage: React.FC = () => {
     handleChange: handleAdvChange,
   } = useCrudForm<Advance>({
     initialData: {
-      date: new Date().toISOString().split('T')[0],
+      date: today(),
       amount: 0,
       person: 'Chủ xưởng',
       type: 'advance',
@@ -152,7 +160,7 @@ export const ChiPhiPage: React.FC = () => {
     setSaving(true);
     try {
       await expensesService.createExpense({
-        date: data.date || new Date().toISOString().split('T')[0],
+        date: data.date || today(),
         category: data.category || 'other',
         amount,
         description: data.description || '',
@@ -210,7 +218,7 @@ export const ChiPhiPage: React.FC = () => {
     setSavingAdv(true);
     try {
       await expensesService.createAdvance({
-        date: data.date || new Date().toISOString().split('T')[0],
+        date: data.date || today(),
         amount,
         person: data.person || 'Chủ xưởng',
         type: data.type || 'advance',
@@ -269,13 +277,7 @@ export const ChiPhiPage: React.FC = () => {
         <div className="space-y-6">
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard
-              title="Tổng chi tháng"
-              value={formatTien(totalExpense)}
-              icon={Wallet}
-              trend={-12}
-              color="danger"
-            />
+            <KpiCard title="Tổng chi tháng" value={formatTien(totalExpense)} icon={Wallet} color="danger" />
             <KpiCard title="Xăng xe" value={formatTien(totalFuel)} icon={Fuel} color="warning" />
             <KpiCard title="Dao cắt" value={formatTien(totalBlade)} icon={Tool} color="info" />
             <KpiCard
@@ -344,13 +346,24 @@ export const ChiPhiPage: React.FC = () => {
                           </td>
                           <td className="td-cell text-xs text-[var(--text-muted)]">{exp.notes || '—'}</td>
                           <td className="td-cell text-right">
-                            <button
-                              onClick={() => handleDeleteExpense(exp.id)}
-                              className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
-                              title="Xóa"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() =>
+                                  setAttachTarget({ type: 'expense', id: exp.id, label: cfg.label })
+                                }
+                                className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
+                                title="Đính kèm ảnh hoá đơn"
+                              >
+                                <Paperclip size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteExpense(exp.id)}
+                                className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                                title="Xóa"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -437,13 +450,28 @@ export const ChiPhiPage: React.FC = () => {
                         </td>
                         <td className="td-cell text-xs text-[var(--text-muted)]">{adv.notes || '—'}</td>
                         <td className="td-cell text-right">
-                          <button
-                            onClick={() => handleDeleteAdvance(adv.id)}
-                            className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
-                            title="Xóa"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() =>
+                                setAttachTarget({
+                                  type: 'advance',
+                                  id: adv.id,
+                                  label: adv.person || 'Chủ xưởng',
+                                })
+                              }
+                              className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
+                              title="Đính kèm ảnh chuyển khoản"
+                            >
+                              <Paperclip size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteAdvance(adv.id)}
+                              className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                              title="Xóa"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -616,6 +644,14 @@ export const ChiPhiPage: React.FC = () => {
         confirmText="Xoá"
         cancelText="Hủy"
       />
+
+      <Modal
+        isOpen={!!attachTarget}
+        onClose={() => setAttachTarget(null)}
+        title={`Ảnh đính kèm — ${attachTarget?.label || ''}`}
+      >
+        {attachTarget && <AttachmentUploader refType={attachTarget.type} refId={attachTarget.id} />}
+      </Modal>
     </div>
   );
 };

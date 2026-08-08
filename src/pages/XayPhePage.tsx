@@ -22,6 +22,7 @@ import { importsService } from '../services/importsService';
 import { settingsService } from '../services/settingsService';
 import { sortByDateDesc } from '../lib/storage';
 import type { Grinding } from '../types';
+import { today } from '../lib/date';
 
 interface XayPhePageProps {
   actionRef?: React.MutableRefObject<(() => void) | null>;
@@ -63,7 +64,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Grinding>({
     initialData: {
-      date: new Date().toISOString().split('T')[0],
+      date: today(),
       input_qty_kg: 0,
       output_qty_kg: 0,
       bags_count: 0,
@@ -144,7 +145,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
         toast.success('Đã cập nhật phiếu xay');
       } else {
         await grindingService.create({
-          date: data.date || new Date().toISOString().split('T')[0],
+          date: data.date || today(),
           import_id: data.import_id || null,
           input_qty_kg: inputKg,
           output_qty_kg: outputKg,

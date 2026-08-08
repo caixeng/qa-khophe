@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { today } from '../lib/date';
 
 export interface StockCount {
   id: string;
@@ -32,7 +33,7 @@ export const stockCountService = {
     const { data, error } = await supabase
       .from('stock_counts')
       .insert({
-        date: entry.date || new Date().toISOString().split('T')[0],
+        date: entry.date || today(),
         counted_bags: entry.counted_bags,
         counted_kg: entry.counted_kg,
         system_kg: entry.system_kg,

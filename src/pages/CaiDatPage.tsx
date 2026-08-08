@@ -1,12 +1,45 @@
 import * as React from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/theme';
 import { useAuth } from '../contexts/auth';
-import { User, Palette, Moon, Sun, Leaf, Check, Monitor, Sliders } from 'lucide-react';
+import { useToast } from '../contexts/toast';
+import { User, Palette, Moon, Sun, Leaf, Check, Monitor, Sliders, PackageMinus } from 'lucide-react';
 import { cn, formatRole } from '../lib/utils';
+import { useAsyncData } from '../hooks/useAsyncData';
+import { settingsService } from '../services/settingsService';
 
 export const CaiDatPage = () => {
   const { theme, setTheme, primaryColor, setPrimaryColor, density, setDensity } = useTheme();
   const { user } = useAuth();
+  const { toast } = useToast();
+
+  const { data: lowStockThresholdData, refetch: refetchThreshold } = useAsyncData(
+    settingsService.getLowStockThreshold,
+    [],
+  );
+  const [thresholdStr, setThresholdStr] = useState('');
+  const [savingThreshold, setSavingThreshold] = useState(false);
+
+  // Đồng bộ ô nhập với giá trị đã lưu mỗi khi tải xong — tránh hiện "0" trong
+  // lúc đang chờ tải, dễ khiến người dùng tưởng chưa cấu hình gì.
+  useEffect(() => {
+    if (lowStockThresholdData !== null) setThresholdStr(String(lowStockThresholdData));
+  }, [lowStockThresholdData]);
+
+  const handleSaveThreshold = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingThreshold(true);
+    try {
+      await settingsService.setLowStockThreshold(Number(thresholdStr) || 0);
+      toast.success('Đã lưu ngưỡng cảnh báo tồn kho');
+      refetchThreshold();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu ngưỡng tồn kho');
+      console.error(err);
+    } finally {
+      setSavingThreshold(false);
+    }
+  };
 
   const THEMES: { id: Theme; title: string; subtitle: string; icon: React.ElementType }[] = [
     {
@@ -205,6 +238,39 @@ export const CaiDatPage = () => {
             );
           })}
         </div>
+      </div>
+
+      {/* 5. Ngưỡng cảnh báo tồn kho thấp */}
+      <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xs">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2 flex items-center gap-2">
+          <PackageMinus size={16} className="text-[var(--primary-500)]" />
+          5. Ngưỡng Cảnh Báo Tồn Kho Thấp
+        </h2>
+        <p className="text-xs text-[var(--text-secondary)] mb-4">
+          Khi tồn kho thành phẩm xuống dưới số kg này, trang Tổng quan sẽ tự hiện cảnh báo. Để 0 để tắt cảnh
+          báo (mặc định).
+        </p>
+
+        <form onSubmit={handleSaveThreshold} className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="label-field block mb-1.5 text-xs font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+              Ngưỡng (kg)
+            </label>
+            <input
+              type="number"
+              inputMode="decimal"
+              min="0"
+              step="any"
+              className="input-field font-mono font-bold w-40"
+              placeholder="0 = tắt cảnh báo"
+              value={thresholdStr}
+              onChange={(e) => setThresholdStr(e.target.value)}
+            />
+          </div>
+          <button type="submit" disabled={savingThreshold} className="btn-primary disabled:opacity-60">
+            {savingThreshold ? 'Đang lưu...' : 'Lưu ngưỡng'}
+          </button>
+        </form>
       </div>
     </div>
   );

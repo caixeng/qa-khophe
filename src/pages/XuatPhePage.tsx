@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Edit, Trash2, Truck, DollarSign, Package, TrendingUp, Printer } from 'lucide-react';
 import { formatTien, formatNgay, formatKg } from '../lib/utils';
 import { Modal, FormField } from '../components/Modal';
+import { AttachmentUploader } from '../components/AttachmentUploader';
 import { StatusBadge } from '../components/StatusBadge';
 import { TableToolbar } from '../components/TableToolbar';
 import { DataState } from '../components/DataState';
@@ -21,9 +22,11 @@ import { useDateRange } from '../hooks/useDateRange';
 import { exportsService } from '../services/exportsService';
 import { contactsService } from '../services/contactsService';
 import { settingsService } from '../services/settingsService';
+import { weighingService } from '../services/weighingService';
 import { sortByDateDesc } from '../lib/storage';
 import { printPhieuXuat } from '../lib/print';
 import type { Export as ExportType, PaymentStatus } from '../types';
+import { today } from '../lib/date';
 
 interface XuatPhePageProps {
   actionRef?: React.MutableRefObject<(() => void) | null>;
@@ -40,6 +43,8 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   } = useAsyncList(() => exportsService.getAll({ from: range.from, to: range.to }), [range.from, range.to]);
   const { data: contacts } = useAsyncList(contactsService.getAll, []);
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
+  const { data: weighingSessions } = useAsyncList(weighingService.getSessions, []);
+  const { data: unlinkedSessionIds } = useAsyncData(weighingService.getUnlinkedSessionIds, []);
 
   const kgPerBag = kgPerBagData ?? 900;
   const customers = useMemo(
@@ -70,13 +75,21 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   // Form State
   const { formState, openModal, closeModal, handleChange } = useCrudForm<ExportType>({
     initialData: {
-      date: new Date().toISOString().split('T')[0],
+      date: today(),
       bags_count: 18,
       total_kg: 16200,
       price_per_kg: 6000,
       payment_status: 'unpaid',
     },
   });
+
+  // Phiên cân chọn được: chưa gắn phiếu xuất nào, HOẶC đang là phiên đã gắn
+  // với đúng phiếu đang sửa (không thì mở phiếu cũ ra sẽ không thấy lựa chọn
+  // hiện tại của nó trong danh sách).
+  const availableSessions = useMemo(() => {
+    const currentId = (formState.data as any)?.weighing_session_id;
+    return weighingSessions.filter((s) => unlinkedSessionIds?.has(s.id) || s.id === currentId);
+  }, [weighingSessions, unlinkedSessionIds, formState.data]);
 
   const [searchParams] = useSearchParams();
 
@@ -158,7 +171,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
         toast.success('Đã cập nhật phiếu xuất');
       } else {
         await exportsService.create({
-          date: data.date || new Date().toISOString().split('T')[0],
+          date: data.date || today(),
           contact_id: data.contact_id || undefined,
           contact_name: contactName,
           bags_count: Number(data.bags_count) || 0,
@@ -166,6 +179,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
           price_per_kg: price,
           total_amount: qty * price,
           payment_status: (data.payment_status as PaymentStatus) || 'unpaid',
+          weighing_session_id: data.weighing_session_id || undefined,
           notes: data.notes,
         });
         toast.success('Đã thêm phiếu xuất mới');
@@ -455,6 +469,10 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
               </div>
             )}
 
+            <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+              <AttachmentUploader refType="export" refId={selectedDetail.id} />
+            </div>
+
             <div className="flex items-center justify-between pt-4 border-t border-[var(--border-color)] gap-2">
               <div className="flex items-center space-x-2">
                 <button
@@ -532,6 +550,34 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name} {c.phone ? `(${c.phone})` : ''}
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          <FormField label="Lấy số liệu từ phiên cân đã cân (tuỳ chọn)">
+            <select
+              className="input-field"
+              value={(formState.data as any)?.weighing_session_id || ''}
+              onChange={(e) => {
+                const sessionId = e.target.value;
+                handleChange('weighing_session_id' as any, sessionId || undefined);
+                const s = availableSessions.find((x) => x.id === sessionId);
+                if (s) {
+                  handleChange('bags_count', s.total_bags);
+                  handleChange('total_kg' as any, s.total_kg || 0);
+                  if (s.contact_id && !formState.data?.contact_id) {
+                    handleChange('contact_id', s.contact_id);
+                    if (s.contact_name) handleChange('contact_name', s.contact_name);
+                  }
+                }
+              }}
+            >
+              <option value="">-- Không gắn, tự nhập số liệu --</option>
+              {availableSessions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {formatNgay(s.date)} — {s.total_bags} bao, {formatKg(s.total_kg || 0)}
+                  {s.contact_name ? ` (${s.contact_name})` : ''}
                 </option>
               ))}
             </select>

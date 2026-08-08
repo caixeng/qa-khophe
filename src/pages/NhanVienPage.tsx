@@ -30,6 +30,7 @@ import { useTableControls } from '../hooks/useTableControls';
 import { useToast } from '../contexts/toast';
 import { employeesService, attendanceService } from '../services/employeesService';
 import type { Employee, Attendance, EmployeeRole, PaymentStatus } from '../types';
+import { today } from '../lib/date';
 
 const roleLabels: Record<EmployeeRole, { label: string; icon: React.ElementType; color: string }> = {
   grinder: { label: 'Thợ xay phế', icon: HardHat, color: 'bg-amber-100 text-amber-900 border-amber-200' },
@@ -98,7 +99,7 @@ export const NhanVienPage: React.FC = () => {
     handleChange: handleAttChange,
   } = useCrudForm<Attendance>({
     initialData: {
-      date: new Date().toISOString().split('T')[0],
+      date: today(),
       work_shift: 1,
       overtime_hours: 0,
       daily_pay: 350000,

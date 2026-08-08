@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { runQuery, ServiceError, MAX_ROWS, type DateRangeFilter } from '../lib/serviceError';
 import type { Import } from '../types';
+import { today } from '../lib/date';
 
 /**
  * Dữ liệu nhập phế đọc/ghi thẳng vào Supabase.
@@ -74,7 +75,7 @@ export const importsService = {
       supabase
         .from('imports')
         .insert({
-          date: item.date || new Date().toISOString().split('T')[0],
+          date: item.date || today(),
           contact_id: item.contact_id || null,
           material_type: item.material_type || 'Tấm nhựa nano',
           quantity_kg: qty,
