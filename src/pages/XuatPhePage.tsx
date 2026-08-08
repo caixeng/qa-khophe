@@ -213,54 +213,54 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl flex items-center space-x-4">
-          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500">
-            <Truck size={24} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
+          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
+            <Truck className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng khối lượng xuất
             </p>
-            <p className="text-xl font-mono font-black text-[var(--text-primary)]">
+            <p className="text-sm sm:text-xl font-mono font-black text-[var(--text-primary)] truncate">
               {formatKg(stats.totalKg)}
             </p>
           </div>
         </div>
 
-        <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl flex items-center space-x-4">
-          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-500">
-            <Package size={24} />
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
+          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+            <Package className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng số bao xuất
             </p>
-            <p className="text-xl font-mono font-black text-[var(--text-primary)]">{stats.totalBags} bao</p>
+            <p className="text-sm sm:text-xl font-mono font-black text-[var(--text-primary)] truncate">{stats.totalBags} bao</p>
           </div>
         </div>
 
-        <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl flex items-center space-x-4">
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
-            <TrendingUp size={24} />
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
+          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+            <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Doanh thu xuất phế
             </p>
-            <p className="text-xl font-mono font-black text-emerald-600">{formatTien(stats.totalRevenue)}</p>
+            <p className="text-sm sm:text-xl font-mono font-black text-emerald-600 truncate">{formatTien(stats.totalRevenue)}</p>
           </div>
         </div>
 
-        <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl flex items-center space-x-4">
-          <div className="p-3 rounded-xl bg-rose-500/10 text-rose-500">
-            <DollarSign size={24} />
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
+          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
+            <DollarSign className="w-4 h-4 sm:w-6 sm:h-6" />
           </div>
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Chưa thu (Công nợ)
             </p>
-            <p className="text-xl font-mono font-black text-rose-600">{formatTien(stats.unpaidAmount)}</p>
+            <p className="text-sm sm:text-xl font-mono font-black text-rose-600 truncate">{formatTien(stats.unpaidAmount)}</p>
           </div>
         </div>
       </div>

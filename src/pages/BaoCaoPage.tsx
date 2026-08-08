@@ -377,7 +377,7 @@ export const BaoCaoPage: React.FC = () => {
       <DataState loading={loading} error={null} isEmpty={false}>
         {activeTab === 'tongquan' && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <KpiCard
                 title="Tổng nhập phế"
                 value={formatKg(summary.totalImportKg)}

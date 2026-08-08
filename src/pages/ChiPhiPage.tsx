@@ -276,7 +276,7 @@ export const ChiPhiPage: React.FC = () => {
       {activeTab === 'chiphi' && (
         <div className="space-y-6">
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             <KpiCard title="Tổng chi tháng" value={formatTien(totalExpense)} icon={Wallet} color="danger" />
             <KpiCard title="Xăng xe" value={formatTien(totalFuel)} icon={Fuel} color="warning" />
             <KpiCard title="Dao cắt" value={formatTien(totalBlade)} icon={Tool} color="info" />

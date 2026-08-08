@@ -203,46 +203,60 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Summary KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card p-4 flex items-center space-x-4 bg-[var(--bg-surface)]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200">
-            <Package size={22} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+        <div className="card p-2.5 sm:p-4 flex items-center space-x-2.5 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
+          <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800">
+            <Package className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <p className="text-xs text-[var(--text-muted)] font-semibold uppercase">Tổng nhập trong kỳ</p>
-            <p className="text-xl font-bold font-mono text-[var(--text-primary)]">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
+              Tổng nhập trong kỳ
+            </p>
+            <p className="text-sm sm:text-xl font-black font-mono text-[var(--text-primary)] truncate">
               {formatKg(stats.totalKg)}
             </p>
           </div>
         </div>
 
-        <div className="card p-4 flex items-center space-x-4 bg-[var(--bg-surface)]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-200">
-            <Package size={22} />
+        <div className="card p-2.5 sm:p-4 flex items-center space-x-2.5 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
+          <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/40 dark:border-blue-800">
+            <Package className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <p className="text-xs text-[var(--text-muted)] font-semibold uppercase">Số lượng lô</p>
-            <p className="text-xl font-bold font-mono text-[var(--text-primary)]">{stats.totalLots}</p>
-          </div>
-        </div>
-
-        <div className="card p-4 flex items-center space-x-4 bg-[var(--bg-surface)]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-200">
-            <Clock size={22} />
-          </div>
-          <div>
-            <p className="text-xs text-[var(--text-muted)] font-semibold uppercase">Chưa xay</p>
-            <p className="text-xl font-bold font-mono text-amber-600">{stats.pendingLots} lô</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
+              Số lượng lô
+            </p>
+            <p className="text-sm sm:text-xl font-black font-mono text-[var(--text-primary)] truncate">
+              {stats.totalLots}
+            </p>
           </div>
         </div>
 
-        <div className="card p-4 flex items-center space-x-4 bg-[var(--bg-surface)]">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 border border-rose-200">
-            <DollarSign size={22} />
+        <div className="card p-2.5 sm:p-4 flex items-center space-x-2.5 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
+          <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/40 dark:border-amber-800">
+            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <p className="text-xs text-[var(--text-muted)] font-semibold uppercase">Chưa thanh toán</p>
-            <p className="text-xl font-bold font-mono text-rose-600">{formatTien(stats.unpaidAmount)}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
+              Chưa xay
+            </p>
+            <p className="text-sm sm:text-xl font-black font-mono text-amber-600 truncate">
+              {stats.pendingLots} lô
+            </p>
+          </div>
+        </div>
+
+        <div className="card p-2.5 sm:p-4 flex items-center space-x-2.5 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
+          <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-800">
+            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
+              Chưa thanh toán
+            </p>
+            <p className="text-sm sm:text-xl font-black font-mono text-rose-600 truncate">
+              {formatTien(stats.unpaidAmount)}
+            </p>
           </div>
         </div>
       </div>
