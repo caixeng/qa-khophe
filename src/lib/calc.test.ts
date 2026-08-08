@@ -26,6 +26,16 @@ describe('computeInventory', () => {
   it('kho rỗng trả về 0', () => {
     expect(computeInventory(0, 0, 900)).toEqual({ currentStockKg: 0, currentBags: 0 });
   });
+
+  it('cộng tồn kho đầu kỳ vào tổng — xưởng đã hoạt động trước khi dùng app', () => {
+    // Đã có sẵn 20.000kg trước khi bắt đầu ghi nhận phiếu xay/xuất trên hệ thống.
+    const r = computeInventory(10_000, 4_000, 900, 20_000);
+    expect(r.currentStockKg).toBe(26_000); // 20.000 + 10.000 - 4.000
+  });
+
+  it('không cấu hình tồn kho đầu kỳ thì mặc định 0, không đổi hành vi cũ', () => {
+    expect(computeInventory(10_000, 4_000, 900)).toEqual(computeInventory(10_000, 4_000, 900, 0));
+  });
 });
 
 describe('computeRemaining', () => {

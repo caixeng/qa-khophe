@@ -44,4 +44,9 @@ export const stockCountService = {
     if (error) throw new Error(error.message);
     return data;
   },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase.from('stock_counts').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  },
 };

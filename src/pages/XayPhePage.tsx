@@ -6,7 +6,7 @@ import { cn, formatNgay, formatKg, formatPhanTram } from '../lib/utils';
 import { Modal, FormField } from '../components/Modal';
 import { TableToolbar } from '../components/TableToolbar';
 import { DataState } from '../components/DataState';
-import { useAsyncList } from '../hooks/useAsyncData';
+import { useAsyncData, useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
 import { useToast } from '../contexts/toast';
@@ -19,6 +19,7 @@ import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useDateRange } from '../hooks/useDateRange';
 import { grindingService } from '../services/grindingService';
 import { importsService } from '../services/importsService';
+import { settingsService } from '../services/settingsService';
 import { sortByDateDesc } from '../lib/storage';
 import type { Grinding } from '../types';
 
@@ -36,6 +37,8 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
     refetch,
   } = useAsyncList(() => grindingService.getAll({ from: range.from, to: range.to }), [range.from, range.to]);
   const { data: importsList } = useAsyncList(importsService.getAll, []);
+  const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
+  const kgPerBag = kgPerBagData ?? 900;
 
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -145,7 +148,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
           import_id: data.import_id || null,
           input_qty_kg: inputKg,
           output_qty_kg: outputKg,
-          bags_count: Number(data.bags_count) || Math.round(outputKg / 25),
+          bags_count: Number(data.bags_count) || Math.round(outputKg / kgPerBag),
           worker: data.worker || 'Hoa',
           notes: data.notes,
         });
@@ -568,7 +571,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                 onChange={(e) => {
                   const outKg = Number(e.target.value);
                   handleChange('output_qty_kg' as any, outKg);
-                  handleChange('bags_count', Math.round(outKg / 25));
+                  handleChange('bags_count', outKg > 0 ? Math.round(outKg / kgPerBag) : 0);
                 }}
               />
             </FormField>
@@ -581,7 +584,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                 inputMode="decimal"
                 min="0"
                 className="input-field font-mono"
-                placeholder="Tự động tính theo ~25kg/bao"
+                placeholder={`Tự động tính theo ~${kgPerBag}kg/bao`}
                 value={formState.data?.bags_count || ''}
                 onChange={(e) => handleChange('bags_count', Number(e.target.value))}
               />
@@ -592,7 +595,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                 type="text"
                 className="input-field"
                 placeholder="Ví dụ: Hoa, Hoàn..."
-                value={(formState.data as any)?.worker || 'Hoa'}
+                value={(formState.data as any)?.worker || ''}
                 onChange={(e) => handleChange('worker' as any, e.target.value)}
               />
             </FormField>

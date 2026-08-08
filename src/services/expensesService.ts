@@ -63,4 +63,9 @@ export const expensesService = {
     if (error) throw new Error(error.message);
     return data;
   },
+
+  async deleteAdvance(id: string): Promise<void> {
+    const { error } = await supabase.from('advances').delete().eq('id', id);
+    if (error) throw new Error(error.message);
+  },
 };

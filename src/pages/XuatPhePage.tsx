@@ -579,7 +579,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
               min="0"
               className="input-field font-mono"
               placeholder="6000"
-              value={formState.data?.price_per_kg || 6000}
+              value={formState.data?.price_per_kg || ''}
               onChange={(e) => handleChange('price_per_kg', Number(e.target.value))}
             />
           </FormField>

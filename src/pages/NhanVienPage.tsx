@@ -697,7 +697,7 @@ export const NhanVienPage: React.FC = () => {
                 step="10000"
                 className="input-field font-mono font-bold"
                 placeholder="350000"
-                value={empForm.data?.daily_salary || 350000}
+                value={empForm.data?.daily_salary || ''}
                 onChange={(e) => handleEmpChange('daily_salary', Number(e.target.value))}
               />
             </FormField>
@@ -811,7 +811,7 @@ export const NhanVienPage: React.FC = () => {
                 min="0"
                 step="10000"
                 className="input-field font-mono font-bold text-[var(--primary-500)]"
-                value={attForm.data?.daily_pay || 350000}
+                value={attForm.data?.daily_pay || ''}
                 onChange={(e) => handleAttChange('daily_pay', Number(e.target.value))}
               />
             </FormField>
