@@ -12,29 +12,46 @@ import { exportsService } from '../services/exportsService';
 import { expensesService } from '../services/expensesService';
 import { grindingService } from '../services/grindingService';
 import { settingsService } from '../services/settingsService';
-import { computeInventory } from '../lib/calc';
+import { paymentsService } from '../services/paymentsService';
+import { computeInventory, computeRemainingWithLegacyStatus } from '../lib/calc';
 import { useAuth } from '../contexts/auth';
+import { today, daysAgo } from '../lib/date';
+import { MAX_ROWS_CUMULATIVE } from '../lib/serviceError';
+
+/** Quá 30 ngày chưa thu là mức cảnh báo hợp lý cho xưởng phế — đủ dài để không
+ *  làm phiền với công nợ mới phát sinh, đủ ngắn để còn kịp nhắc khách trước
+ *  khi khoản nợ "nguội" và khó đòi hơn. */
+const OVERDUE_DEBT_DAYS = 30;
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const canSeeFinance = user?.role === 'manager' || user?.role === 'admin';
 
-  const { data: imports } = useAsyncList(importsService.getAll, []);
-  const { data: exports } = useAsyncList(exportsService.getAll, []);
+  const { data: imports } = useAsyncList(() => importsService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
+  const { data: exports } = useAsyncList(() => exportsService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
   // Staff không có quyền đọc expenses (RLS) — tránh gọi API sẽ chỉ nhận lỗi 403
   const { data: expenses } = useAsyncList(canSeeFinance ? expensesService.getExpenses : async () => [], [
     canSeeFinance,
   ]);
-  const { data: grinding } = useAsyncList(grindingService.getAll, []);
+  const { data: grinding } = useAsyncList(() => grindingService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
   const { data: openingStockData } = useAsyncData(settingsService.getOpeningStock, []);
+  const { data: lowStockThresholdData } = useAsyncData(settingsService.getLowStockThreshold, []);
+  // Cùng nguồn số liệu với trang Công nợ — trước đây Dashboard chỉ đếm
+  // payment_status === 'unpaid' và bỏ qua 'partial' cùng số đã trả thật, nên
+  // hai màn hình hiện hai con số nợ khác nhau cho cùng một dữ liệu.
+  const { data: paidImports } = useAsyncData(() => paymentsService.getPaidByRefType('import'), []);
+  const { data: paidExports } = useAsyncData(() => paymentsService.getPaidByRefType('export'), []);
 
   const kgPerBag = kgPerBagData ?? 900;
   const openingStock = openingStockData ?? 0;
+  const lowStockThreshold = lowStockThresholdData ?? 0;
+  const paidByImport = useMemo(() => paidImports ?? {}, [paidImports]);
+  const paidByExport = useMemo(() => paidExports ?? {}, [paidExports]);
 
   const summary = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = today();
     const todayImportKg = imports
       .filter((i) => i.date === todayStr)
       .reduce((sum, i) => sum + (Number(i.quantity_kg) || 0), 0);
@@ -55,12 +72,31 @@ export const DashboardPage: React.FC = () => {
 
     // Chưa có quyền đọc chi phí (staff) thì không suy đoán lợi nhuận — ẩn thay vì hiện số sai
     const estimatedProfit = canSeeFinance ? totalRevenue - totalImportCost - totalOperatingCost : null;
-    const receivables = exports
-      .filter((e) => e.payment_status === 'unpaid')
-      .reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
-    const payables = imports
-      .filter((i) => i.payment_status === 'unpaid')
-      .reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
+
+    // Nợ còn lại thật (đã trừ số đã trả từng phần) — công thức giống hệt trang
+    // Công nợ, để hai màn hình luôn khớp nhau.
+    const exportsWithDebt = exports
+      .map((e) => ({
+        item: e,
+        remaining: computeRemainingWithLegacyStatus(
+          e.total_amount,
+          paidByExport[e.id] || 0,
+          e.payment_status,
+        ),
+      }))
+      .filter((x) => x.remaining > 0);
+    const importsWithDebt = imports
+      .map((i) => ({
+        item: i,
+        remaining: computeRemainingWithLegacyStatus(
+          i.total_amount,
+          paidByImport[i.id] || 0,
+          i.payment_status,
+        ),
+      }))
+      .filter((x) => x.remaining > 0);
+    const receivables = exportsWithDebt.reduce((sum, x) => sum + x.remaining, 0);
+    const payables = importsWithDebt.reduce((sum, x) => sum + x.remaining, 0);
 
     const totalGround = grinding.reduce((sum, g) => sum + (Number(g.output_qty_kg) || 0), 0);
     const { currentStockKg: inventoryKg, currentBags: inventoryBags } = computeInventory(
@@ -103,8 +139,14 @@ export const DashboardPage: React.FC = () => {
 
     // Alerts
     const pendingImports = imports.filter((i) => i.processing_status === 'pending');
-    const unpaidExports = exports.filter((e) => e.payment_status === 'unpaid');
-    const totalUnpaidReceivables = unpaidExports.reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
+    const unpaidExports = exportsWithDebt.map((x) => x.item);
+    const totalUnpaidReceivables = receivables;
+
+    const overdueDate = daysAgo(OVERDUE_DEBT_DAYS);
+    const overdueReceivables = exportsWithDebt.filter((x) => x.item.date <= overdueDate);
+    const totalOverdueReceivables = overdueReceivables.reduce((sum, x) => sum + x.remaining, 0);
+
+    const lowStockAlert = lowStockThreshold > 0 && inventoryKg < lowStockThreshold;
 
     return {
       todayImportKg,
@@ -124,8 +166,22 @@ export const DashboardPage: React.FC = () => {
       pendingImports,
       unpaidExports,
       totalUnpaidReceivables,
+      overdueReceivables: overdueReceivables.map((x) => x.item),
+      totalOverdueReceivables,
+      lowStockAlert,
     };
-  }, [imports, exports, expenses, grinding, kgPerBag, openingStock, canSeeFinance]);
+  }, [
+    imports,
+    exports,
+    expenses,
+    grinding,
+    kgPerBag,
+    openingStock,
+    lowStockThreshold,
+    paidByImport,
+    paidByExport,
+    canSeeFinance,
+  ]);
 
   return (
     <div className="page-shell animate-fade-in">
@@ -262,9 +318,33 @@ export const DashboardPage: React.FC = () => {
                   </p>
                 </div>
               )}
-              {summary.pendingImports.length === 0 && summary.unpaidExports.length === 0 && (
-                <div className="p-3 text-center text-xs text-[var(--text-muted)]">Không có cảnh báo nào</div>
+              {summary.overdueReceivables.length > 0 && (
+                <div className="p-3 rounded-xl bg-[var(--bg-surface)] border-2 border-rose-500 shadow-sm">
+                  <p className="text-xs font-bold text-[var(--text-primary)]">
+                    ⏰ {summary.overdueReceivables.length} khách nợ quá {OVERDUE_DEBT_DAYS} ngày
+                  </p>
+                  <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                    {summary.totalOverdueReceivables.toLocaleString('vi-VN')} đ — nên nhắc thu trước khi khó
+                    đòi hơn
+                  </p>
+                </div>
               )}
+              {summary.lowStockAlert && (
+                <div className="p-3 rounded-xl bg-[var(--bg-surface)] border-2 border-amber-500 shadow-sm">
+                  <p className="text-xs font-bold text-[var(--text-primary)]">📉 Tồn kho xuống thấp</p>
+                  <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                    Chỉ còn {formatKg(summary.inventoryKg)} — dưới ngưỡng đã cấu hình
+                  </p>
+                </div>
+              )}
+              {summary.pendingImports.length === 0 &&
+                summary.unpaidExports.length === 0 &&
+                summary.overdueReceivables.length === 0 &&
+                !summary.lowStockAlert && (
+                  <div className="p-3 text-center text-xs text-[var(--text-muted)]">
+                    Không có cảnh báo nào
+                  </div>
+                )}
             </div>
           </div>
         </div>

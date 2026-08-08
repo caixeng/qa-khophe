@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { today } from '../lib/date';
 
 export type PaymentRefType = 'import' | 'export';
 
@@ -53,7 +54,7 @@ export const paymentsService = {
         ref_type: payment.ref_type,
         ref_id: payment.ref_id,
         amount: Number(payment.amount) || 0,
-        date: payment.date || new Date().toISOString().split('T')[0],
+        date: payment.date || today(),
         method: payment.method || 'cash',
         notes: payment.notes || null,
       })

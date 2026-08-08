@@ -68,8 +68,17 @@ export interface DateRangeFilter {
   limit?: number;
 }
 
-/** Số dòng tối đa cho một lần tải danh sách. */
+/** Số dòng tối đa cho một lần tải danh sách có lọc theo kỳ (trang danh sách). */
 export const MAX_ROWS = 2000;
+
+/**
+ * Trần cho các màn hình cần TOÀN BỘ lịch sử để cộng dồn đúng (tồn kho luỹ kế,
+ * tổng công nợ chưa thu/trả) — không lọc theo kỳ được vì một khoản nợ 3 tháng
+ * trước vẫn là nợ. Cao hơn MAX_ROWS nhiều để không âm thầm cắt số liệu khi
+ * xưởng đã hoạt động lâu năm; đây vẫn là một trần, không phải giải pháp lâu
+ * dài — khi vượt qua mốc này cần chuyển sang cộng tổng ở phía máy chủ.
+ */
+export const MAX_ROWS_CUMULATIVE = 20000;
 
 /** Ném ServiceError nếu Supabase trả lỗi. Dùng ngay sau mỗi truy vấn. */
 export function throwIfError(error: PostgrestError | null, action: string): void {

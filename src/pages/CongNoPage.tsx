@@ -15,6 +15,7 @@ import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
 import { paymentsService, type PaymentRefType } from '../services/paymentsService';
 import { computeRemainingWithLegacyStatus } from '../lib/calc';
+import { MAX_ROWS_CUMULATIVE } from '../lib/serviceError';
 import type { Import, Export } from '../types';
 
 export const CongNoPage: React.FC = () => {
@@ -23,18 +24,20 @@ export const CongNoPage: React.FC = () => {
   const { toast } = useToast();
   const canRecordPayment = user?.role === 'manager' || user?.role === 'admin';
 
+  // Công nợ cần TOÀN BỘ lịch sử — một khoản nợ phát sinh 3 tháng trước vẫn
+  // phải hiện ở đây, nên không lọc theo kỳ như các trang danh sách khác.
   const {
     data: imports,
     loading: impLoading,
     error: impError,
     refetch: refetchImports,
-  } = useAsyncList(importsService.getAll, []);
+  } = useAsyncList(() => importsService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
   const {
     data: exports,
     loading: expLoading,
     error: expError,
     refetch: refetchExports,
-  } = useAsyncList(exportsService.getAll, []);
+  } = useAsyncList(() => exportsService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
   const { data: paidImports, refetch: refetchPaidImports } = useAsyncData(
     () => paymentsService.getPaidByRefType('import'),
     [],

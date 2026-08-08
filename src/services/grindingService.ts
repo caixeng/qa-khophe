@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { runQuery, ServiceError, MAX_ROWS, type DateRangeFilter } from '../lib/serviceError';
 import type { Grinding } from '../types';
+import { today } from '../lib/date';
 
 type GrindingRow = {
   id: string;
@@ -79,7 +80,7 @@ export const grindingService = {
       supabase
         .from('grinding')
         .insert({
-          date: item.date || new Date().toISOString().split('T')[0],
+          date: item.date || today(),
           import_id: item.import_id || null,
           input_qty_kg: input,
           output_qty_kg: output,

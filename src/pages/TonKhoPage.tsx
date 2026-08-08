@@ -15,6 +15,7 @@ import { exportsService } from '../services/exportsService';
 import { settingsService } from '../services/settingsService';
 import { stockCountService } from '../services/stockCountService';
 import { computeInventory } from '../lib/calc';
+import { MAX_ROWS_CUMULATIVE } from '../lib/serviceError';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const TonKhoPage: React.FC = () => {
@@ -23,13 +24,22 @@ export const TonKhoPage: React.FC = () => {
   const canCount = user?.role === 'manager' || user?.role === 'admin';
   const canEditOpeningStock = user?.role === 'admin';
 
-  const { data: grinding, loading: gLoading, error: gError } = useAsyncList(grindingService.getAll, []);
-  const { data: exports, loading: eLoading, error: eError } = useAsyncList(exportsService.getAll, []);
-  const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
+  // Tồn kho là số cộng dồn từ đầu — cần toàn bộ lịch sử, không lọc theo kỳ.
   const {
-    data: openingStockData,
-    refetch: refetchOpeningStock,
-  } = useAsyncData(settingsService.getOpeningStock, []);
+    data: grinding,
+    loading: gLoading,
+    error: gError,
+  } = useAsyncList(() => grindingService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
+  const {
+    data: exports,
+    loading: eLoading,
+    error: eError,
+  } = useAsyncList(() => exportsService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
+  const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
+  const { data: openingStockData, refetch: refetchOpeningStock } = useAsyncData(
+    settingsService.getOpeningStock,
+    [],
+  );
   const { data: stockCounts, refetch: refetchStockCounts } = useAsyncList(stockCountService.getAll, []);
 
   const kgPerBag = kgPerBagData ?? 900;
@@ -53,7 +63,12 @@ export const TonKhoPage: React.FC = () => {
   const inventoryStats = useMemo(() => {
     const totalGround = grinding.reduce((sum, g) => sum + (Number(g.output_qty_kg) || 0), 0);
     const totalExported = exports.reduce((sum, e) => sum + (Number(e.total_kg) || 0), 0);
-    const { currentStockKg, currentBags } = computeInventory(totalGround, totalExported, kgPerBag, openingStock);
+    const { currentStockKg, currentBags } = computeInventory(
+      totalGround,
+      totalExported,
+      kgPerBag,
+      openingStock,
+    );
 
     return {
       totalGround,
@@ -215,7 +230,8 @@ export const TonKhoPage: React.FC = () => {
       <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs flex items-center justify-between gap-3 flex-wrap">
         <div>
           <p className="text-xs font-bold text-[var(--text-primary)]">
-            Tồn kho đầu kỳ: <span className="font-mono text-[var(--primary-500)]">{formatKg(openingStock)}</span>
+            Tồn kho đầu kỳ:{' '}
+            <span className="font-mono text-[var(--primary-500)]">{formatKg(openingStock)}</span>
           </p>
           <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
             Số kg đã có sẵn trong kho trước khi bắt đầu ghi nhận phiếu xay/xuất trên hệ thống — cộng vào tồn
@@ -409,8 +425,8 @@ export const TonKhoPage: React.FC = () => {
         <form onSubmit={handleSaveOpeningStock} className="space-y-4">
           <p className="text-xs text-[var(--text-secondary)]">
             Nhập số kg thành phẩm đã có sẵn trong kho <b>trước khi</b> bắt đầu ghi nhận phiếu xay/xuất trên hệ
-            thống. Giá trị này được cộng vào mọi tính toán tồn kho — chỉ cần nhập đúng 1 lần khi mới dùng
-            app; nếu xưởng đã dùng app từ đầu thì để 0.
+            thống. Giá trị này được cộng vào mọi tính toán tồn kho — chỉ cần nhập đúng 1 lần khi mới dùng app;
+            nếu xưởng đã dùng app từ đầu thì để 0.
           </p>
 
           <FormField label="Tồn kho đầu kỳ (kg)" required>

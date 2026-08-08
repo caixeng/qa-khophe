@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { today, daysAgo } from '../lib/date';
 
 export interface DateRange {
   /** yyyy-mm-dd, đã bao gồm ngày này */
@@ -8,24 +9,8 @@ export interface DateRange {
   to: string;
 }
 
-function toISODate(d: Date): string {
-  // Dùng giờ địa phương, KHÔNG dùng toISOString() — toISOString() quy về UTC,
-  // nên ở múi giờ +07 mọi thao tác trước 7h sáng sẽ bị lùi mất một ngày.
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-export function today(): string {
-  return toISODate(new Date());
-}
-
-export function daysAgo(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return toISODate(d);
-}
+// Re-export để không phải sửa các nơi đang import today()/daysAgo() từ đây.
+export { today, daysAgo };
 
 /** Mặc định: 90 ngày gần nhất — đủ rộng cho công việc hằng ngày, đủ hẹp để truy vấn nhanh. */
 export const DEFAULT_RANGE_DAYS = 90;

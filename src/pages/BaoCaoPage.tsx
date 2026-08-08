@@ -13,6 +13,7 @@ import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
 import { grindingService } from '../services/grindingService';
 import { expensesService } from '../services/expensesService';
+import { attendanceService } from '../services/employeesService';
 import {
   BarChart,
   Bar,
@@ -26,6 +27,7 @@ import {
   Cell,
   Legend,
 } from 'recharts';
+import { today, toISODate } from '../lib/date';
 
 const COLORS = ['#00668c', '#059669', '#d97706', '#64748b', '#7c3aed', '#e11d48'];
 
@@ -52,9 +54,74 @@ export const BaoCaoPage: React.FC = () => {
     [range.from, range.to],
   );
   const { data: expenses, loading: expesLoading } = useAsyncList(
-    canSeeFinance ? expensesService.getExpenses : async () => [],
-    [canSeeFinance],
+    canSeeFinance ? () => expensesService.getExpenses({ from: range.from, to: range.to }) : async () => [],
+    [canSeeFinance, range.from, range.to],
   );
+  // Lương công nhân là chi phí vận hành thật — thiếu khoản này thì "lợi nhuận"
+  // trên báo cáo luôn cao hơn thực tế đúng bằng tổng quỹ lương trong kỳ.
+  const { data: attendance } = useAsyncList(
+    canSeeFinance
+      ? () => attendanceService.getAttendance({ from: range.from, to: range.to })
+      : async () => [],
+    [canSeeFinance, range.from, range.to],
+  );
+
+  /**
+   * Kỳ liền trước, CÙNG ĐỘ DÀI với kỳ đang xem — để "% so với kỳ trước" so
+   * sánh đúng nghĩa (7 ngày so với 7 ngày liền trước, không phải so với cả
+   * tháng trước). Không dùng số tuyệt đối một mình: quản lý cần biết đang đi
+   * lên hay đi xuống, chứ một con số đơn lẻ không nói lên điều đó.
+   */
+  const previousRange = useMemo(() => {
+    const from = new Date(range.from);
+    const to = new Date(range.to);
+    const lengthDays = Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000) + 1);
+    const prevTo = new Date(from);
+    prevTo.setDate(prevTo.getDate() - 1);
+    const prevFrom = new Date(prevTo);
+    prevFrom.setDate(prevFrom.getDate() - lengthDays + 1);
+    return { from: toISODate(prevFrom), to: toISODate(prevTo) };
+  }, [range.from, range.to]);
+
+  const { data: prevImports } = useAsyncList(
+    () => importsService.getAll({ from: previousRange.from, to: previousRange.to }),
+    [previousRange.from, previousRange.to],
+  );
+  const { data: prevExports } = useAsyncList(
+    () => exportsService.getAll({ from: previousRange.from, to: previousRange.to }),
+    [previousRange.from, previousRange.to],
+  );
+  const { data: prevExpenses } = useAsyncList(
+    canSeeFinance
+      ? () => expensesService.getExpenses({ from: previousRange.from, to: previousRange.to })
+      : async () => [],
+    [canSeeFinance, previousRange.from, previousRange.to],
+  );
+  const { data: prevAttendance } = useAsyncList(
+    canSeeFinance
+      ? () => attendanceService.getAttendance({ from: previousRange.from, to: previousRange.to })
+      : async () => [],
+    [canSeeFinance, previousRange.from, previousRange.to],
+  );
+
+  const previousSummary = useMemo(() => {
+    const totalImportKg = prevImports.reduce((sum, i) => sum + (Number(i.quantity_kg) || 0), 0);
+    const totalExportKg = prevExports.reduce((sum, e) => sum + (Number(e.total_kg) || 0), 0);
+    const totalRevenue = prevExports.reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
+    const totalImportCost = prevImports.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
+    const totalOperatingCost =
+      prevExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) +
+      prevAttendance.reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
+    const estimatedProfit = totalRevenue - totalImportCost - totalOperatingCost;
+
+    return { totalImportKg, totalExportKg, totalOperatingCost, estimatedProfit };
+  }, [prevImports, prevExports, prevExpenses, prevAttendance]);
+
+  /** % thay đổi so với kỳ trước. null = không tính được (kỳ trước = 0). */
+  function pctChange(curr: number, prev: number): number | null {
+    if (prev === 0) return null;
+    return Math.round(((curr - prev) / Math.abs(prev)) * 1000) / 10;
+  }
 
   /**
    * Hiệu suất xay: tỷ lệ hao hụt theo từng thợ.
@@ -93,7 +160,9 @@ export const BaoCaoPage: React.FC = () => {
     const totalExportKg = exports.reduce((sum, e) => sum + (Number(e.total_kg) || 0), 0);
     const totalRevenue = exports.reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
 
-    const totalOperatingCost = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const totalExpenseCost = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const totalPayrollCost = attendance.reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
+    const totalOperatingCost = totalExpenseCost + totalPayrollCost;
 
     const estimatedProfit = totalRevenue - totalImportCost - totalOperatingCost;
 
@@ -102,10 +171,12 @@ export const BaoCaoPage: React.FC = () => {
       totalImportCost,
       totalExportKg,
       totalRevenue,
+      totalExpenseCost,
+      totalPayrollCost,
       totalOperatingCost,
       estimatedProfit,
     };
-  }, [imports, exports, expenses]);
+  }, [imports, exports, expenses, attendance]);
 
   // Supplier distribution for Pie Chart
   const supplierDistribution = useMemo(() => {
@@ -173,7 +244,9 @@ export const BaoCaoPage: React.FC = () => {
       ];
       if (canSeeFinance) {
         summaryData.push(
-          ['Chi phí vận hành xưởng (VNĐ)', summary.totalOperatingCost],
+          ['Chi phí xưởng (VNĐ)', summary.totalExpenseCost],
+          ['Lương công nhân (VNĐ)', summary.totalPayrollCost],
+          ['Tổng chi phí vận hành (VNĐ)', summary.totalOperatingCost],
           ['Lợi nhuận gộp ước tính (VNĐ)', summary.estimatedProfit],
         );
       }
@@ -214,9 +287,23 @@ export const BaoCaoPage: React.FC = () => {
           ...expenses.map((e) => [e.date, e.category, e.amount, e.description || '', e.notes || '']),
         ];
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expenseRows), 'Chi phí');
+
+        const payrollRows = [
+          ['Ngày', 'Nhân viên', 'Số công', 'Đơn giá/ngày', 'Tạm ứng', 'Thực lĩnh', 'Trạng thái'],
+          ...attendance.map((a) => [
+            a.date,
+            a.employee_name,
+            a.work_shift,
+            a.daily_pay,
+            a.advance_pay || 0,
+            a.net_pay,
+            a.payment_status,
+          ]),
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(payrollRows), 'Lương');
       }
 
-      XLSX.writeFile(wb, `BaoCao_KhoPhe_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(wb, `BaoCao_KhoPhe_${today()}.xlsx`);
     } finally {
       setExporting(false);
     }
@@ -297,6 +384,7 @@ export const BaoCaoPage: React.FC = () => {
                 subtitle={formatTien(summary.totalImportCost)}
                 icon={Package}
                 color="success"
+                trend={pctChange(summary.totalImportKg, previousSummary.totalImportKg) ?? undefined}
               />
               <KpiCard
                 title="Tổng xuất phế"
@@ -304,13 +392,20 @@ export const BaoCaoPage: React.FC = () => {
                 subtitle={formatTien(summary.totalRevenue)}
                 icon={TrendingUp}
                 color="info"
+                trend={pctChange(summary.totalExportKg, previousSummary.totalExportKg) ?? undefined}
               />
               {canSeeFinance && (
                 <KpiCard
                   title="Chi phí vận hành"
                   value={formatTien(summary.totalOperatingCost)}
+                  subtitle={`Gồm lương: ${formatTien(summary.totalPayrollCost)}`}
                   icon={DollarSign}
                   color="danger"
+                  trend={(() => {
+                    const pct = pctChange(summary.totalOperatingCost, previousSummary.totalOperatingCost);
+                    // Chi phí tăng là tin xấu — đảo dấu "tích cực" so với quy ước tăng=xanh mặc định.
+                    return pct === null ? undefined : { value: pct, isPositive: pct <= 0 };
+                  })()}
                 />
               )}
               {canSeeFinance && (
@@ -319,6 +414,7 @@ export const BaoCaoPage: React.FC = () => {
                   value={formatTien(summary.estimatedProfit)}
                   icon={DollarSign}
                   color="primary"
+                  trend={pctChange(summary.estimatedProfit, previousSummary.estimatedProfit) ?? undefined}
                 />
               )}
             </div>

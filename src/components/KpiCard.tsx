@@ -7,6 +7,8 @@ export interface KpiCardProps {
   value: string | number;
   icon: any; // Can be component reference or JSX element
   trend?: number | { value: number; isPositive?: boolean };
+  /** Nhãn sau số %, mặc định "so với kỳ trước" — đổi được vì không phải lúc nào kỳ đang xem cũng là 1 tháng. */
+  trendLabel?: string;
   color?: 'success' | 'warning' | 'danger' | 'info' | 'primary';
   subtitle?: string;
   className?: string;
@@ -33,6 +35,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   value,
   icon: Icon,
   trend,
+  trendLabel = 'so với kỳ trước',
   color = 'primary',
   subtitle,
   className,
@@ -75,7 +78,9 @@ export const KpiCard: React.FC<KpiCardProps> = ({
               ) : (
                 <ArrowDownRight className="w-3 h-3 mr-1" />
               )}
-              <span>{trendVal}% so với tháng trước</span>
+              <span>
+                {trendVal}% {trendLabel}
+              </span>
             </div>
           )}
         </div>

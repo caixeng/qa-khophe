@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '../lib/utils';
+import { toISODate } from '../lib/date';
 
 export interface DateRangePickerProps {
   startDate: string;
@@ -16,7 +17,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 }) => {
   const handlePreset = (daysBack: number, startOfSelected?: boolean) => {
     const today = new Date();
-    const end = today.toISOString().split('T')[0];
+    const end = toISODate(today);
     let start = new Date();
 
     if (startOfSelected && daysBack === 30) {
@@ -26,12 +27,12 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
       // Previous month
       start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const lastDayPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-      return onChange(start.toISOString().split('T')[0], lastDayPrevMonth.toISOString().split('T')[0]);
+      return onChange(toISODate(start), toISODate(lastDayPrevMonth));
     } else {
       start.setDate(today.getDate() - daysBack);
     }
 
-    onChange(start.toISOString().split('T')[0], end);
+    onChange(toISODate(start), end);
   };
 
   return (

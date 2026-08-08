@@ -1,7 +1,16 @@
 import * as React from 'react';
-import { TrendingUp, Package, DollarSign, AlertTriangle, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import {
+  TrendingUp,
+  Package,
+  DollarSign,
+  AlertTriangle,
+  ArrowUpRight,
+  CheckCircle2,
+  Clock,
+  TrendingDown,
+} from 'lucide-react';
 import { formatTien, formatKg, formatNgay } from '../../lib/utils';
-import type { Import } from '../../types';
+import type { Import, Export } from '../../types';
 
 interface MobileDirectorDashboardProps {
   summary: {
@@ -15,11 +24,18 @@ interface MobileDirectorDashboardProps {
     inventoryBags: number;
     pendingImports: Import[];
     totalUnpaidReceivables: number;
+    overdueReceivables: Export[];
+    totalOverdueReceivables: number;
+    lowStockAlert: boolean;
   };
 }
 
 export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = ({ summary }) => {
-  const hasAlerts = summary.pendingImports.length > 0 || summary.totalUnpaidReceivables > 0;
+  const hasAlerts =
+    summary.pendingImports.length > 0 ||
+    summary.totalUnpaidReceivables > 0 ||
+    summary.overdueReceivables.length > 0 ||
+    summary.lowStockAlert;
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -130,6 +146,32 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
               </p>
               <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-0.5">
                 Xem chi tiết tại trang Tài chính &gt; Công nợ.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {summary.overdueReceivables.length > 0 && (
+          <div className="p-3 rounded-xl bg-rose-100 dark:bg-rose-950/50 border border-rose-300 dark:border-rose-800 flex items-start space-x-3">
+            <Clock size={18} className="text-rose-700 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-rose-800 dark:text-rose-300">
+                {summary.overdueReceivables.length} khách nợ quá hạn
+              </p>
+              <p className="text-[11px] text-rose-700 dark:text-rose-400 mt-0.5">
+                {formatTien(summary.totalOverdueReceivables)} — nên nhắc thu sớm
+              </p>
+            </div>
+          </div>
+        )}
+
+        {summary.lowStockAlert && (
+          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 flex items-start space-x-3">
+            <TrendingDown size={18} className="text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Tồn kho xuống thấp</p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+                Chỉ còn {formatKg(summary.inventoryKg)}
               </p>
             </div>
           </div>

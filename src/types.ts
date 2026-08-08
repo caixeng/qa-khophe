@@ -95,6 +95,8 @@ export interface WeighingSession {
   material_type: string;
   total_bags: number;
   total_kg?: number;
+  contact_id?: string;
+  contact_name?: string;
   notes?: string;
   created_by?: string;
   created_at?: string;

@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 
 const DEFAULT_KG_PER_BAG = 900;
 const DEFAULT_OPENING_STOCK_KG = 0;
+const DEFAULT_LOW_STOCK_THRESHOLD_KG = 0; // 0 = tắt cảnh báo tồn kho thấp
 
 async function getNumericSetting(key: string, fallback: number): Promise<number> {
   try {
@@ -12,6 +13,14 @@ async function getNumericSetting(key: string, fallback: number): Promise<number>
   } catch {
     return fallback;
   }
+}
+
+async function setNumericSetting(key: string, value: number): Promise<void> {
+  const { error } = await supabase
+    .from('settings')
+    .upsert({ key, value: String(Math.max(0, value)) }, { onConflict: 'key' });
+
+  if (error) throw new Error(error.message);
 }
 
 export const settingsService = {
@@ -39,10 +48,18 @@ export const settingsService = {
    * nếu tài khoản không đủ quyền, lỗi được throw để UI hiện thông báo thật.
    */
   async setOpeningStock(valueKg: number): Promise<void> {
-    const { error } = await supabase
-      .from('settings')
-      .upsert({ key: 'opening_stock_kg', value: String(Math.max(0, valueKg)) }, { onConflict: 'key' });
+    return setNumericSetting('opening_stock_kg', valueKg);
+  },
 
-    if (error) throw new Error(error.message);
+  /**
+   * Ngưỡng cảnh báo tồn kho thấp (kg). 0 = tắt cảnh báo — mặc định tắt vì mỗi
+   * xưởng có quy mô khác nhau, không có con số hợp lý chung để tự bật.
+   */
+  async getLowStockThreshold(): Promise<number> {
+    return getNumericSetting('low_stock_threshold_kg', DEFAULT_LOW_STOCK_THRESHOLD_KG);
+  },
+
+  async setLowStockThreshold(valueKg: number): Promise<void> {
+    return setNumericSetting('low_stock_threshold_kg', valueKg);
   },
 };
