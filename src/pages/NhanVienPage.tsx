@@ -316,21 +316,6 @@ export const NhanVienPage: React.FC = () => {
     setConfirmState({ isOpen: false, id: '', type: 'attendance' });
   };
 
-  const handlePayMonthForEmployee = async (employeeId?: string, employeeName?: string) => {
-    if (!employeeId) {
-      toast.error('Không tìm thấy ID nhân viên để chốt lương');
-      return;
-    }
-    try {
-      await attendanceService.payMonthForEmployee(employeeId, payrollMonth);
-      toast.success(`Đã chốt trả đủ lương tháng ${payrollMonth} cho ${employeeName}`);
-      refetchAtt();
-    } catch (err) {
-      toast.error('Lỗi khi chốt thanh toán lương');
-      console.error(err);
-    }
-  };
-
   return (
     <div className="page-shell animate-fade-in">
       <PageHeader
@@ -842,7 +827,7 @@ export const NhanVienPage: React.FC = () => {
                   Công thức tính: <span className="text-[var(--primary-600)] dark:text-[var(--primary-400)] font-mono font-black">Thực Lĩnh Còn Nợ = Lương Gộp − Đã Tạm Ứng</span>
                 </p>
                 <p className="text-[11px] text-[var(--text-secondary)] font-medium">
-                  Ví dụ: Công làm 7.050.000đ − Đã ứng 5.000.000đ = <b className="text-rose-600 dark:text-rose-400">Còn nợ nốt 2.050.000đ</b>. Khi bạn bấm nút <b>[✓ Trả nốt]</b>, số tiền nợ sẽ chuyển thành <b className="text-emerald-600 dark:text-emerald-400">🟢 Đã trả đủ (0đ)</b>.
+                  Ví dụ: Công làm 7.050.000đ − Đã ứng 5.000.000đ = <b className="text-rose-600 dark:text-rose-400">Còn nợ nốt 2.050.000đ</b>.
                 </p>
               </div>
             </div>
@@ -873,7 +858,6 @@ export const NhanVienPage: React.FC = () => {
                           <div>Thực lĩnh còn nợ</div>
                           <div className="text-[10px] font-normal text-[var(--text-muted)]">(Gộp − Ứng)</div>
                         </th>
-                        <th className="th-cell text-right">Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -902,20 +886,6 @@ export const NhanVienPage: React.FC = () => {
                               </span>
                             )}
                           </td>
-                          <td className="td-cell text-right">
-                            {r.unpaid > 0 && r.employee_id ? (
-                              <button
-                                type="button"
-                                onClick={() => handlePayMonthForEmployee(r.employee_id, r.name)}
-                                className="btn-primary py-1 px-2.5 text-[11px] font-bold rounded-lg cursor-pointer whitespace-nowrap"
-                                title="Xác nhận đã trả nốt số tiền này cho nhân viên"
-                              >
-                                ✓ Trả nốt {formatTien(r.unpaid)}
-                              </button>
-                            ) : (
-                              <span className="text-[11px] text-emerald-600 font-bold">✓ Hoàn tất</span>
-                            )}
-                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -932,7 +902,6 @@ export const NhanVienPage: React.FC = () => {
                         <td className="td-cell text-right font-mono text-xs text-rose-600 font-black">
                           {formatTien(payroll.totals.unpaid)}
                         </td>
-                        <td className="td-cell"></td>
                       </tr>
                     </tfoot>
                   </table>
