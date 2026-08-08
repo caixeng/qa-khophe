@@ -88,13 +88,14 @@ describe('computePayroll', () => {
     expect(r.rows[0].advance).toBe(200_000);
     expect(r.rows[0].gross).toBe(350_000);
     expect(r.rows[0].net).toBe(150_000);
+    expect(r.rows[0].unpaid).toBe(150_000);
   });
 
-  it('xếp người lĩnh nhiều nhất lên đầu', () => {
+  it('xếp người còn nợ nhiều nhất lên đầu', () => {
     const r = computePayroll(
       [
-        att({ employee_id: 'e1', employee_name: 'Ít', net_pay: 100_000 }),
-        att({ employee_id: 'e2', employee_name: 'Nhiều', net_pay: 900_000 }),
+        att({ employee_id: 'e1', employee_name: 'Ít', daily_pay: 100_000 }),
+        att({ employee_id: 'e2', employee_name: 'Nhiều', daily_pay: 900_000 }),
       ],
       '2026-08',
     );

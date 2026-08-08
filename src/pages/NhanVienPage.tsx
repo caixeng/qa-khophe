@@ -888,7 +888,11 @@ export const NhanVienPage: React.FC = () => {
                             {r.advance > 0 ? `-${formatTien(r.advance)}` : '—'}
                           </td>
                           <td className="td-cell text-right font-mono text-xs font-black">
-                            {r.unpaid > 0 ? (
+                            {r.net < 0 ? (
+                              <span className="text-amber-700 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-lg border border-amber-300 dark:border-amber-800/40 font-bold" title="Nhân viên đã ứng trước nhiều hơn tiền công tháng này">
+                                ⚠️ NV Nợ Xưởng {formatTien(Math.abs(r.net))}
+                              </span>
+                            ) : r.unpaid > 0 ? (
                               <span className="text-rose-600 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800/40">
                                 {formatTien(r.unpaid)}
                               </span>

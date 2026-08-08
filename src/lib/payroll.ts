@@ -49,19 +49,23 @@ export function computePayroll(attendance: readonly Attendance[], month: string)
     };
 
     const shift = Number(a.work_shift) || 0;
-    const net = Number(a.net_pay) || 0;
+    const dailyPay = Number(a.daily_pay) || 0;
+    const advance = Number(a.advance_pay) || 0;
 
     row.shifts += shift;
-    row.gross += shift * (Number(a.daily_pay) || 0);
-    row.advance += Number(a.advance_pay) || 0;
-    row.net += net;
-    // Chỉ 'paid' mới coi là đã trả; 'partial' vẫn còn nợ nên tính vào phải trả.
-    if (a.payment_status !== 'paid') row.unpaid += net;
+    row.gross += shift * dailyPay;
+    row.advance += advance;
+
+    // Tính net thực tế = Gross - Advance (Nếu âm tức là nhân viên đang nợ tiền xưởng)
+    const currentNet = row.gross - row.advance;
+    row.net = currentNet;
+    // Chỉ tính còn phải trả khi net > 0 và chưa thanh toán xong ('paid')
+    row.unpaid = a.payment_status === 'paid' ? 0 : Math.max(0, currentNet);
 
     byPerson.set(key, row);
   }
 
-  const rows = [...byPerson.values()].sort((x, y) => y.net - x.net);
+  const rows = [...byPerson.values()].sort((x, y) => y.unpaid - x.unpaid);
 
   return {
     rows,
