@@ -13,6 +13,11 @@ import {
   Truck,
   Scale,
   ShieldCheck,
+  Zap,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  List,
 } from 'lucide-react';
 import { cn, formatTien, formatNgay } from '../lib/utils';
 import { computePayroll } from '../lib/payroll';
@@ -24,6 +29,7 @@ import { DataState } from '../components/DataState';
 import { KpiCard } from '../components/KpiCard';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
+import { QuickAttendanceCard, type QuickAttendanceState } from '../components/mobile/QuickAttendanceCard';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
@@ -134,6 +140,71 @@ export const NhanVienPage: React.FC = () => {
 
     return { totalShifts, totalPayroll, totalPaid, totalUnpaid };
   }, [attendanceList]);
+
+  // Quick Attendance State & View Mode
+  const [selectedDate, setSelectedDate] = useState<string>(today());
+  const [quickStates, setQuickStates] = useState<Record<string, QuickAttendanceState>>({});
+  const [attViewMode, setAttViewMode] = useState<'quick' | 'history'>('quick');
+
+  React.useEffect(() => {
+    const activeEmps = employees.filter((e) => e.status === 'active');
+    const existingForDate = attendanceList.filter((a) => a.date === selectedDate);
+    const map: Record<string, QuickAttendanceState> = {};
+
+    activeEmps.forEach((emp) => {
+      const existing = existingForDate.find((a) => a.employee_id === emp.id || a.employee_name === emp.name);
+      map[emp.id] = {
+        employee_id: emp.id,
+        attendance_id: existing?.id,
+        work_shift: existing ? Number(existing.work_shift) : 1,
+        overtime_hours: existing ? Number(existing.overtime_hours) : 0,
+        daily_pay: existing ? Number(existing.daily_pay) : emp.daily_salary || 350000,
+        advance_pay: existing ? Number(existing.advance_pay) : 0,
+        notes: existing?.notes || '',
+      };
+    });
+
+    setQuickStates(map);
+  }, [selectedDate, employees, attendanceList]);
+
+  const handlePrevDate = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(d.toISOString().slice(0, 10));
+  };
+
+  const handleNextDate = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 1);
+    setSelectedDate(d.toISOString().slice(0, 10));
+  };
+
+  const handleMarkAllFull = () => {
+    setQuickStates((prev) => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach((id) => {
+        updated[id] = { ...updated[id], work_shift: 1 };
+      });
+      return updated;
+    });
+    toast.success('Đã chọn 1 Công cho tất cả công nhân');
+  };
+
+  const handleSaveQuickAttendance = async () => {
+    if (savingAtt) return;
+    setSavingAtt(true);
+    try {
+      const records = Object.values(quickStates);
+      await attendanceService.batchUpsertAttendance(selectedDate, records);
+      toast.success(`Đã lưu bảng chấm công ngày ${formatNgay(selectedDate)}`);
+      refetchAtt();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu bảng chấm công');
+      console.error('Lỗi khi lưu bảng chấm công:', err);
+    } finally {
+      setSavingAtt(false);
+    }
+  };
 
   // Kỳ lương đang xem, mặc định tháng hiện tại.
   const [payrollMonth, setPayrollMonth] = useState(() => new Date().toISOString().slice(0, 7));
@@ -258,7 +329,7 @@ export const NhanVienPage: React.FC = () => {
       />
 
       {/* KPI Cards for Payroll */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <KpiCard
           title="Tổng số nhân sự"
           value={`${employees.length} người`}
@@ -289,52 +360,63 @@ export const NhanVienPage: React.FC = () => {
         />
       </div>
 
-      {/* CIC-IBST Pill Tabs */}
-      <div className="flex flex-wrap items-center gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] w-fit">
+      {/* CIC-IBST Pill Tabs (Trên mobile: Thu gọn thành Icon + Con số đếm vừa vặn 100% màn hình) */}
+      <div className="flex items-center justify-between sm:justify-start gap-1 p-1 rounded-xl shadow-xs border border-[var(--border-color)] bg-[var(--bg-surface)] w-full sm:w-fit">
         <button
           onClick={() => setActiveTab('employees')}
+          title={`Danh sách nhân viên (${employees.length})`}
           className={cn(
-            'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
+            'flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
             activeTab === 'employees'
               ? 'bg-[var(--primary-500)] text-white shadow-xs'
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
           <Users
-            size={14}
+            size={16}
             className={activeTab === 'employees' ? 'text-white' : 'text-[var(--text-muted)]'}
           />
-          <span>Danh sách nhân viên ({employees.length})</span>
+          <span className="hidden sm:inline">Danh sách nhân viên</span>
+          <span className="text-[11px] px-1.5 py-0.2 bg-black/10 dark:bg-white/20 rounded-full font-mono">
+            {employees.length}
+          </span>
         </button>
+
         <button
           onClick={() => setActiveTab('attendance')}
+          title={`Chấm công & Tính lương (${attendanceList.length})`}
           className={cn(
-            'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
+            'flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
             activeTab === 'attendance'
               ? 'bg-[var(--primary-500)] text-white shadow-xs'
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
           <Calendar
-            size={14}
+            size={16}
             className={activeTab === 'attendance' ? 'text-white' : 'text-[var(--text-muted)]'}
           />
-          <span>Chấm công & Tính lương ({attendanceList.length})</span>
+          <span className="hidden sm:inline">Chấm công & Tính lương</span>
+          <span className="text-[11px] px-1.5 py-0.2 bg-black/10 dark:bg-white/20 rounded-full font-mono">
+            {attendanceList.length}
+          </span>
         </button>
+
         <button
           onClick={() => setActiveTab('payroll')}
+          title="Bảng lương tháng"
           className={cn(
-            'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
+            'flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
             activeTab === 'payroll'
               ? 'bg-[var(--primary-500)] text-white shadow-xs'
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
           <DollarSign
-            size={14}
+            size={16}
             className={activeTab === 'payroll' ? 'text-white' : 'text-[var(--text-muted)]'}
           />
-          <span>Bảng lương tháng</span>
+          <span className="hidden sm:inline">Bảng lương tháng</span>
         </button>
       </div>
 
@@ -383,7 +465,11 @@ export const NhanVienPage: React.FC = () => {
                       const roleInfo = roleLabels[emp.role] || roleLabels.staff;
                       const RoleIcon = roleInfo.icon;
                       return (
-                        <tr key={emp.id} className="tr-hover">
+                        <tr
+                          key={emp.id}
+                          onClick={() => openEmpModal(emp)}
+                          className="tr-hover cursor-pointer"
+                        >
                           <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{emp.name}</td>
                           <td className="td-cell">
                             <span
@@ -427,14 +513,20 @@ export const NhanVienPage: React.FC = () => {
                           <td className="td-cell text-right">
                             <div className="flex items-center justify-end space-x-2">
                               <button
-                                onClick={() => openEmpModal(emp)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openEmpModal(emp);
+                                }}
                                 className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
                                 title="Sửa"
                               >
                                 <Edit size={16} />
                               </button>
                               <button
-                                onClick={() => handleDeleteEmployee(emp.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteEmployee(emp.id);
+                                }}
                                 className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
                                 title="Xóa"
                               >
@@ -461,93 +553,236 @@ export const NhanVienPage: React.FC = () => {
 
       {/* TAB 2: CHẤM CÔNG & TÍNH LƯƠNG */}
       {activeTab === 'attendance' && (
-        <DataState loading={attLoading} error={attError} isEmpty={filteredAttendance.length === 0}>
-          <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <caption className="sr-only">Bảng chấm công nhân viên</caption>
-                <thead>
-                  <tr>
-                    <th scope="col" className="th-cell">
-                      Ngày chấm công
-                    </th>
-                    <th scope="col" className="th-cell">
-                      Tên công nhân
-                    </th>
-                    <th className="th-cell text-right">Số công</th>
-                    <th className="th-cell text-right">Đơn giá/ngày</th>
-                    <th className="th-cell text-right">Tạm ứng</th>
-                    <th className="th-cell text-right">Thực lĩnh</th>
-                    <th scope="col" className="th-cell">
-                      Trạng thái thanh toán
-                    </th>
-                    <th scope="col" className="th-cell">
-                      Ghi chú công
-                    </th>
-                    <th className="th-cell text-right">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredAttendance
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    .map((att) => (
-                      <tr key={att.id} className="tr-hover">
-                        <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
-                          {formatNgay(att.date)}
-                        </td>
-                        <td className="td-cell font-bold text-xs text-[var(--text-primary)]">
-                          {att.employee_name}
-                        </td>
-                        <td className="td-cell text-right font-mono font-bold text-xs text-[var(--primary-500)]">
-                          {att.work_shift} công
-                        </td>
-                        <td className="td-cell text-right font-mono text-xs text-[var(--text-secondary)]">
-                          {formatTien(att.daily_pay)}
-                        </td>
-                        <td className="td-cell text-right font-mono text-xs text-rose-600">
-                          {att.advance_pay ? `-${formatTien(att.advance_pay)}` : '0 đ'}
-                        </td>
-                        <td className="td-cell text-right font-mono font-black text-xs text-emerald-600">
-                          {formatTien(att.net_pay)}
-                        </td>
-                        <td className="td-cell">
-                          <StatusBadge status={att.payment_status} />
-                        </td>
-                        <td className="td-cell text-xs text-[var(--text-muted)] max-w-xs truncate">
-                          {att.notes || '—'}
-                        </td>
-                        <td className="td-cell text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button
-                              onClick={() => openAttModal(att)}
-                              className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
-                              title="Sửa"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteAttendance(att.id)}
-                              className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
-                              title="Xóa"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+        <div className="space-y-4">
+          {/* Control Bar: Selector & View Toggle */}
+          <div className="card flex flex-wrap items-center justify-between gap-3 bg-[var(--bg-surface)] p-3 rounded-2xl border border-[var(--border-color)]">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={handlePrevDate}
+                  className="btn-secondary px-2.5 py-1.5 text-xs flex items-center justify-center cursor-pointer"
+                  title="Ngày trước"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="input-field py-1 px-2.5 font-mono font-bold text-xs w-auto cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={handleNextDate}
+                  className="btn-secondary px-2.5 py-1.5 text-xs flex items-center justify-center cursor-pointer"
+                  title="Ngày sau"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDate(today())}
+                className="btn-secondary px-3 py-1.5 text-xs font-extrabold cursor-pointer"
+              >
+                Hôm nay
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {attViewMode === 'quick' && (
+                <button
+                  type="button"
+                  onClick={handleMarkAllFull}
+                  className="btn-secondary text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-xs font-extrabold flex items-center gap-1.5 py-1.5 px-3 cursor-pointer"
+                >
+                  <Zap size={14} /> ⚡ Chấm đủ tất cả (1 Công)
+                </button>
+              )}
+
+              <div className="flex items-center p-1 bg-[var(--bg-subtle)] rounded-xl border border-[var(--border-color)]">
+                <button
+                  type="button"
+                  onClick={() => setAttViewMode('quick')}
+                  className={cn(
+                    'px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
+                    attViewMode === 'quick'
+                      ? 'bg-[var(--primary-500)] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)]',
+                  )}
+                >
+                  <Zap size={13} /> 1-Chạm
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAttViewMode('history')}
+                  className={cn(
+                    'px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
+                    attViewMode === 'history'
+                      ? 'bg-[var(--primary-500)] text-white shadow-xs'
+                      : 'text-[var(--text-secondary)]',
+                  )}
+                >
+                  <List size={13} /> Lịch sử
+                </button>
+              </div>
             </div>
           </div>
-          <PaginationBar
-            currentPage={currentPage}
-            totalItems={filteredAttendance.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
-        </DataState>
+
+          {/* MODE A: BẢNG CHẤM CÔNG NHANH 1-CHẠM */}
+          {attViewMode === 'quick' && (
+            <DataState loading={empLoading} error={empError} isEmpty={employees.filter((e) => e.status === 'active').length === 0}>
+              <div className="space-y-3 pb-36 lg:pb-24">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {employees
+                    .filter((e) => e.status === 'active')
+                    .map((emp) => {
+                      const state = quickStates[emp.id] || {
+                        employee_id: emp.id,
+                        work_shift: 1,
+                        overtime_hours: 0,
+                        daily_pay: emp.daily_salary || 350000,
+                        advance_pay: 0,
+                        notes: '',
+                      };
+                      return (
+                        <QuickAttendanceCard
+                          key={emp.id}
+                          employee={emp}
+                          state={state}
+                          onChange={(newState) => {
+                            setQuickStates((prev) => ({
+                              ...prev,
+                              [emp.id]: newState,
+                            }));
+                          }}
+                        />
+                      );
+                    })}
+                </div>
+
+                {/* Mobile Sticky Bottom Floating Save Bar */}
+                <div className="fixed bottom-20 left-4 right-4 lg:bottom-6 lg:left-72 lg:right-8 z-40 flex items-center justify-center pointer-events-none">
+                  <button
+                    type="button"
+                    onClick={handleSaveQuickAttendance}
+                    disabled={savingAtt}
+                    className="btn-primary py-3.5 px-6 rounded-2xl text-sm font-extrabold shadow-2xl flex items-center justify-center gap-2.5 border-2 border-white/20 w-full max-w-lg cursor-pointer pointer-events-auto active:scale-95 disabled:opacity-60"
+                  >
+                    <CheckCircle2 size={18} />
+                    <span>
+                      {savingAtt
+                        ? 'Đang lưu...'
+                        : `Lưu Bảng Chấm Công Ngày ${formatNgay(selectedDate)} (${Object.values(quickStates).filter((x) => x.work_shift > 0).length}/${employees.filter((e) => e.status === 'active').length} làm)`}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </DataState>
+          )}
+
+          {/* MODE B: LỊCH SỬ DẠNG BẢNG */}
+          {attViewMode === 'history' && (
+            <DataState loading={attLoading} error={attError} isEmpty={filteredAttendance.length === 0}>
+              <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <caption className="sr-only">Bảng chấm công nhân viên</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col" className="th-cell">
+                          Ngày chấm công
+                        </th>
+                        <th scope="col" className="th-cell">
+                          Tên công nhân
+                        </th>
+                        <th className="th-cell text-right">Số công</th>
+                        <th className="th-cell text-right">Đơn giá/ngày</th>
+                        <th className="th-cell text-right">Tạm ứng</th>
+                        <th className="th-cell text-right">Thực lĩnh</th>
+                        <th scope="col" className="th-cell">
+                          Trạng thái thanh toán
+                        </th>
+                        <th scope="col" className="th-cell">
+                          Ghi chú công
+                        </th>
+                        <th className="th-cell text-right">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredAttendance
+                        .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                        .map((att) => (
+                          <tr
+                            key={att.id}
+                            onClick={() => openAttModal(att)}
+                            className="tr-hover cursor-pointer"
+                          >
+                            <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
+                              {formatNgay(att.date)}
+                            </td>
+                            <td className="td-cell font-bold text-xs text-[var(--text-primary)]">
+                              {att.employee_name}
+                            </td>
+                            <td className="td-cell text-right font-mono font-bold text-xs text-[var(--primary-500)]">
+                              {att.work_shift} công
+                            </td>
+                            <td className="td-cell text-right font-mono text-xs text-[var(--text-secondary)]">
+                              {formatTien(att.daily_pay)}
+                            </td>
+                            <td className="td-cell text-right font-mono text-xs text-rose-600">
+                              {att.advance_pay ? `-${formatTien(att.advance_pay)}` : '0 đ'}
+                            </td>
+                            <td className="td-cell text-right font-mono font-black text-xs text-emerald-600">
+                              {formatTien(att.net_pay)}
+                            </td>
+                            <td className="td-cell">
+                              <StatusBadge status={att.payment_status} />
+                            </td>
+                            <td className="td-cell text-xs text-[var(--text-muted)] max-w-xs truncate">
+                              {att.notes || '—'}
+                            </td>
+                            <td className="td-cell text-right">
+                              <div className="flex items-center justify-end space-x-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openAttModal(att);
+                                  }}
+                                  className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
+                                  title="Sửa"
+                                >
+                                  <Edit size={16} />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteAttendance(att.id);
+                                  }}
+                                  className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
+                                  title="Xóa"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <PaginationBar
+                currentPage={currentPage}
+                totalItems={filteredAttendance.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={setItemsPerPage}
+              />
+            </DataState>
+          )}
+        </div>
       )}
 
       {/* TAB 3: BẢNG LƯƠNG THÁNG */}

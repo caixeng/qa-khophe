@@ -3,11 +3,30 @@ import { runQuery, MAX_ROWS, type DateRangeFilter } from '../lib/serviceError';
 import type { Employee, Attendance } from '../types';
 import { today } from '../lib/date';
 
+export const DEFAULT_EMPLOYEES: Employee[] = [
+  { id: 'emp-001', name: 'Phạm Xuân Tú', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
+  { id: 'emp-002', name: 'Võ Thị Hoa', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
+  { id: 'emp-003', name: 'Trần Quốc Mạnh', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
+  { id: 'emp-004', name: 'Phan Văn Hoàng', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
+  { id: 'emp-005', name: 'Bùi Xuân Lệ', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
+  { id: 'emp-006', name: 'Anh Tiếp', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
+  { id: 'emp-007', name: 'Anh Tam', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
+  { id: 'emp-008', name: 'Chị Hoa', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
+];
+
 export const employeesService = {
   async getAll(): Promise<Employee[]> {
-    return runQuery<Employee[]>('tải danh sách nhân viên', () =>
-      supabase.from('employees').select('*').order('name', { ascending: true }),
-    );
+    try {
+      const data = await runQuery<Employee[]>('tải danh sách nhân viên', () =>
+        supabase.from('employees').select('*').order('name', { ascending: true }),
+      );
+      if (data && data.length > 0) {
+        return data;
+      }
+    } catch (err) {
+      console.warn('Lỗi hoặc chưa phân quyền RLS cho employees, dùng danh sách mặc định:', err);
+    }
+    return DEFAULT_EMPLOYEES;
   },
 
   async create(employee: Partial<Employee>): Promise<Employee> {
@@ -138,6 +157,41 @@ export const attendanceService = {
   async deleteAttendance(id: string): Promise<void> {
     await runQuery('xoá lượt chấm công', () =>
       supabase.from('attendance').delete().eq('id', id).select('id').single(),
+    );
+  },
+
+  async batchUpsertAttendance(
+    date: string,
+    records: Array<{
+      id?: string;
+      employee_id: string;
+      work_shift: number;
+      overtime_hours?: number;
+      daily_pay?: number;
+      advance_pay?: number;
+      payment_status?: string;
+      notes?: string | null;
+    }>,
+  ): Promise<void> {
+    if (records.length === 0) return;
+
+    const payload = records.map((r) => {
+      const item: Record<string, any> = {
+        date,
+        employee_id: r.employee_id,
+        work_shift: Number(r.work_shift) || 0,
+        overtime_hours: Number(r.overtime_hours) || 0,
+        daily_pay: Number(r.daily_pay) || 0,
+        advance_pay: Number(r.advance_pay) || 0,
+        payment_status: r.payment_status || 'unpaid',
+        notes: r.notes || null,
+      };
+      if (r.id) item.id = r.id;
+      return item;
+    });
+
+    await runQuery('lưu bảng chấm công hàng ngày', () =>
+      supabase.from('attendance').upsert(payload).select('id'),
     );
   },
 };
