@@ -8,13 +8,22 @@ export interface InventorySnapshot {
   currentBags: number;
 }
 
-/** Tồn kho thành phẩm = tổng đã xay ra - tổng đã xuất bán. */
+/**
+ * Tồn kho thành phẩm = tồn kho đầu kỳ + tổng đã xay ra - tổng đã xuất bán.
+ *
+ * `openingStockKg` là tồn kho đã có sẵn trước khi hệ thống bắt đầu ghi nhận
+ * phiếu xay/xuất (nhập tay 1 lần trong Cài đặt). Không có nó, các xưởng đã
+ * hoạt động lâu năm trước khi dùng app sẽ luôn hiện tồn kho thấp/âm giả dù
+ * kho thực tế vẫn còn hàng — vì lịch sử xay trước đó không nằm trong bảng
+ * `grinding`. Mặc định 0 cho xưởng mới, không ảnh hưởng gì nếu chưa cấu hình.
+ */
 export function computeInventory(
   totalGroundKg: number,
   totalExportedKg: number,
   kgPerBag: number,
+  openingStockKg = 0,
 ): InventorySnapshot {
-  const currentStockKg = Math.max(0, totalGroundKg - totalExportedKg);
+  const currentStockKg = Math.max(0, openingStockKg + totalGroundKg - totalExportedKg);
   const currentBags = kgPerBag > 0 ? Math.round(currentStockKg / kgPerBag) : 0;
   return { currentStockKg, currentBags };
 }

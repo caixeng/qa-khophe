@@ -29,7 +29,7 @@ import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
 import { useToast } from '../contexts/toast';
 import { expensesService } from '../services/expensesService';
-import type { Expense } from '../types';
+import type { Expense, Advance } from '../types';
 
 const categoryConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   fuel: { label: 'Xăng', icon: Fuel, color: 'text-orange-500' },
@@ -54,15 +54,18 @@ export const ChiPhiPage: React.FC = () => {
     data: advances,
     loading: advLoading,
     error: advError,
+    refetch: refetchAdv,
   } = useAsyncList(expensesService.getAdvances, []);
 
   const { searchQuery, setSearchQuery } = useTableControls();
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [confirmState, setConfirmState] = useState<{ isOpen: boolean; id: string }>({
-    isOpen: false,
-    id: '',
-  });
+  const [savingAdv, setSavingAdv] = useState(false);
+  const [confirmState, setConfirmState] = useState<{
+    isOpen: boolean;
+    id: string;
+    type: 'expense' | 'advance';
+  }>({ isOpen: false, id: '', type: 'expense' });
 
   const { formState, openModal, closeModal, handleChange } = useCrudForm<Expense>({
     initialData: {
@@ -70,6 +73,21 @@ export const ChiPhiPage: React.FC = () => {
       category: 'fuel',
       amount: 0,
       description: '',
+      notes: '',
+    },
+  });
+
+  const {
+    formState: advForm,
+    openModal: openAdvModal,
+    closeModal: closeAdvModal,
+    handleChange: handleAdvChange,
+  } = useCrudForm<Advance>({
+    initialData: {
+      date: new Date().toISOString().split('T')[0],
+      amount: 0,
+      person: 'Chủ xưởng',
+      type: 'advance',
       notes: '',
     },
   });
@@ -152,19 +170,61 @@ export const ChiPhiPage: React.FC = () => {
   };
 
   const handleDeleteExpense = (id: string) => {
-    setConfirmState({ isOpen: true, id });
+    setConfirmState({ isOpen: true, id, type: 'expense' });
   };
 
-  const confirmDeleteExpense = async () => {
+  const handleDeleteAdvance = (id: string) => {
+    setConfirmState({ isOpen: true, id, type: 'advance' });
+  };
+
+  const confirmDeleteEntry = async () => {
+    const { id, type } = confirmState;
     try {
-      await expensesService.deleteExpense(confirmState.id);
-      toast.success('Đã xoá khoản chi phí');
-      refetchExp();
+      if (type === 'expense') {
+        await expensesService.deleteExpense(id);
+        toast.success('Đã xoá khoản chi phí');
+        refetchExp();
+      } else {
+        await expensesService.deleteAdvance(id);
+        toast.success('Đã xoá khoản ứng tiền');
+        refetchAdv();
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Không xoá được khoản chi phí');
-      console.error('Lỗi khi xóa chi phí:', err);
+      toast.error(err instanceof Error ? err.message : 'Không xoá được bản ghi');
+      console.error('Lỗi khi xóa:', err);
     }
-    setConfirmState({ isOpen: false, id: '' });
+    setConfirmState({ isOpen: false, id: '', type: 'expense' });
+  };
+
+  const handleSaveAdvance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (savingAdv) return;
+
+    const data = advForm.data;
+    const amount = Number(data.amount) || 0;
+    if (amount <= 0) {
+      toast.warning('Số tiền ứng phải lớn hơn 0');
+      return;
+    }
+
+    setSavingAdv(true);
+    try {
+      await expensesService.createAdvance({
+        date: data.date || new Date().toISOString().split('T')[0],
+        amount,
+        person: data.person || 'Chủ xưởng',
+        type: data.type || 'advance',
+        notes: data.notes,
+      });
+      toast.success('Đã ghi nhận khoản ứng tiền');
+      closeAdvModal();
+      refetchAdv();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Không lưu được khoản ứng tiền');
+      console.error('Lỗi khi lưu ứng tiền:', err);
+    } finally {
+      setSavingAdv(false);
+    }
   };
 
   return (
@@ -172,7 +232,11 @@ export const ChiPhiPage: React.FC = () => {
       <PageHeader
         title="Chi Phí & Ứng Tiền"
         subtitle="Quản lý các khoản chi phát sinh tại xưởng và theo dõi ứng tiền"
-        action={{ label: 'Thêm chi phí', icon: Plus, onClick: () => openModal() }}
+        action={
+          activeTab === 'chiphi'
+            ? { label: 'Thêm chi phí', icon: Plus, onClick: () => openModal() }
+            : { label: 'Thêm ứng tiền', icon: Plus, onClick: () => openAdvModal() }
+        }
       />
 
       {/* Tabs */}
@@ -342,6 +406,7 @@ export const ChiPhiPage: React.FC = () => {
                       <th scope="col" className="th-cell">
                         Ghi chú
                       </th>
+                      <th className="th-cell text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -371,6 +436,15 @@ export const ChiPhiPage: React.FC = () => {
                           {formatTien(adv.amount)}
                         </td>
                         <td className="td-cell text-xs text-[var(--text-muted)]">{adv.notes || '—'}</td>
+                        <td className="td-cell text-right">
+                          <button
+                            onClick={() => handleDeleteAdvance(adv.id)}
+                            className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                            title="Xóa"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -456,12 +530,88 @@ export const ChiPhiPage: React.FC = () => {
         </form>
       </Modal>
 
+      {/* Modal Thêm ứng tiền */}
+      <Modal isOpen={advForm.isOpen} onClose={closeAdvModal} title="Ghi nhận ứng tiền / hoàn ứng">
+        <form onSubmit={handleSaveAdvance} className="space-y-4">
+          <FormField label="Ngày ghi nhận" required>
+            <input
+              type="date"
+              required
+              className="input-field"
+              value={advForm.data?.date || ''}
+              onChange={(e) => handleAdvChange('date', e.target.value)}
+            />
+          </FormField>
+
+          <FormField label="Loại giao dịch" required>
+            <select
+              className="input-field"
+              value={advForm.data?.type || 'advance'}
+              onChange={(e) => handleAdvChange('type', e.target.value as Advance['type'])}
+            >
+              <option value="advance">Ứng tiền (chi ra)</option>
+              <option value="settlement">Hoàn ứng (thu về)</option>
+            </select>
+          </FormField>
+
+          <FormField label="Số tiền (đ)" required>
+            <input
+              type="number"
+              inputMode="decimal"
+              required
+              min="1"
+              className="input-field font-mono font-bold text-[var(--primary-500)]"
+              placeholder="0"
+              value={advForm.data?.amount || ''}
+              onChange={(e) => handleAdvChange('amount', Number(e.target.value))}
+            />
+          </FormField>
+
+          <FormField label="Người giao/nhận">
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Chủ xưởng"
+              value={advForm.data?.person || ''}
+              onChange={(e) => handleAdvChange('person', e.target.value)}
+            />
+          </FormField>
+
+          <FormField label="Ghi chú">
+            <textarea
+              className="input-field"
+              rows={2}
+              placeholder="Ghi chú thêm..."
+              value={advForm.data?.notes || ''}
+              onChange={(e) => handleAdvChange('notes', e.target.value)}
+            />
+          </FormField>
+
+          <div className="flex justify-end space-x-3 pt-4 border-t border-[var(--border-color)]">
+            <button type="button" onClick={closeAdvModal} className="btn-secondary">
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={savingAdv}
+              className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {savingAdv ? 'Đang lưu...' : 'Lưu ứng tiền'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
       <ConfirmDialog
         isOpen={confirmState.isOpen}
-        onClose={() => setConfirmState({ isOpen: false, id: '' })}
-        onConfirm={confirmDeleteExpense}
-        title="Xoá khoản chi phí"
-        message="Bạn có chắc chắn muốn xoá khoản chi phí này? Hành động này không thể hoàn tác."
+        onClose={() => setConfirmState({ isOpen: false, id: '', type: 'expense' })}
+        onConfirm={confirmDeleteEntry}
+        title={confirmState.type === 'expense' ? 'Xoá khoản chi phí' : 'Xoá khoản ứng tiền'}
+        message={
+          confirmState.type === 'expense'
+            ? 'Bạn có chắc chắn muốn xoá khoản chi phí này? Hành động này không thể hoàn tác.'
+            : 'Bạn có chắc chắn muốn xoá khoản ứng tiền này? Hành động này không thể hoàn tác.'
+        }
         variant="danger"
         confirmText="Xoá"
         cancelText="Hủy"

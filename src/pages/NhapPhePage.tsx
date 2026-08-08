@@ -551,7 +551,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
               min="0"
               className="input-field font-mono"
               placeholder="4000"
-              value={formState.data?.price_per_kg || 4000}
+              value={formState.data?.price_per_kg || ''}
               onChange={(e) => handleChange('price_per_kg', Number(e.target.value))}
             />
           </FormField>

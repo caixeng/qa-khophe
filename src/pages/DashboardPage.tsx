@@ -28,8 +28,10 @@ export const DashboardPage: React.FC = () => {
   ]);
   const { data: grinding } = useAsyncList(grindingService.getAll, []);
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
+  const { data: openingStockData } = useAsyncData(settingsService.getOpeningStock, []);
 
   const kgPerBag = kgPerBagData ?? 900;
+  const openingStock = openingStockData ?? 0;
 
   const summary = useMemo(() => {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -65,6 +67,7 @@ export const DashboardPage: React.FC = () => {
       totalGround,
       totalExportKg,
       kgPerBag,
+      openingStock,
     );
 
     // Dynamic recent activities
@@ -122,7 +125,7 @@ export const DashboardPage: React.FC = () => {
       unpaidExports,
       totalUnpaidReceivables,
     };
-  }, [imports, exports, expenses, grinding, kgPerBag, canSeeFinance]);
+  }, [imports, exports, expenses, grinding, kgPerBag, openingStock, canSeeFinance]);
 
   return (
     <div className="page-shell animate-fade-in">
