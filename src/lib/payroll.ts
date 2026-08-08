@@ -1,6 +1,7 @@
 import type { Attendance } from '../types';
 
 export interface PayrollRow {
+  employee_id?: string;
   name: string;
   shifts: number;
   gross: number;
@@ -11,10 +12,10 @@ export interface PayrollRow {
 
 export interface PayrollSummary {
   rows: PayrollRow[];
-  totals: Omit<PayrollRow, 'name'>;
+  totals: Omit<PayrollRow, 'name' | 'employee_id'>;
 }
 
-const EMPTY_TOTALS: Omit<PayrollRow, 'name'> = {
+const EMPTY_TOTALS: Omit<PayrollRow, 'name' | 'employee_id'> = {
   shifts: 0,
   gross: 0,
   advance: 0,
@@ -42,6 +43,7 @@ export function computePayroll(attendance: readonly Attendance[], month: string)
 
     const key = a.employee_id || a.employee_name || 'Không rõ';
     const row = byPerson.get(key) ?? {
+      employee_id: a.employee_id,
       name: a.employee_name || 'Không rõ',
       ...EMPTY_TOTALS,
     };

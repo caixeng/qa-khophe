@@ -194,4 +194,18 @@ export const attendanceService = {
       supabase.from('attendance').upsert(payload).select('id'),
     );
   },
+
+  async payMonthForEmployee(employeeId: string, month: string): Promise<void> {
+    const startDate = `${month}-01`;
+    const endDate = `${month}-31`;
+    await runQuery('chốt thanh toán lương tháng cho nhân viên', () =>
+      supabase
+        .from('attendance')
+        .update({ payment_status: 'paid' })
+        .eq('employee_id', employeeId)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .select('id'),
+    );
+  },
 };
