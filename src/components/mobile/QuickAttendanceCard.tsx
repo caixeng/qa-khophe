@@ -137,19 +137,44 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
           type="button"
           onClick={() => setShowCustom(!showCustom)}
           className={cn(
-            'h-11 rounded-xl text-[11px] font-black transition-all flex items-center justify-center gap-0.5 cursor-pointer border px-1',
-            showCustom || isCustom || state.advance_pay > 0
+            'h-11 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-0.5 cursor-pointer border px-1',
+            showCustom || isCustom
               ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
               : 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-blue-50 hover:text-blue-800 dark:hover:bg-blue-950/40',
           )}
         >
-          <span>💸 Ứng/Khác</span>
+          <span>⚙️ Khác</span>
           {showCustom ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </button>
       </div>
 
-      {/* Custom Options Panel (Tăng ca, Tạm ứng, Ghi chú) */}
-      {(showCustom || state.advance_pay > 0 || state.overtime_hours > 0) && (
+      {/* Mục riêng biệt: Tạm ứng tiền trong ngày */}
+      <div className="mt-2.5 pt-2 border-t border-[var(--border-color)]">
+        <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/30">
+          <label
+            htmlFor={`advance-input-${employee.id}`}
+            className="text-xs font-black text-amber-800 dark:text-amber-300 shrink-0 flex items-center gap-1 cursor-pointer"
+          >
+            💸 Tạm ứng:
+          </label>
+          <div className="relative flex-1 max-w-[180px]">
+            <input
+              id={`advance-input-${employee.id}`}
+              type="number"
+              inputMode="numeric"
+              step="10000"
+              min="0"
+              placeholder="0 đ (gõ tiền ứng)"
+              value={state.advance_pay || ''}
+              onChange={(e) => onChange({ ...state, advance_pay: Number(e.target.value) || 0 })}
+              className="input-field py-1 px-2.5 font-mono text-xs font-black text-rose-600 dark:text-rose-400 bg-[var(--bg-surface)] border-amber-300 dark:border-amber-800 text-right w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Custom Options Panel (Số công lẻ, Tăng ca, Ghi chú) */}
+      {showCustom && (
         <div className="mt-3 pt-3 border-t border-[var(--border-color)] space-y-3 animate-fade-in text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -187,22 +212,6 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor={`advance-input-${employee.id}`} className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
-                Tạm ứng trong ngày (đ):
-              </label>
-              <input
-                id={`advance-input-${employee.id}`}
-                type="number"
-                step="10000"
-                min="0"
-                value={state.advance_pay || ''}
-                onChange={(e) => onChange({ ...state, advance_pay: Number(e.target.value) || 0 })}
-                className="input-field py-1.5 font-mono text-xs text-rose-600 font-bold"
-                placeholder="0"
-              />
-            </div>
-
-            <div>
               <label htmlFor={`daily-salary-input-${employee.id}`} className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
                 Lương ngày (đ):
               </label>
@@ -215,20 +224,20 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
                 className="input-field py-1.5 font-mono text-xs"
               />
             </div>
-          </div>
 
-          <div>
-            <label htmlFor={`notes-input-${employee.id}`} className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
-              Ghi chú công:
-            </label>
-            <input
-              id={`notes-input-${employee.id}`}
-              type="text"
-              value={state.notes || ''}
-              onChange={(e) => onChange({ ...state, notes: e.target.value })}
-              className="input-field py-1.5 text-xs"
-              placeholder="VD: Làm ca đêm, xay phế nhựa..."
-            />
+            <div>
+              <label htmlFor={`notes-input-${employee.id}`} className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
+                Ghi chú công:
+              </label>
+              <input
+                id={`notes-input-${employee.id}`}
+                type="text"
+                value={state.notes || ''}
+                onChange={(e) => onChange({ ...state, notes: e.target.value })}
+                className="input-field py-1.5 text-xs"
+                placeholder="VD: Làm ca đêm, xay phế nhựa..."
+              />
+            </div>
           </div>
         </div>
       )}
