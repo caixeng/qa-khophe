@@ -98,7 +98,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
           type="button"
           onClick={() => handleShiftSelect(1)}
           className={cn(
-            'h-9 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer border px-1',
+            'h-11 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer border px-1',
             isFull
               ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm scale-[1.02]'
               : 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-emerald-50 hover:text-emerald-800 dark:hover:bg-emerald-950/40',
@@ -111,7 +111,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
           type="button"
           onClick={() => handleShiftSelect(0.5)}
           className={cn(
-            'h-9 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer border px-1',
+            'h-11 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer border px-1',
             isHalf
               ? 'bg-amber-500 text-white border-amber-500 shadow-sm scale-[1.02]'
               : 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-amber-50 hover:text-amber-800 dark:hover:bg-amber-950/40',
@@ -124,7 +124,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
           type="button"
           onClick={() => handleShiftSelect(0)}
           className={cn(
-            'h-9 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer border px-1',
+            'h-11 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer border px-1',
             isOff
               ? 'bg-slate-700 text-white border-slate-700 shadow-sm scale-[1.02]'
               : 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800',
@@ -137,7 +137,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
           type="button"
           onClick={() => setShowCustom(!showCustom)}
           className={cn(
-            'h-9 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-0.5 cursor-pointer border px-1',
+            'h-11 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-0.5 cursor-pointer border px-1',
             showCustom || isCustom
               ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
               : 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-blue-50 hover:text-blue-800 dark:hover:bg-blue-950/40',

@@ -1,19 +1,28 @@
 {
-  "name": "KhoPhe ERP - Quản lý Kho Phế Liệu",
-  "short_name": "KhoPhe",
+  "id": "/",
+  "name": "VUA PHẾ - Quản lý xưởng phế liệu",
+  "short_name": "VUA PHẾ",
   "description": "Ứng dụng quản lý kho phế liệu nhựa PVC — nhập, xay, xuất, cân, tồn kho, công nợ, nhân sự",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "orientation": "any",
   "background_color": "#F0ECE1",
   "theme_color": "#00668c",
   "lang": "vi",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["business", "productivity", "finance"]
 }

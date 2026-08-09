@@ -12,7 +12,7 @@ createRoot(document.getElementById('root') as HTMLElement).render(
   </React.StrictMode>,
 );
 
-if ('serviceWorker' in navigator) {
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {
       // Offline shell là tính năng phụ trợ — không chặn app nếu đăng ký thất bại

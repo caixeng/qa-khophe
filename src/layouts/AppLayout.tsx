@@ -99,7 +99,7 @@ export const AppLayout = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden">
+    <div className="app-viewport flex w-full bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden">
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-[var(--bg-surface)] focus:text-[var(--text-primary)] top-0 left-0"
@@ -227,7 +227,7 @@ export const AppLayout = () => {
             <button
               onClick={() => setSearchOpen(true)}
               aria-label="Tìm kiếm toàn hệ thống"
-              className="sm:hidden p-2 rounded-xl border border-border bg-subtle text-[var(--text-muted)] cursor-pointer"
+              className="tap-target sm:hidden flex items-center justify-center rounded-xl border border-border bg-subtle text-[var(--text-muted)] cursor-pointer"
             >
               <Search size={16} />
             </button>
@@ -237,7 +237,7 @@ export const AppLayout = () => {
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
                 aria-label="Menu người dùng"
-                className="flex items-center gap-2 hover:bg-[var(--bg-subtle)] p-1.5 pr-2.5 rounded-xl border border-transparent hover:border-[var(--border-color)] transition-all cursor-pointer"
+                className="tap-target flex items-center gap-2 hover:bg-[var(--bg-subtle)] p-1.5 pr-2.5 rounded-xl border border-transparent hover:border-[var(--border-color)] transition-all cursor-pointer"
               >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] flex items-center justify-center text-white font-bold text-xs shadow-sm">
                   {user?.name?.charAt(0) || 'A'}
@@ -286,7 +286,7 @@ export const AppLayout = () => {
                               type="button"
                               onClick={() => setTheme(id)}
                               className={cn(
-                                'flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
+                  'tap-target md:min-h-0 md:min-w-0 flex-1 flex items-center justify-center gap-1 md:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
                                 theme === id
                                   ? 'bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]'
                                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -314,7 +314,7 @@ export const AppLayout = () => {
                                 onClick={() => setPrimaryColor(id)}
                                 title={name}
                                 className={cn(
-                                  'w-5 h-5 rounded-full flex items-center justify-center transition-transform hover:scale-110 cursor-pointer',
+                                  'tap-target md:min-w-0 md:min-h-0 md:w-5 md:h-5 rounded-full flex items-center justify-center transition-transform hover:scale-110 cursor-pointer',
                                   active && 'scale-110 ring-2 ring-offset-2 ring-offset-[var(--bg-surface)]',
                                 )}
                                 style={{
@@ -349,7 +349,7 @@ export const AppLayout = () => {
                               type="button"
                               onClick={() => setDensity(d)}
                               className={cn(
-                                'py-1 text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center',
+                                'tap-target md:min-w-0 md:min-h-0 md:py-1 text-xs md:text-[11px] font-bold rounded-lg transition-all cursor-pointer text-center',
                                 density === d
                                   ? 'bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]'
                                   : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -366,7 +366,7 @@ export const AppLayout = () => {
                     <div className="pt-2">
                       <button
                         onClick={handleLogout}
-                        className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 transition-colors cursor-pointer"
+                        className="tap-target w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 transition-colors cursor-pointer"
                       >
                         <LogOut size={14} /> Đăng xuất
                       </button>
@@ -379,7 +379,7 @@ export const AppLayout = () => {
         </header>
 
         {/* SCROLLABLE OUTLET */}
-        <main id="main-content" className="flex-1 overflow-y-auto pt-4 px-4 lg:px-6 pb-8">
+        <main id="main-content" className="mobile-scroll-area flex-1 overflow-y-auto pt-4 px-4 lg:px-6 pb-8">
           <div className="w-full">
             <Suspense fallback={<PageLoadingSkeleton />}>
               <Outlet />
@@ -392,7 +392,7 @@ export const AppLayout = () => {
       <nav
         role="navigation"
         aria-label="Menu di động"
-        className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-surface)]/95 backdrop-blur-md border-t border-[var(--border-color)] flex justify-between items-center h-16 px-2 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] pb-safe-area"
+        className="mobile-nav-safe lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-surface)]/95 backdrop-blur-md border-t border-[var(--border-color)] flex justify-between items-start px-2 z-30 shadow-[0_-4px_16px_rgba(0,0,0,0.08)]"
       >
         <NavLink
           to="/"
@@ -455,7 +455,7 @@ export const AppLayout = () => {
           className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all text-[var(--text-muted)] hover:text-[var(--text-primary)] font-medium active:scale-95 cursor-pointer"
         >
           <Menu size={20} />
-          <span className="text-[11px] truncate">Thêm</span>
+          <span className="text-xs truncate">Khác</span>
         </button>
       </nav>
 

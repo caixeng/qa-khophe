@@ -1,10 +1,12 @@
 import * as React from 'react';
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Download, Package, TrendingUp, DollarSign } from 'lucide-react';
 import { cn, formatTien, formatKg } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
 import { KpiCard } from '../components/KpiCard';
 import { DataState } from '../components/DataState';
+import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useDateRange } from '../hooks/useDateRange';
 import { PeriodFilter } from '../components/PeriodFilter';
@@ -32,9 +34,32 @@ import { today, toISODate } from '../lib/date';
 const COLORS = ['#00668c', '#059669', '#d97706', '#64748b', '#7c3aed', '#e11d48'];
 
 export const BaoCaoPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'tongquan' | 'nhapxuat' | 'hieusuat' | 'taichinh'>('tongquan');
+  type ReportTab = 'tongquan' | 'nhapxuat' | 'hieusuat' | 'taichinh';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const initialTab: ReportTab =
+    requestedTab === 'nhapxuat' || requestedTab === 'hieusuat' || requestedTab === 'taichinh'
+      ? requestedTab
+      : 'tongquan';
+  const [activeTab, setActiveTab] = useState<ReportTab>(initialTab);
   const { user } = useAuth();
   const canSeeFinance = user?.role === 'manager' || user?.role === 'admin';
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const next: ReportTab =
+      tab === 'nhapxuat' || tab === 'hieusuat' || (tab === 'taichinh' && canSeeFinance)
+        ? tab
+        : 'tongquan';
+    if (next !== activeTab) setActiveTab(next);
+  }, [searchParams, activeTab, canSeeFinance]);
+
+  const handleTabChange = (tab: ReportTab) => {
+    const next = new URLSearchParams(searchParams);
+    if (tab === 'tongquan') next.delete('tab');
+    else next.set('tab', tab);
+    setSearchParams(next);
+  };
 
   const { range, setRange } = useDateRange();
 
@@ -325,11 +350,13 @@ export const BaoCaoPage: React.FC = () => {
 
       <PeriodFilter range={range} onChange={setRange} />
 
-      <div className="flex flex-wrap border-b border-[var(--border-color)]">
+      <div role="tablist" aria-label="Loại báo cáo" className="grid grid-cols-2 border-b border-[var(--border-color)] sm:flex sm:flex-wrap">
         <button
-          onClick={() => setActiveTab('tongquan')}
+          role="tab"
+          aria-selected={activeTab === 'tongquan'}
+          onClick={() => handleTabChange('tongquan')}
           className={cn(
-            'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
+            'tap-target px-3 sm:px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
             activeTab === 'tongquan'
               ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -338,9 +365,11 @@ export const BaoCaoPage: React.FC = () => {
           Tổng quan sản lượng
         </button>
         <button
-          onClick={() => setActiveTab('nhapxuat')}
+          role="tab"
+          aria-selected={activeTab === 'nhapxuat'}
+          onClick={() => handleTabChange('nhapxuat')}
           className={cn(
-            'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
+            'tap-target px-3 sm:px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
             activeTab === 'nhapxuat'
               ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -349,9 +378,11 @@ export const BaoCaoPage: React.FC = () => {
           Phân bổ nguồn phế
         </button>
         <button
-          onClick={() => setActiveTab('hieusuat')}
+          role="tab"
+          aria-selected={activeTab === 'hieusuat'}
+          onClick={() => handleTabChange('hieusuat')}
           className={cn(
-            'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
+            'tap-target px-3 sm:px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
             activeTab === 'hieusuat'
               ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -361,9 +392,11 @@ export const BaoCaoPage: React.FC = () => {
         </button>
         {canSeeFinance && (
           <button
-            onClick={() => setActiveTab('taichinh')}
+            role="tab"
+            aria-selected={activeTab === 'taichinh'}
+            onClick={() => handleTabChange('taichinh')}
             className={cn(
-              'px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
+              'tap-target px-3 sm:px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
               activeTab === 'taichinh'
                 ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
                 : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -483,7 +516,8 @@ export const BaoCaoPage: React.FC = () => {
                 Chưa có phiếu xay nào trong kỳ này.
               </p>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full text-left border-collapse">
                   <caption className="sr-only">Hiệu suất xay theo thợ</caption>
                   <thead>
@@ -533,6 +567,35 @@ export const BaoCaoPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              <MobileCardList
+                items={grindingEfficiency.map((row, index) => ({
+                  id: row.worker,
+                  title: `${index + 1}. ${row.worker}`,
+                  subtitle: `${row.lots} lô đã xay`,
+                  badge: (
+                    <span
+                      className={cn(
+                        'rounded-full px-2 py-1 text-xs font-bold',
+                        row.lossPct > 10
+                          ? 'bg-rose-100 text-rose-700'
+                          : row.lossPct > 5
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-emerald-100 text-emerald-700',
+                      )}
+                    >
+                      Hao {row.lossPct.toFixed(1)}%
+                    </span>
+                  ),
+                  accentColor: row.lossPct > 10 ? '#f43f5e' : row.lossPct > 5 ? '#f59e0b' : '#10b981',
+                  fields: [
+                    { label: 'Đầu vào', value: formatKg(row.inputKg) },
+                    { label: 'Thành phẩm', value: formatKg(row.outputKg) },
+                    { label: 'Hao hụt', value: <span className="font-mono">{formatKg(row.lossKg)}</span> },
+                  ],
+                }))}
+                emptyMessage="Chưa có dữ liệu hiệu suất xay"
+              />
+              </>
             )}
           </div>
         )}

@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[var(--bg-app)] flex flex-col items-center justify-center p-4">
+        <div className="screen-min-height safe-screen-padding bg-[var(--bg-app)] flex flex-col items-center justify-center p-4">
           <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center border border-gray-100">
             <div className="flex justify-center mb-4">
               <div className="p-3 bg-red-50 rounded-full">

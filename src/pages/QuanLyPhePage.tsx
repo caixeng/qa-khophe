@@ -18,7 +18,7 @@ const TABS: { id: PheTab; label: string; icon: React.ElementType; color: string 
 ];
 
 export const QuanLyPhePage: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = (searchParams.get('tab') as PheTab) || 'nhap';
   const [activeTab, setActiveTab] = useState<PheTab>(tabParam);
   const actionRef = React.useRef<(() => void) | null>(null);
@@ -49,21 +49,32 @@ export const QuanLyPhePage: React.FC = () => {
     }
   };
 
+  const handleTabChange = (tab: PheTab) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', tab);
+    next.delete('open');
+    setSearchParams(next);
+  };
+
   return (
     <div className="page-shell animate-fade-in">
       {/* CIC-IBST UNIFIED TOP TOOLBAR ROW */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* CIC-IBST Pill Tabs Segmented Control */}
-        <div className="flex flex-wrap items-center gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] w-fit">
+        <div role="tablist" aria-label="Nghiệp vụ quản lý phế" className="grid w-full grid-cols-2 gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] sm:flex sm:w-fit">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`phe-panel-${tab.id}`}
+                onClick={() => handleTabChange(tab.id)}
                 className={cn(
-                  'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
+                  'tap-target sm:min-h-0 sm:min-w-0 flex items-center justify-center gap-1.5 px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
                   isActive
                     ? 'bg-[var(--primary-500)] text-white shadow-xs'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
@@ -77,13 +88,13 @@ export const QuanLyPhePage: React.FC = () => {
         </div>
 
         {/* Right aligned action button in exact same row */}
-        <button onClick={handleActionClick} className="btn-primary flex items-center gap-2">
+        <button onClick={handleActionClick} className="btn-primary min-h-11 w-full justify-center sm:w-auto flex items-center gap-2">
           <Plus size={16} /> {getActionLabel(activeTab)}
         </button>
       </div>
 
       {/* Tab Content */}
-      <div className="transition-all duration-200">
+      <div id={`phe-panel-${activeTab}`} role="tabpanel" className="transition-all duration-200">
         {activeTab === 'nhap' && <NhapPhePage actionRef={actionRef} />}
         {activeTab === 'xay' && <XayPhePage actionRef={actionRef} />}
         {activeTab === 'xuat' && <XuatPhePage actionRef={actionRef} />}

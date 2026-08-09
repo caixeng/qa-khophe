@@ -379,7 +379,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
             {activeBags.map((w, idx) => (
               <span
                 key={idx}
-                className="group relative px-3 py-1.5 pr-6 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-primary)] shadow-xs flex items-center gap-1"
+                className="group relative min-h-11 pl-3 pr-11 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs font-mono font-bold text-[var(--text-primary)] shadow-xs flex items-center gap-1"
               >
                 <button
                   type="button"
@@ -392,10 +392,11 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
                 <button
                   type="button"
                   onClick={() => handleRemoveBag(idx)}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center hover:bg-rose-200 cursor-pointer"
+                  aria-label={`Xoá bao số ${activeBags.length - idx}`}
+                  className="tap-target absolute right-0 top-1/2 -translate-y-1/2 rounded-xl text-rose-600 flex items-center justify-center hover:bg-rose-100 cursor-pointer"
                   title="Xoá bao này"
                 >
-                  <X size={10} />
+                  <X size={16} />
                 </button>
               </span>
             ))}

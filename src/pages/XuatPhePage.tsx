@@ -222,7 +222,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng khối lượng xuất
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black text-[var(--text-primary)] truncate">
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">
               {formatKg(stats.totalKg)}
             </p>
           </div>
@@ -236,7 +236,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng số bao xuất
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black text-[var(--text-primary)] truncate">{stats.totalBags} bao</p>
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">{stats.totalBags} bao</p>
           </div>
         </div>
 
@@ -248,7 +248,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Doanh thu xuất phế
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black text-emerald-600 truncate">{formatTien(stats.totalRevenue)}</p>
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-emerald-600 [overflow-wrap:anywhere]">{formatTien(stats.totalRevenue)}</p>
           </div>
         </div>
 
@@ -260,7 +260,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Chưa thu (Công nợ)
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black text-rose-600 truncate">{formatTien(stats.unpaidAmount)}</p>
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-rose-600 [overflow-wrap:anywhere]">{formatTien(stats.unpaidAmount)}</p>
           </div>
         </div>
       </div>

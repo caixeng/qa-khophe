@@ -5,6 +5,7 @@ import { ArrowLeft, Phone, MapPin, Package, Truck, Wallet, TrendingUp, Printer }
 import { cn, formatTien, formatNgay, formatKg } from '../lib/utils';
 import { DataState } from '../components/DataState';
 import { StatusBadge } from '../components/StatusBadge';
+import { MobileCardList } from '../components/mobile/MobileCardList';
 import { PeriodFilter } from '../components/PeriodFilter';
 import { useAsyncData, useAsyncList } from '../hooks/useAsyncData';
 import { useDateRange } from '../hooks/useDateRange';
@@ -206,7 +207,7 @@ export const DoiTacChiTietPage: React.FC = () => {
                 <h2 className="border-b border-[var(--border-color)] px-4 py-3 text-sm font-bold text-[var(--text-primary)]">
                   Phiếu nhập từ đối tác này ({myImports.length})
                 </h2>
-                <div className="overflow-x-auto">
+                <div className="hidden overflow-x-auto lg:block">
                   <table className="w-full text-left border-collapse">
                     <caption className="sr-only">Lịch sử phiếu nhập</caption>
                     <thead>
@@ -271,6 +272,41 @@ export const DoiTacChiTietPage: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
+                <div className="p-3 lg:hidden">
+                  <MobileCardList
+                    items={myImports.map((item) => {
+                      const remaining = computeRemainingWithLegacyStatus(
+                        item.total_amount,
+                        paidByImport[item.id] || 0,
+                        item.payment_status,
+                      );
+                      return {
+                        id: item.id,
+                        title: formatNgay(item.date),
+                        badge: <StatusBadge status={item.payment_status} />,
+                        accentColor: remaining > 0 ? '#f59e0b' : '#10b981',
+                        fields: [
+                          { label: 'Khối lượng', value: formatKg(item.quantity_kg) },
+                          { label: 'Đơn giá', value: `${formatTien(item.price_per_kg)}/kg` },
+                          { label: 'Thành tiền', value: <span className="font-mono">{formatTien(item.total_amount)}</span> },
+                          ...(canSeeFinance
+                            ? [{ label: 'Còn nợ', value: <span className="font-mono text-amber-600">{remaining > 0 ? formatTien(remaining) : '—'}</span> }]
+                            : []),
+                        ],
+                        actions: (
+                          <button
+                            type="button"
+                            onClick={() => printPhieuNhap(item)}
+                            className="tap-target flex items-center justify-center rounded-xl text-[var(--primary-600)] hover:bg-[var(--primary-50)]"
+                            aria-label={`In phiếu nhập ngày ${formatNgay(item.date)}`}
+                          >
+                            <Printer size={18} />
+                          </button>
+                        ),
+                      };
+                    })}
+                  />
+                </div>
               </div>
             )}
 
@@ -280,7 +316,7 @@ export const DoiTacChiTietPage: React.FC = () => {
                 <h2 className="border-b border-[var(--border-color)] px-4 py-3 text-sm font-bold text-[var(--text-primary)]">
                   Phiếu xuất cho đối tác này ({myExports.length})
                 </h2>
-                <div className="overflow-x-auto">
+                <div className="hidden overflow-x-auto lg:block">
                   <table className="w-full text-left border-collapse">
                     <caption className="sr-only">Lịch sử phiếu xuất</caption>
                     <thead>
@@ -342,6 +378,41 @@ export const DoiTacChiTietPage: React.FC = () => {
                       })}
                     </tbody>
                   </table>
+                </div>
+                <div className="p-3 lg:hidden">
+                  <MobileCardList
+                    items={myExports.map((item) => {
+                      const remaining = computeRemainingWithLegacyStatus(
+                        item.total_amount,
+                        paidByExport[item.id] || 0,
+                        item.payment_status,
+                      );
+                      return {
+                        id: item.id,
+                        title: formatNgay(item.date),
+                        badge: <StatusBadge status={item.payment_status} />,
+                        accentColor: remaining > 0 ? '#f43f5e' : '#10b981',
+                        fields: [
+                          { label: 'Số bao', value: `${item.bags_count || 0} bao` },
+                          { label: 'Khối lượng', value: formatKg(item.total_kg || 0) },
+                          { label: 'Thành tiền', value: <span className="font-mono">{formatTien(item.total_amount)}</span> },
+                          ...(canSeeFinance
+                            ? [{ label: 'Còn nợ', value: <span className="font-mono text-rose-600">{remaining > 0 ? formatTien(remaining) : '—'}</span> }]
+                            : []),
+                        ],
+                        actions: (
+                          <button
+                            type="button"
+                            onClick={() => printPhieuXuat(item)}
+                            className="tap-target flex items-center justify-center rounded-xl text-[var(--primary-600)] hover:bg-[var(--primary-50)]"
+                            aria-label={`In phiếu xuất ngày ${formatNgay(item.date)}`}
+                          >
+                            <Printer size={18} />
+                          </button>
+                        ),
+                      };
+                    })}
+                  />
                 </div>
               </div>
             )}

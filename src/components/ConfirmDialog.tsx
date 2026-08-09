@@ -25,21 +25,28 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   variant = 'warning',
 }) => {
   const confirmBtnRef = useRef<HTMLButtonElement>(null);
+  const cancelBtnRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const previousOverflow = useRef('');
 
   useEffect(() => {
     if (isOpen) {
+      triggerRef.current = document.activeElement as HTMLElement | null;
+      previousOverflow.current = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-      // Focus the confirm button when opened
       setTimeout(() => {
-        confirmBtnRef.current?.focus();
+        if (variant === 'danger') cancelBtnRef.current?.focus();
+        else confirmBtnRef.current?.focus();
       }, 50);
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousOverflow.current;
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousOverflow.current;
+      triggerRef.current?.focus();
     };
-  }, [isOpen]);
+  }, [isOpen, variant]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -52,6 +59,19 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         if (document.activeElement?.getAttribute('data-action') !== 'cancel') {
           e.preventDefault();
           onConfirm();
+        }
+      } else if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
         }
       }
     };
@@ -69,6 +89,11 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
       {/* Dialog Card */}
       <div
+        ref={dialogRef}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-dialog-title"
+        aria-describedby="confirm-dialog-message"
         className={cn(
           'card bg-[var(--bg-surface)] w-full max-w-sm shadow-xl relative z-10 p-5',
           'animate-[scale-in_0.2s_ease-out_forwards]',
@@ -76,7 +101,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1 hover:bg-[var(--bg-subtle)] rounded-md transition-colors cursor-pointer text-[var(--text-secondary)]"
+          aria-label="Đóng"
+          className="tap-target absolute top-2 right-2 flex items-center justify-center hover:bg-[var(--bg-subtle)] rounded-xl transition-colors cursor-pointer text-[var(--text-secondary)]"
         >
           <X className="w-5 h-5" />
         </button>
@@ -97,13 +123,13 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             )}
           </div>
 
-          <h2 className="text-lg font-bold text-[var(--text-primary)] mb-2">{title}</h2>
+          <h2 id="confirm-dialog-title" className="text-lg font-bold text-[var(--text-primary)] mb-2">{title}</h2>
 
-          <div className="text-sm text-[var(--text-secondary)] mb-6">{message}</div>
+          <div id="confirm-dialog-message" className="text-sm text-[var(--text-secondary)] mb-6">{message}</div>
         </div>
 
         <div className="flex gap-3 justify-end">
-          <button onClick={onClose} data-action="cancel" className="btn-secondary flex-1">
+          <button ref={cancelBtnRef} onClick={onClose} data-action="cancel" className="btn-secondary flex-1">
             {cancelText}
           </button>
           <button

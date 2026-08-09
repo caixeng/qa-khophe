@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Package, Truck, Users, UserCheck, X } from 'lucide-react';
 import { importsService } from '../services/importsService';
@@ -20,6 +20,23 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
   const navigate = useNavigate();
   const [q, setQ] = useState('');
   const [data, setData] = useState<Hit[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return;
+    triggerRef.current = document.activeElement as HTMLElement | null;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCloseRef.current();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      triggerRef.current?.focus();
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -27,13 +44,21 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
       return;
     }
     if (data) return;
+    let active = true;
     (async () => {
-      const [imports, exports, contacts, employees] = await Promise.all([
+      setLoadError(null);
+      const results = await Promise.allSettled([
         importsService.getAll(),
         exportsService.getAll(),
         contactsService.getAll(),
         employeesService.getAll(),
       ]);
+      if (!active) return;
+      const imports = results[0].status === 'fulfilled' ? results[0].value : [];
+      const exports = results[1].status === 'fulfilled' ? results[1].value : [];
+      const contacts = results[2].status === 'fulfilled' ? results[2].value : [];
+      const employees = results[3].status === 'fulfilled' ? results[3].value : [];
+      const failedCount = results.filter((result) => result.status === 'rejected').length;
       const hits: Hit[] = [
         ...imports.map((r) => ({
           loai: 'Phiếu nhập',
@@ -65,7 +90,17 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
         })),
       ];
       setData(hits);
+      if (failedCount > 0) {
+        setLoadError(
+          failedCount === results.length
+            ? 'Không tải được dữ liệu tìm kiếm. Kiểm tra kết nối rồi thử lại.'
+            : 'Một phần dữ liệu chưa tải được; kết quả có thể chưa đầy đủ.',
+        );
+      }
     })();
+    return () => {
+      active = false;
+    };
   }, [open, data]);
 
   const results = useMemo(() => {
@@ -83,25 +118,29 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/45 p-4 pt-24 backdrop-blur-sm animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Tìm kiếm toàn hệ thống"
+      className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/45 p-0 backdrop-blur-sm animate-fade-in sm:items-start sm:p-4 sm:pt-24"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="card w-full max-w-xl overflow-hidden shadow-dropdown animate-fade-in-up">
-        <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+      <div className="card flex h-[100dvh] w-full flex-col overflow-hidden rounded-none shadow-dropdown animate-fade-in-up sm:h-auto sm:max-w-xl sm:rounded-xl">
+        <div className="modal-safe-top flex min-h-16 items-center gap-2 border-b border-border px-4 pb-3 sm:py-3">
           <Search size={16} className="text-ink-muted" />
           <input
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Tìm phiếu nhập, phiếu xuất, đối tác, nhân viên..."
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-ink-muted"
+            className="min-h-11 flex-1 bg-transparent text-base outline-none placeholder:text-ink-muted"
           />
-          <button onClick={onClose} className="rounded p-1 text-ink-muted hover:bg-subtle cursor-pointer">
+          <button onClick={onClose} aria-label="Đóng tìm kiếm" className="tap-target flex items-center justify-center rounded-xl text-ink-muted hover:bg-subtle cursor-pointer">
             <X size={15} />
           </button>
         </div>
-        <div className="max-h-96 overflow-y-auto p-2">
+        <div className="mobile-scroll-area flex-1 overflow-y-auto p-2 sm:max-h-96">
           {!data && <p className="px-3 py-6 text-center text-xs text-ink-muted">Đang tải dữ liệu...</p>}
+          {loadError && <p className="mx-2 my-2 rounded-xl bg-amber-50 px-3 py-3 text-xs font-semibold text-amber-800">{loadError}</p>}
           {data && q && results.length === 0 && (
             <p className="px-3 py-6 text-center text-xs text-ink-muted">Không có kết quả cho "{q}".</p>
           )}
@@ -114,7 +153,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
             <button
               key={i}
               onClick={() => go(h.to)}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-subtle cursor-pointer"
+              className="tap-target flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-subtle cursor-pointer"
             >
               <h.icon size={16} className="shrink-0 text-primary-500" />
               <div className="min-w-0 flex-1">

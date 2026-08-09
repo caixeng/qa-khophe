@@ -26,6 +26,7 @@ import { KpiCard } from '../components/KpiCard';
 import { DataState } from '../components/DataState';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { AttachmentUploader } from '../components/AttachmentUploader';
+import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
@@ -46,7 +47,9 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType; c
 };
 
 export const ChiPhiPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'chiphi' | 'ungtien'>('chiphi');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialView = searchParams.get('view') === 'ungtien' ? 'ungtien' : 'chiphi';
+  const [activeTab, setActiveTab] = useState<'chiphi' | 'ungtien'>(initialView);
   const {
     data: expenses,
     loading: expLoading,
@@ -100,8 +103,6 @@ export const ChiPhiPage: React.FC = () => {
     },
   });
 
-  const [searchParams] = useSearchParams();
-
   useEffect(() => {
     if (searchParams.get('open') === 'true') {
       openModal();
@@ -113,6 +114,19 @@ export const ChiPhiPage: React.FC = () => {
       }
     }
   }, [searchParams, openModal]);
+
+  useEffect(() => {
+    const view = searchParams.get('view');
+    const nextView = view === 'ungtien' ? 'ungtien' : 'chiphi';
+    if (nextView !== activeTab) setActiveTab(nextView);
+  }, [searchParams, activeTab]);
+
+  const handleViewChange = (view: 'chiphi' | 'ungtien') => {
+    const next = new URLSearchParams(searchParams);
+    if (view === 'chiphi') next.delete('view');
+    else next.set('view', view);
+    setSearchParams(next);
+  };
 
   const filteredExpenses = useMemo(() => {
     if (!searchQuery) return expenses;
@@ -248,11 +262,13 @@ export const ChiPhiPage: React.FC = () => {
       />
 
       {/* Tabs */}
-      <div className="flex space-x-2 border-b border-[var(--border-color)]">
+      <div role="tablist" aria-label="Loại sổ tài chính" className="grid grid-cols-2 gap-1 border-b border-[var(--border-color)]">
         <button
-          onClick={() => setActiveTab('chiphi')}
+          role="tab"
+          aria-selected={activeTab === 'chiphi'}
+          onClick={() => handleViewChange('chiphi')}
           className={cn(
-            'pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer',
+            'tap-target pb-3 px-3 text-xs font-bold transition-all border-b-2 cursor-pointer',
             activeTab === 'chiphi'
               ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -261,9 +277,11 @@ export const ChiPhiPage: React.FC = () => {
           Chi phí xưởng ({expenses.length})
         </button>
         <button
-          onClick={() => setActiveTab('ungtien')}
+          role="tab"
+          aria-selected={activeTab === 'ungtien'}
+          onClick={() => handleViewChange('ungtien')}
           className={cn(
-            'pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer',
+            'tap-target pb-3 px-3 text-xs font-bold transition-all border-b-2 cursor-pointer',
             activeTab === 'ungtien'
               ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -301,7 +319,7 @@ export const ChiPhiPage: React.FC = () => {
             isEmpty={filteredExpenses.length === 0}
             emptyTitle="Chưa có khoản chi phí nào"
           >
-            <div className="erp-table-container">
+            <div className="erp-table-container hidden lg:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <caption className="sr-only">Danh sách khoản chi phí</caption>
@@ -372,6 +390,47 @@ export const ChiPhiPage: React.FC = () => {
                 </table>
               </div>
             </div>
+            <MobileCardList
+              items={filteredExpenses.map((exp) => {
+                const cfg = categoryConfig[exp.category] || categoryConfig.other;
+                return {
+                  id: exp.id,
+                  title: exp.description || cfg.label,
+                  subtitle: formatNgay(exp.date),
+                  badge: (
+                    <span className={cn('rounded-full bg-[var(--bg-subtle)] px-2 py-1 text-xs font-bold', cfg.color)}>
+                      {cfg.label}
+                    </span>
+                  ),
+                  accentColor: '#f43f5e',
+                  fields: [
+                    { label: 'Số tiền', value: <span className="font-mono text-rose-600">{formatTien(exp.amount)}</span> },
+                    { label: 'Ghi chú', value: exp.notes || '—' },
+                  ],
+                  actions: (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setAttachTarget({ type: 'expense', id: exp.id, label: cfg.label })}
+                        className="tap-target flex items-center justify-center rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"
+                        aria-label={`Đính kèm ảnh cho ${exp.description || cfg.label}`}
+                      >
+                        <Paperclip size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteExpense(exp.id)}
+                        className="tap-target flex items-center justify-center rounded-xl text-rose-600 hover:bg-rose-50"
+                        aria-label={`Xóa ${exp.description || cfg.label}`}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </>
+                  ),
+                };
+              })}
+              emptyMessage="Chưa có khoản chi phí nào"
+            />
           </DataState>
         </div>
       )}
@@ -400,7 +459,7 @@ export const ChiPhiPage: React.FC = () => {
             isEmpty={advances.length === 0}
             emptyTitle="Chưa có thông tin ứng tiền"
           >
-            <div className="erp-table-container">
+            <div className="erp-table-container hidden lg:block">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <caption className="sr-only">Danh sách khoản ứng tiền</caption>
@@ -479,6 +538,47 @@ export const ChiPhiPage: React.FC = () => {
                 </table>
               </div>
             </div>
+            <MobileCardList
+              items={advances.map((adv) => {
+                const isAdvance = adv.type === 'advance' || (adv.type as string) === 'ung';
+                return {
+                  id: adv.id,
+                  title: adv.person || 'Chủ xưởng',
+                  subtitle: formatNgay(adv.date),
+                  badge: (
+                    <span className={cn('rounded-full px-2 py-1 text-xs font-bold', isAdvance ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')}>
+                      {isAdvance ? 'Ứng tiền' : 'Hoàn ứng'}
+                    </span>
+                  ),
+                  accentColor: isAdvance ? '#f59e0b' : '#10b981',
+                  fields: [
+                    { label: 'Số tiền', value: <span className="font-mono text-[var(--primary-600)]">{formatTien(adv.amount)}</span> },
+                    { label: 'Ghi chú', value: adv.notes || '—' },
+                  ],
+                  actions: (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setAttachTarget({ type: 'advance', id: adv.id, label: adv.person || 'Chủ xưởng' })}
+                        className="tap-target flex items-center justify-center rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"
+                        aria-label={`Đính kèm ảnh cho ${adv.person || 'Chủ xưởng'}`}
+                      >
+                        <Paperclip size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteAdvance(adv.id)}
+                        className="tap-target flex items-center justify-center rounded-xl text-rose-600 hover:bg-rose-50"
+                        aria-label={`Xóa khoản của ${adv.person || 'Chủ xưởng'}`}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </>
+                  ),
+                };
+              })}
+              emptyMessage="Chưa có khoản ứng hoặc hoàn ứng nào"
+            />
           </DataState>
         </div>
       )}

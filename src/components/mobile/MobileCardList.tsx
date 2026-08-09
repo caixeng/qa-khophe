@@ -38,8 +38,17 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
         <div
           key={item.id}
           onClick={item.onClick}
+          onKeyDown={(event) => {
+            if (!item.onClick || event.target !== event.currentTarget) return;
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              item.onClick();
+            }
+          }}
+          role={item.onClick ? 'button' : undefined}
+          tabIndex={item.onClick ? 0 : undefined}
           className={cn(
-            'p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xs transition-all active:scale-[0.99] relative overflow-hidden',
+            'p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xs transition-all active:scale-[0.99] relative overflow-hidden focus-visible:ring-2 focus-visible:ring-[var(--primary-500)]',
             item.onClick && 'cursor-pointer hover:border-[var(--primary-400)]',
           )}
         >
@@ -54,7 +63,7 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
           {/* Header Row */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-sm text-[var(--text-primary)] leading-snug truncate">
+              <h4 className="font-bold text-sm text-[var(--text-primary)] leading-snug break-words">
                 {item.title}
               </h4>
               {item.subtitle && (
@@ -70,7 +79,7 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
               {item.fields.map((f, i) => (
                 <div key={i} className="min-w-0">
                   <span className="text-[11px] text-[var(--text-muted)] block truncate">{f.label}</span>
-                  <span className="font-semibold text-[var(--text-primary)] truncate block">{f.value}</span>
+                  <span className="font-semibold text-[var(--text-primary)] break-words block">{f.value}</span>
                 </div>
               ))}
             </div>
@@ -78,7 +87,10 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
 
           {/* Footer / Actions */}
           {item.actions && (
-            <div className="flex items-center justify-end gap-2 mt-3 pt-2.5 border-t border-[var(--border-color)]/60">
+            <div
+              className="flex items-center justify-end gap-2 mt-3 pt-2.5 border-t border-[var(--border-color)]/60"
+              onClick={(event) => event.stopPropagation()}
+            >
               {item.actions}
             </div>
           )}

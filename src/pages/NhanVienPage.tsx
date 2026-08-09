@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Plus,
   Edit,
@@ -30,6 +31,7 @@ import { KpiCard } from '../components/KpiCard';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
 import { QuickAttendanceCard, type QuickAttendanceState } from '../components/mobile/QuickAttendanceCard';
+import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
@@ -54,8 +56,14 @@ const roleLabels: Record<EmployeeRole, { label: string; icon: React.ElementType;
   staff: { label: 'Nhân viên xưởng', icon: Users, color: 'bg-slate-100 text-slate-900 border-slate-200' },
 };
 
+type EmployeeTab = 'employees' | 'attendance' | 'payroll';
+
 export const NhanVienPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'employees' | 'attendance' | 'payroll'>('employees');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const initialTab: EmployeeTab =
+    requestedTab === 'attendance' || requestedTab === 'payroll' ? requestedTab : 'employees';
+  const [activeTab, setActiveTab] = useState<EmployeeTab>(initialTab);
   const { toast } = useToast();
   const [savingEmp, setSavingEmp] = useState(false);
   const [savingAtt, setSavingAtt] = useState(false);
@@ -80,6 +88,20 @@ export const NhanVienPage: React.FC = () => {
 
   const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } =
     useTableControls();
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    const nextTab: EmployeeTab = tab === 'attendance' || tab === 'payroll' ? tab : 'employees';
+    if (nextTab !== activeTab) setActiveTab(nextTab);
+  }, [searchParams, activeTab]);
+
+  const handleTabChange = (tab: EmployeeTab) => {
+    const next = new URLSearchParams(searchParams);
+    if (tab === 'employees') next.delete('tab');
+    else next.set('tab', tab);
+    setCurrentPage(1);
+    setSearchParams(next);
+  };
 
   // Employee Form State
   const {
@@ -321,11 +343,15 @@ export const NhanVienPage: React.FC = () => {
       <PageHeader
         title="Quản Lý Nhân Sự"
         subtitle="Quản lý hồ sơ công nhân xưởng phế, chấm công hàng ngày và tính lương công"
-        action={{
-          label: activeTab === 'employees' ? 'Thêm nhân viên' : 'Chấm công mới',
-          icon: Plus,
-          onClick: () => (activeTab === 'employees' ? openEmpModal() : openAttModal()),
-        }}
+        action={
+          activeTab === 'payroll'
+            ? undefined
+            : {
+                label: activeTab === 'employees' ? 'Thêm nhân viên' : 'Chấm công mới',
+                icon: Plus,
+                onClick: () => (activeTab === 'employees' ? openEmpModal() : openAttModal()),
+              }
+        }
       />
 
       {/* KPI Cards for Payroll */}
@@ -361,12 +387,14 @@ export const NhanVienPage: React.FC = () => {
       </div>
 
       {/* CIC-IBST Pill Tabs (Trên mobile: Thu gọn thành Icon + Con số đếm vừa vặn 100% màn hình) */}
-      <div className="flex items-center justify-between sm:justify-start gap-1 p-1 rounded-xl shadow-xs border border-[var(--border-color)] bg-[var(--bg-surface)] w-full sm:w-fit">
+      <div role="tablist" aria-label="Quản lý nhân sự" className="flex items-center justify-between sm:justify-start gap-1 p-1 rounded-xl shadow-xs border border-[var(--border-color)] bg-[var(--bg-surface)] w-full sm:w-fit">
         <button
-          onClick={() => setActiveTab('employees')}
+          role="tab"
+          aria-selected={activeTab === 'employees'}
+          onClick={() => handleTabChange('employees')}
           title={`Danh sách nhân viên (${employees.length})`}
           className={cn(
-            'flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
+            'tap-target sm:min-h-0 sm:min-w-0 flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
             activeTab === 'employees'
               ? 'bg-[var(--primary-500)] text-white shadow-xs'
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
@@ -383,10 +411,12 @@ export const NhanVienPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('attendance')}
+          role="tab"
+          aria-selected={activeTab === 'attendance'}
+          onClick={() => handleTabChange('attendance')}
           title={`Chấm công & Tính lương (${attendanceList.length})`}
           className={cn(
-            'flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
+            'tap-target sm:min-h-0 sm:min-w-0 flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
             activeTab === 'attendance'
               ? 'bg-[var(--primary-500)] text-white shadow-xs'
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
@@ -403,10 +433,12 @@ export const NhanVienPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setActiveTab('payroll')}
+          role="tab"
+          aria-selected={activeTab === 'payroll'}
+          onClick={() => handleTabChange('payroll')}
           title="Bảng lương tháng"
           className={cn(
-            'flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 py-2 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
+            'tap-target sm:min-h-0 sm:min-w-0 flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
             activeTab === 'payroll'
               ? 'bg-[var(--primary-500)] text-white shadow-xs'
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
@@ -421,19 +453,21 @@ export const NhanVienPage: React.FC = () => {
       </div>
 
       {/* Table Toolbar */}
-      <TableToolbar
-        placeholder={
-          activeTab === 'employees' ? 'Tìm theo tên hoặc SĐT...' : 'Tìm theo tên công nhân hoặc ngày...'
-        }
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-        totalCount={activeTab === 'employees' ? filteredEmployees.length : filteredAttendance.length}
-      />
+      {activeTab !== 'payroll' && (
+        <TableToolbar
+          placeholder={
+            activeTab === 'employees' ? 'Tìm theo tên hoặc SĐT...' : 'Tìm theo tên công nhân hoặc ngày...'
+          }
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          totalCount={activeTab === 'employees' ? filteredEmployees.length : filteredAttendance.length}
+        />
+      )}
 
       {/* TAB 1: DANH SÁCH NHÂN VIÊN */}
       {activeTab === 'employees' && (
         <DataState loading={empLoading} error={empError} isEmpty={filteredEmployees.length === 0}>
-          <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
+          <div className="card hidden lg:block bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <caption className="sr-only">Danh sách hồ sơ nhân viên</caption>
@@ -541,6 +575,47 @@ export const NhanVienPage: React.FC = () => {
               </table>
             </div>
           </div>
+          <MobileCardList
+            items={filteredEmployees
+              .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+              .map((emp) => {
+                const roleInfo = roleLabels[emp.role] || roleLabels.staff;
+                return {
+                  id: emp.id,
+                  title: emp.name,
+                  subtitle: emp.phone || 'Chưa có số điện thoại',
+                  badge: <StatusBadge status={emp.status} />,
+                  accentColor: emp.status === 'active' ? '#10b981' : '#94a3b8',
+                  onClick: () => openEmpModal(emp),
+                  fields: [
+                    { label: 'Chức vụ', value: roleInfo.label },
+                    { label: 'Lương công', value: <span className="font-mono">{formatTien(emp.daily_salary)}/ngày</span> },
+                    { label: 'Ghi chú', value: emp.notes || '—' },
+                  ],
+                  actions: (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => openEmpModal(emp)}
+                        className="tap-target flex items-center justify-center rounded-xl text-[var(--primary-600)] hover:bg-[var(--primary-50)]"
+                        aria-label={`Sửa ${emp.name}`}
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEmployee(emp.id)}
+                        className="tap-target flex items-center justify-center rounded-xl text-rose-600 hover:bg-rose-50"
+                        aria-label={`Xóa ${emp.name}`}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </>
+                  ),
+                };
+              })}
+            emptyMessage="Chưa có hồ sơ nhân viên"
+          />
           <PaginationBar
             currentPage={currentPage}
             totalItems={filteredEmployees.length}
@@ -595,7 +670,7 @@ export const NhanVienPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleMarkAllFull}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm flex items-center gap-1.5 py-2 px-3.5 rounded-xl border border-emerald-500 cursor-pointer active:scale-95 transition-all"
+                  className="tap-target bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-sm flex items-center gap-1.5 py-2 px-3.5 rounded-xl border border-emerald-500 cursor-pointer active:scale-95 transition-all"
                 >
                   <Zap size={14} className="fill-white" /> ⚡ Chấm đủ tất cả (1 Công)
                 </button>
@@ -606,7 +681,7 @@ export const NhanVienPage: React.FC = () => {
                   type="button"
                   onClick={() => setAttViewMode('quick')}
                   className={cn(
-                    'px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
+                    'tap-target px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
                     attViewMode === 'quick'
                       ? 'bg-[var(--primary-500)] text-white shadow-xs'
                       : 'text-[var(--text-secondary)]',
@@ -618,7 +693,7 @@ export const NhanVienPage: React.FC = () => {
                   type="button"
                   onClick={() => setAttViewMode('history')}
                   className={cn(
-                    'px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
+                    'tap-target px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
                     attViewMode === 'history'
                       ? 'bg-[var(--primary-500)] text-white shadow-xs'
                       : 'text-[var(--text-secondary)]',
@@ -663,7 +738,7 @@ export const NhanVienPage: React.FC = () => {
                 </div>
 
                 {/* Mobile Sticky Bottom Floating Save Bar */}
-                <div className="fixed bottom-20 left-4 right-4 lg:bottom-6 lg:left-72 lg:right-8 z-40 flex items-center justify-center pointer-events-none">
+                <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] left-4 right-4 lg:bottom-6 lg:left-72 lg:right-8 z-40 flex items-center justify-center pointer-events-none">
                   <button
                     type="button"
                     onClick={handleSaveQuickAttendance}
@@ -685,7 +760,7 @@ export const NhanVienPage: React.FC = () => {
           {/* MODE B: LỊCH SỬ DẠNG BẢNG */}
           {attViewMode === 'history' && (
             <DataState loading={attLoading} error={attError} isEmpty={filteredAttendance.length === 0}>
-              <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
+              <div className="card hidden lg:block bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <caption className="sr-only">Bảng chấm công nhân viên</caption>
@@ -773,6 +848,45 @@ export const NhanVienPage: React.FC = () => {
                   </table>
                 </div>
               </div>
+              <MobileCardList
+                items={filteredAttendance
+                  .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                  .map((att) => ({
+                    id: att.id,
+                    title: att.employee_name,
+                    subtitle: formatNgay(att.date),
+                    badge: <StatusBadge status={att.payment_status} />,
+                    accentColor: att.payment_status === 'paid' ? '#10b981' : '#f59e0b',
+                    onClick: () => openAttModal(att),
+                    fields: [
+                      { label: 'Số công', value: `${att.work_shift} công` },
+                      { label: 'Thực lĩnh', value: <span className="font-mono text-emerald-600">{formatTien(att.net_pay)}</span> },
+                      { label: 'Tạm ứng', value: att.advance_pay ? formatTien(att.advance_pay) : '0 đ' },
+                      { label: 'Ghi chú', value: att.notes || '—' },
+                    ],
+                    actions: (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openAttModal(att)}
+                          className="tap-target flex items-center justify-center rounded-xl text-[var(--primary-600)] hover:bg-[var(--primary-50)]"
+                          aria-label={`Sửa chấm công ${att.employee_name}`}
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteAttendance(att.id)}
+                          className="tap-target flex items-center justify-center rounded-xl text-rose-600 hover:bg-rose-50"
+                          aria-label={`Xóa chấm công ${att.employee_name}`}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </>
+                    ),
+                  }))}
+                emptyMessage="Chưa có lịch sử chấm công"
+              />
               <PaginationBar
                 currentPage={currentPage}
                 totalItems={filteredAttendance.length}
@@ -819,19 +933,6 @@ export const NhanVienPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Banner Giải Thích Công Thức Lương */}
-            <div className="p-3.5 rounded-xl bg-[var(--primary-50)] dark:bg-[var(--primary-950)]/40 border border-[var(--primary-200)] dark:border-[var(--primary-800)] text-xs text-[var(--text-primary)] flex items-start gap-2.5 shadow-xs">
-              <span className="text-base shrink-0">💡</span>
-              <div className="space-y-1 leading-relaxed">
-                <p className="font-extrabold text-[var(--text-primary)]">
-                  Công thức tính: <span className="text-[var(--primary-600)] dark:text-[var(--primary-400)] font-mono font-black">Thực Lĩnh Còn Nợ = Lương Gộp − Đã Tạm Ứng</span>
-                </p>
-                <p className="text-[11px] text-[var(--text-secondary)] font-medium">
-                  Ví dụ: Công làm 7.050.000đ − Đã ứng 5.000.000đ = <b className="text-rose-600 dark:text-rose-400">Còn nợ nốt 2.050.000đ</b>.
-                </p>
-              </div>
-            </div>
-
             {payroll.rows.length === 0 ? (
               <div className="card bg-[var(--bg-surface)] py-12 text-center">
                 <p className="text-sm text-[var(--text-secondary)]">
@@ -842,7 +943,8 @@ export const NhanVienPage: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="erp-table-container">
+              <>
+              <div className="erp-table-container hidden lg:block">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <caption className="sr-only">Bảng lương tháng {payrollMonth}</caption>
@@ -907,6 +1009,42 @@ export const NhanVienPage: React.FC = () => {
                   </table>
                 </div>
               </div>
+              <MobileCardList
+                items={payroll.rows.map((row) => ({
+                  id: row.name,
+                  title: row.name,
+                  subtitle: `${row.shifts} công trong tháng`,
+                  badge: (
+                    <span
+                      className={cn(
+                        'rounded-full px-2 py-1 text-xs font-bold',
+                        row.net < 0
+                          ? 'bg-amber-100 text-amber-800'
+                          : row.unpaid > 0
+                            ? 'bg-rose-100 text-rose-700'
+                            : 'bg-emerald-100 text-emerald-700',
+                      )}
+                    >
+                      {row.net < 0 ? 'Nợ xưởng' : row.unpaid > 0 ? 'Chưa trả đủ' : 'Đã trả đủ'}
+                    </span>
+                  ),
+                  accentColor: row.net < 0 ? '#f59e0b' : row.unpaid > 0 ? '#f43f5e' : '#10b981',
+                  fields: [
+                    { label: 'Lương gộp', value: <span className="font-mono">{formatTien(row.gross)}</span> },
+                    { label: 'Đã tạm ứng', value: <span className="font-mono text-amber-600">{formatTien(row.advance)}</span> },
+                    {
+                      label: row.net < 0 ? 'NV nợ xưởng' : 'Thực lĩnh còn nợ',
+                      value: (
+                        <span className={cn('font-mono font-bold', row.net < 0 ? 'text-amber-700' : 'text-rose-600')}>
+                          {formatTien(row.net < 0 ? Math.abs(row.net) : row.unpaid)}
+                        </span>
+                      ),
+                    },
+                  ],
+                }))}
+                emptyMessage="Chưa có dữ liệu lương trong tháng"
+              />
+              </>
             )}
           </div>
         </DataState>

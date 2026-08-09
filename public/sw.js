@@ -3,9 +3,11 @@
 // Mục tiêu: mở lại được app khi mất sóng ở xưởng. KHÔNG bao giờ cache dữ liệu
 // nghiệp vụ (Supabase) — số liệu kho phải luôn là số liệu thật, mất mạng thì
 // để request lỗi và UI hiện thông báo.
-const CACHE_NAME = 'khophe-shell-v2';
+const CACHE_NAME = 'khophe-shell-v3';
+const APP_SHELL = ['/', '/index.html', '/manifest.json', '/favicon.svg', '/apple-touch-icon.png'];
 
-self.addEventListener('install', () => {
+self.addEventListener('install', (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
   self.skipWaiting();
 });
 

@@ -61,10 +61,10 @@ export const KpiCard: React.FC<KpiCardProps> = ({
 
       <div className="flex justify-between items-start gap-2">
         <div className="min-w-0">
-          <p className="text-xs sm:text-sm font-medium text-[var(--text-secondary)] mb-0.5 truncate">{title}</p>
-          <h3 className="text-base sm:text-2xl font-bold font-mono text-[var(--text-primary)] truncate">{value}</h3>
+          <p className="text-xs sm:text-sm font-medium text-[var(--text-secondary)] mb-0.5 leading-snug">{title}</p>
+          <h3 className="text-sm min-[360px]:text-base sm:text-2xl leading-tight font-bold font-mono text-[var(--text-primary)] [overflow-wrap:anywhere]">{value}</h3>
 
-          {subtitle && <p className="text-[11px] sm:text-xs text-[var(--text-tertiary)] mt-0.5 truncate">{subtitle}</p>}
+          {subtitle && <p className="text-[11px] sm:text-xs text-[var(--text-tertiary)] mt-0.5 break-words">{subtitle}</p>}
 
           {trendVal !== null && (
             <div

@@ -34,7 +34,7 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)] px-4">
+    <div className="screen-min-height safe-screen-padding flex items-center justify-center bg-[var(--bg-app)] px-4">
       <div className="card w-full max-w-md p-8 bg-[var(--bg-surface)] rounded-2xl shadow-[var(--shadow-card)] animate-in fade-in zoom-in duration-300">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] text-white shadow-lg mb-4 overflow-hidden p-0.5 ring-2 ring-[var(--primary-400)]/30">

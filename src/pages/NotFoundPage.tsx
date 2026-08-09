@@ -6,7 +6,7 @@ export const NotFoundPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[var(--bg-app)] flex flex-col items-center justify-center p-4">
+    <div className="screen-min-height safe-screen-padding bg-[var(--bg-app)] flex flex-col items-center justify-center p-4">
       <div className="bg-white p-8 rounded-lg shadow-sm max-w-md w-full text-center border border-gray-100">
         <div className="flex justify-center mb-6">
           <div className="p-4 bg-gray-50 rounded-full">

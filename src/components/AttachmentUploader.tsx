@@ -135,7 +135,7 @@ export const AttachmentUploader: React.FC<AttachmentUploaderProps> = ({
                 <button
                   type="button"
                   onClick={() => setDeleteTarget(a)}
-                  className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-sm cursor-pointer"
+                  className="tap-target absolute -top-3 -right-3 rounded-full bg-rose-500 text-white flex items-center justify-center shadow-sm cursor-pointer"
                   title="Xoá ảnh"
                 >
                   <X size={11} />

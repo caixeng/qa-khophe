@@ -328,7 +328,7 @@ export const DanhBaPage: React.FC = () => {
                 {contact.phone ? (
                   <a
                     href={`tel:${contact.phone}`}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-xs active:scale-95 transition-transform"
+                    className="tap-target flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 text-white text-xs font-bold shadow-xs active:scale-95 transition-transform"
                   >
                     <Phone size={14} /> Gọi điện
                   </a>
@@ -338,13 +338,13 @@ export const DanhBaPage: React.FC = () => {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => openModal(contact)}
-                    className="p-2 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    className="tap-target p-2 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] text-xs font-bold flex items-center gap-1 cursor-pointer"
                   >
                     <Edit size={14} /> Sửa
                   </button>
                   <button
                     onClick={() => handleDelete(contact.id)}
-                    className="p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    className="tap-target p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold flex items-center gap-1 cursor-pointer"
                   >
                     <Trash2 size={14} />
                   </button>

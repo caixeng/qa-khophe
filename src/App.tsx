@@ -31,9 +31,10 @@ const NotFoundPage = React.lazy(() =>
 );
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RequireRole } from './components/RequireRole';
+import { PwaStatus } from './components/PwaStatus';
 
 const LoadingScreen = () => (
-  <div className="flex flex-col h-screen items-center justify-center bg-[var(--bg-app)] text-[var(--primary-500)]">
+  <div className="app-viewport flex flex-col items-center justify-center bg-[var(--bg-app)] text-[var(--primary-500)]">
     <div className="relative flex items-center justify-center w-20 h-20 mb-4 p-0.5 rounded-2xl bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] shadow-lg ring-2 ring-[var(--primary-400)]/30 overflow-hidden">
       <img src="/vua_phe_logo2.jpg" alt="VUA PHẾ Logo" className="w-full h-full object-cover rounded-xl" />
     </div>
@@ -64,12 +65,13 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <ToastProvider>
+          <PwaStatus />
           <ThemeProvider>
             <AuthProvider>
               <SlidePanelProvider>
                 <React.Suspense
                   fallback={
-                    <div className="flex h-screen items-center justify-center bg-[var(--bg-app)]">
+                    <div className="app-viewport flex items-center justify-center bg-[var(--bg-app)]">
                       <div className="w-8 h-8 rounded-full border-4 border-[var(--primary-500)] border-t-transparent animate-spin"></div>
                     </div>
                   }

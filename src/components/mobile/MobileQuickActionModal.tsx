@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MobileBottomSheet } from './MobileBottomSheet';
 import { PackagePlus, Settings2, Truck, WalletCards } from 'lucide-react';
+import { useAuth } from '../../contexts/auth';
 
 interface MobileQuickActionModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface MobileQuickActionModalProps {
 
 export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const actions = [
     {
@@ -24,6 +26,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
         onClose();
         navigate('/phe?tab=nhap&open=true');
       },
+      managerOnly: false,
     },
     {
       title: 'Lô Xay phế',
@@ -37,6 +40,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
         onClose();
         navigate('/phe?tab=xay&open=true');
       },
+      managerOnly: false,
     },
     {
       title: 'Xuất phế / Bán phế',
@@ -50,6 +54,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
         onClose();
         navigate('/phe?tab=xuat&open=true');
       },
+      managerOnly: false,
     },
     {
       title: 'Ghi nhận Chi phí',
@@ -63,17 +68,22 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
         onClose();
         navigate('/tai-chinh?tab=chiphi&open=true');
       },
+      managerOnly: true,
     },
   ];
+
+  const visibleActions = actions.filter(
+    (action) => !action.managerOnly || user?.role === 'manager' || user?.role === 'admin',
+  );
 
   return (
     <MobileBottomSheet isOpen={isOpen} onClose={onClose} title="Thao tác nhanh xưởng phế">
       <div className="grid grid-cols-1 gap-3 pb-4">
-        {actions.map((act, index) => (
+        {visibleActions.map((act, index) => (
           <button
             key={index}
             onClick={act.action}
-            className={`flex items-center gap-4 p-4 rounded-2xl border ${act.borderColor} ${act.bgColor} active:scale-98 transition-all text-left shadow-xs cursor-pointer`}
+            className={`tap-target flex items-center gap-4 p-4 rounded-2xl border ${act.borderColor} ${act.bgColor} active:scale-98 transition-all text-left shadow-xs cursor-pointer`}
           >
             <div
               className={`w-12 h-12 rounded-2xl bg-gradient-to-tr ${act.color} flex items-center justify-center text-white shadow-md shrink-0`}

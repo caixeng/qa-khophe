@@ -212,7 +212,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
               Tổng nhập trong kỳ
             </p>
-            <p className="text-sm sm:text-xl font-black font-mono text-[var(--text-primary)] truncate">
+            <p className="text-sm sm:text-xl font-black font-mono leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">
               {formatKg(stats.totalKg)}
             </p>
           </div>
@@ -226,7 +226,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
               Số lượng lô
             </p>
-            <p className="text-sm sm:text-xl font-black font-mono text-[var(--text-primary)] truncate">
+            <p className="text-sm sm:text-xl font-black font-mono leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">
               {stats.totalLots}
             </p>
           </div>
@@ -240,7 +240,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
               Chưa xay
             </p>
-            <p className="text-sm sm:text-xl font-black font-mono text-amber-600 truncate">
+            <p className="text-sm sm:text-xl font-black font-mono leading-tight text-amber-600 [overflow-wrap:anywhere]">
               {stats.pendingLots} lô
             </p>
           </div>
@@ -254,7 +254,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
               Chưa thanh toán
             </p>
-            <p className="text-sm sm:text-xl font-black font-mono text-rose-600 truncate">
+            <p className="text-sm sm:text-xl font-black font-mono leading-tight text-rose-600 [overflow-wrap:anywhere]">
               {formatTien(stats.unpaidAmount)}
             </p>
           </div>

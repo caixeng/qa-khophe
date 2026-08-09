@@ -193,7 +193,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng xay trong kỳ
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black text-[var(--text-primary)] truncate">
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">
               {formatKg(stats.totalInput)}
             </p>
           </div>
@@ -207,7 +207,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Đầu ra thành phẩm
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black text-emerald-600 truncate">{formatKg(stats.totalOutput)}</p>
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-emerald-600 [overflow-wrap:anywhere]">{formatKg(stats.totalOutput)}</p>
           </div>
         </div>
 
@@ -219,7 +219,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng hao hụt
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black text-rose-600 truncate">{formatKg(stats.totalLossKg)}</p>
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-rose-600 [overflow-wrap:anywhere]">{formatKg(stats.totalLossKg)}</p>
           </div>
         </div>
 
@@ -231,7 +231,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               % Hao hụt trung bình
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black text-[var(--primary-500)] truncate">
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-[var(--primary-500)] [overflow-wrap:anywhere]">
               {formatPhanTram(stats.avgLossPct)}
             </p>
           </div>

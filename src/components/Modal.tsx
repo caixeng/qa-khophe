@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { ConfirmDialog } from './ConfirmDialog';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -15,15 +16,41 @@ export interface ModalProps {
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, className }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const prevIsOpen = useRef(false);
+  const triggerRef = useRef<HTMLElement | null>(null);
+  const previousOverflow = useRef('');
+  const dirtyRef = useRef(false);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const confirmCloseRef = useRef(false);
+  confirmCloseRef.current = confirmClose;
+
+  const finishClose = useCallback(() => {
+    dirtyRef.current = false;
+    setConfirmClose(false);
+    onClose();
+  }, [onClose]);
+
+  const requestClose = useCallback(() => {
+    if (dirtyRef.current && modalRef.current?.querySelector('form')) {
+      setConfirmClose(true);
+      return;
+    }
+    finishClose();
+  }, [finishClose]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        if (!confirmCloseRef.current) requestClose();
       }
     };
 
     if (isOpen) {
+      if (!prevIsOpen.current) {
+        triggerRef.current = document.activeElement as HTMLElement | null;
+        previousOverflow.current = document.body.style.overflow;
+        dirtyRef.current = false;
+        setConfirmClose(false);
+      }
       document.body.style.overflow = 'hidden';
       document.addEventListener('keydown', handleKeyDown);
 
@@ -43,17 +70,18 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         }, 50);
       }
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousOverflow.current;
       document.removeEventListener('keydown', handleKeyDown);
+      if (prevIsOpen.current) triggerRef.current?.focus();
     }
 
     prevIsOpen.current = isOpen;
 
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousOverflow.current;
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, requestClose]);
 
   const handleTabKey = (e: React.KeyboardEvent) => {
     if (e.key !== 'Tab' || !modalRef.current) return;
@@ -79,9 +107,9 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-stretch justify-center p-0 sm:items-center sm:p-4">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={requestClose} />
 
       {/* Modal Card */}
       <div
@@ -90,35 +118,60 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         aria-modal="true"
         aria-labelledby="modal-title"
         onKeyDown={handleTabKey}
+        onInputCapture={() => {
+          dirtyRef.current = true;
+        }}
+        onChangeCapture={() => {
+          dirtyRef.current = true;
+        }}
+        onClickCapture={(event) => {
+          if (!dirtyRef.current || !modalRef.current?.querySelector('form')) return;
+          const button = (event.target as HTMLElement).closest('button');
+          if (button?.type === 'button' && /^(Hủy|Đóng)$/i.test(button.textContent?.trim() || '')) {
+            event.preventDefault();
+            event.stopPropagation();
+            setConfirmClose(true);
+          }
+        }}
         className={cn(
-          'card bg-[var(--bg-surface)] w-full max-w-lg shadow-xl relative z-10 animate-fade-in flex flex-col max-h-[90vh]',
+          'card bg-[var(--bg-surface)] w-full h-[100dvh] max-h-[100dvh] rounded-none sm:h-auto sm:max-w-lg sm:max-h-[90dvh] sm:rounded-xl shadow-xl relative z-10 animate-fade-in flex flex-col',
           className,
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
+        <div className="modal-safe-top flex min-h-16 items-center justify-between px-4 pb-4 border-b border-[var(--border-color)] sm:p-4">
           <h2 id="modal-title" className="text-lg font-bold text-[var(--text-primary)]">
             {title}
           </h2>
           <button
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Đóng"
-            className="p-1 hover:bg-[var(--bg-subtle)] rounded-md transition-colors cursor-pointer"
+            className="tap-target flex items-center justify-center hover:bg-[var(--bg-subtle)] rounded-xl transition-colors cursor-pointer"
           >
             <X className="w-5 h-5 text-[var(--text-secondary)]" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-4 overflow-y-auto">{children}</div>
+        <div className="adaptive-dialog-body mobile-scroll-area flex-1 p-4 overflow-y-auto">{children}</div>
 
         {/* Footer */}
         {footer && (
-          <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-subtle)]/50 rounded-b-xl flex justify-end gap-2">
+          <div className="modal-safe-bottom p-4 border-t border-[var(--border-color)] bg-[var(--bg-subtle)]/50 sm:rounded-b-xl flex justify-end gap-2">
             {footer}
           </div>
         )}
       </div>
+      <ConfirmDialog
+        isOpen={confirmClose}
+        onClose={() => setConfirmClose(false)}
+        onConfirm={finishClose}
+        title="Bỏ thay đổi chưa lưu?"
+        message="Thông tin bạn vừa nhập chưa được lưu. Nếu đóng bây giờ, các thay đổi sẽ bị mất."
+        confirmText="Bỏ thay đổi"
+        cancelText="Tiếp tục nhập"
+        variant="warning"
+      />
     </div>
   );
 };

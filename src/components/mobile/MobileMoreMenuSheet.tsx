@@ -31,7 +31,7 @@ const MENU_ITEMS = [
   { path: '/nhan-vien', label: 'Quản lý Nhân sự', icon: UserCheck, managerOnly: true },
   { path: '/danh-ba', label: 'Danh bạ đối tác', icon: Users },
   { path: '/bao-cao', label: 'Báo cáo', icon: BarChart3 },
-  { path: '/cai-dat', label: 'Cài đặt hệ thống', icon: Settings },
+  { path: '/cai-dat', label: 'Cài đặt hệ thống', icon: Settings, adminOnly: true },
 ];
 
 const THEME_OPTIONS: { id: Theme; label: string; icon: React.ElementType }[] = [
@@ -45,7 +45,10 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
   const { theme, setTheme, primaryColor, setPrimaryColor } = useTheme();
 
   const isManagerOrAdmin = user?.role === 'manager' || user?.role === 'admin';
-  const visibleItems = MENU_ITEMS.filter((item) => !item.managerOnly || isManagerOrAdmin);
+  const isAdmin = user?.role === 'admin';
+  const visibleItems = MENU_ITEMS.filter(
+    (item) => (!item.managerOnly || isManagerOrAdmin) && (!item.adminOnly || isAdmin),
+  );
 
   return (
     <MobileBottomSheet isOpen={isOpen} onClose={onClose} title="Danh mục & Cài đặt">
@@ -60,7 +63,7 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
               {user?.name || 'Người dùng'}
             </h4>
             <p className="text-xs text-[var(--text-muted)] truncate">{user?.email || '—'}</p>
-            <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-[var(--primary-50)] text-[var(--primary-600)]">
+            <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-extrabold uppercase bg-[var(--primary-50)] text-[var(--primary-600)]">
               {user?.role === 'admin'
                 ? 'Quản trị viên'
                 : user?.role === 'manager'
@@ -72,7 +75,7 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
 
         {/* Navigation Grid */}
         <div className="space-y-1.5">
-          <h5 className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] px-1">
+          <h5 className="text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)] px-1">
             Menu chức năng
           </h5>
           <div className="grid grid-cols-2 gap-2.5">
@@ -83,7 +86,7 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
                 onClick={onClose}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-3 p-3 rounded-2xl border transition-all text-xs font-bold active:scale-98',
+                    'tap-target flex items-center gap-3 p-3 rounded-2xl border transition-all text-xs font-bold active:scale-98',
                     isActive
                       ? 'bg-[var(--primary-50)] border-[var(--primary-500)] text-[var(--primary-600)] shadow-xs'
                       : 'bg-[var(--bg-surface)] border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-subtle)]',
@@ -101,7 +104,7 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
 
         {/* Quick Personalization */}
         <div className="space-y-3 pt-2 border-t border-[var(--border-color)]">
-          <h5 className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] px-1">
+          <h5 className="text-xs font-extrabold uppercase tracking-wider text-[var(--text-muted)] px-1">
             Giao diện ứng dụng
           </h5>
 
@@ -113,7 +116,7 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
                 type="button"
                 onClick={() => setTheme(id)}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95',
+                  'tap-target flex-1 flex items-center justify-center gap-1.5 rounded-xl text-xs font-bold transition-all active:scale-95',
                   theme === id
                     ? 'bg-[var(--bg-surface)] text-[var(--primary-600)] shadow-xs border border-[var(--border-color)]'
                     : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -136,7 +139,7 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
                   onClick={() => setPrimaryColor(id)}
                   title={name}
                   className={cn(
-                    'w-7 h-7 rounded-full flex items-center justify-center transition-transform active:scale-90',
+                    'tap-target rounded-full flex items-center justify-center transition-transform active:scale-90',
                     active && 'scale-110 ring-2 ring-offset-2 ring-offset-[var(--bg-surface)]',
                   )}
                   style={{ backgroundColor: hex }}
@@ -155,7 +158,7 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
               onClose();
               logout();
             }}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 text-rose-600 font-bold text-xs active:scale-98 transition-all"
+            className="tap-target w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 text-rose-600 font-bold text-xs active:scale-98 transition-all"
           >
             <LogOut size={16} /> Đăng xuất tài khoản
           </button>
