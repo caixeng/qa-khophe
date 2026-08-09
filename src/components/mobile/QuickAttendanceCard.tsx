@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { User, DollarSign, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn, formatTien } from '../../lib/utils';
+import { calculateAttendancePay } from '../../lib/payroll';
 import type { Employee } from '../../types';
 
 export interface QuickAttendanceState {
@@ -40,6 +41,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
   const isCustom = !isFull && !isHalf && !isOff;
 
   const hasExtra = state.overtime_hours > 0 || state.advance_pay > 0 || Boolean(state.notes);
+  const pay = calculateAttendancePay(state);
 
   return (
     <div
@@ -97,6 +99,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
         <button
           type="button"
           onClick={() => handleShiftSelect(1)}
+          aria-pressed={isFull}
           className={cn(
             'h-11 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer border px-1',
             isFull
@@ -110,6 +113,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
         <button
           type="button"
           onClick={() => handleShiftSelect(0.5)}
+          aria-pressed={isHalf}
           className={cn(
             'h-11 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer border px-1',
             isHalf
@@ -123,6 +127,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
         <button
           type="button"
           onClick={() => handleShiftSelect(0)}
+          aria-pressed={isOff}
           className={cn(
             'h-11 rounded-xl text-xs font-black transition-all flex items-center justify-center cursor-pointer border px-1',
             isOff
@@ -136,6 +141,8 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
         <button
           type="button"
           onClick={() => setShowCustom(!showCustom)}
+          aria-expanded={showCustom}
+          aria-controls={`attendance-extra-${employee.id}`}
           className={cn(
             'h-11 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-0.5 cursor-pointer border px-1',
             showCustom || isCustom
@@ -148,9 +155,18 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
         </button>
       </div>
 
+      <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-[var(--bg-subtle)] px-3 py-2 text-xs">
+        <span className="text-[var(--text-muted)]">
+          {state.overtime_hours > 0 ? `Gồm ${state.overtime_hours} giờ tăng ca 150%` : 'Lương dự kiến trong ngày'}
+        </span>
+        <strong className={cn('font-mono', pay.net < 0 ? 'text-amber-700' : 'text-emerald-600')}>
+          {formatTien(Math.abs(pay.net))}
+        </strong>
+      </div>
+
       {/* Custom Options Panel (Số công lẻ, Tăng ca, Ghi chú) */}
       {showCustom && (
-        <div className="mt-3 pt-3 border-t border-[var(--border-color)] space-y-3 animate-fade-in text-xs">
+        <div id={`attendance-extra-${employee.id}`} className="mt-3 pt-3 border-t border-[var(--border-color)] space-y-3 animate-fade-in text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor={`shift-input-${employee.id}`} className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">

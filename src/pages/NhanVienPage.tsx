@@ -19,9 +19,11 @@ import {
   ChevronLeft,
   ChevronRight,
   List,
+  Clock,
+  UserMinus,
 } from 'lucide-react';
 import { cn, formatTien, formatNgay } from '../lib/utils';
-import { computePayroll } from '../lib/payroll';
+import { calculateAttendancePay, computePayroll } from '../lib/payroll';
 import { PageHeader } from '../components/PageHeader';
 import { Modal, FormField } from '../components/Modal';
 import { StatusBadge } from '../components/StatusBadge';
@@ -38,7 +40,7 @@ import { useTableControls } from '../hooks/useTableControls';
 import { useToast } from '../contexts/toast';
 import { employeesService, attendanceService } from '../services/employeesService';
 import type { Employee, Attendance, EmployeeRole, PaymentStatus } from '../types';
-import { today } from '../lib/date';
+import { monthRange, shiftISODate, today } from '../lib/date';
 
 const roleLabels: Record<EmployeeRole, { label: string; icon: React.ElementType; color: string }> = {
   grinder: { label: 'Thợ xay phế', icon: HardHat, color: 'bg-amber-100 text-amber-900 border-amber-200' },
@@ -67,10 +69,13 @@ export const NhanVienPage: React.FC = () => {
   const { toast } = useToast();
   const [savingEmp, setSavingEmp] = useState(false);
   const [savingAtt, setSavingAtt] = useState(false);
+  const [payrollMonth, setPayrollMonth] = useState(() => today().slice(0, 7));
+  const [historyMonth, setHistoryMonth] = useState(() => today().slice(0, 7));
   const [confirmState, setConfirmState] = useState<{
     isOpen: boolean;
     id: string;
-    type: 'employee' | 'attendance';
+    type: 'employee' | 'attendance' | 'payroll';
+    name?: string;
   }>({ isOpen: false, id: '', type: 'employee' });
 
   const {
@@ -81,10 +86,26 @@ export const NhanVienPage: React.FC = () => {
   } = useAsyncList(employeesService.getAll, []);
   const {
     data: attendanceList,
-    loading: attLoading,
-    error: attError,
     refetch: refetchAtt,
   } = useAsyncList(attendanceService.getAttendance, []);
+  const {
+    data: historyAttendance,
+    loading: historyLoading,
+    error: historyError,
+    refetch: refetchHistory,
+  } = useAsyncList(
+    () => attendanceService.getAttendance({ ...monthRange(historyMonth), limit: 5000 }),
+    [historyMonth],
+  );
+  const {
+    data: payrollAttendance,
+    loading: payrollLoading,
+    error: payrollError,
+    refetch: refetchPayroll,
+  } = useAsyncList(
+    () => attendanceService.getAttendance({ ...monthRange(payrollMonth), limit: 5000 }),
+    [payrollMonth],
+  );
 
   const { searchQuery, setSearchQuery, currentPage, setCurrentPage, itemsPerPage, setItemsPerPage } =
     useTableControls();
@@ -115,12 +136,14 @@ export const NhanVienPage: React.FC = () => {
       role: 'grinder',
       daily_salary: 350000,
       phone: '',
+      address: '',
+      join_date: today(),
       status: 'active',
     },
   });
 
   // Advance Pay Modal State
-  const [payrollDetailName, setPayrollDetailName] = useState<string | null>(null);
+  const [payrollDetailKey, setPayrollDetailKey] = useState<string | null>(null);
 
     const [advPayModal, setAdvPayModal] = useState<{
     isOpen: boolean;
@@ -139,12 +162,14 @@ export const NhanVienPage: React.FC = () => {
   });
   const [savingAdvPay, setSavingAdvPay] = useState(false);
 
-  const openAdvPayModal = (employeeName?: string) => {
-    const emp = employees.find((e) => e.name === employeeName);
+  const openAdvPayModal = (employeeId?: string, employeeName?: string) => {
+    const directMatch = employees.find((e) => e.id === employeeId);
+    const nameMatches = employeeName ? employees.filter((e) => e.name === employeeName) : [];
+    const emp = directMatch || (nameMatches.length === 1 ? nameMatches[0] : undefined);
     setAdvPayModal({
       isOpen: true,
       employeeId: emp ? emp.id : '',
-      employeeName: employeeName || '',
+      employeeName: emp?.name || employeeName || '',
       amount: 0,
       date: today(),
       notes: '',
@@ -153,7 +178,7 @@ export const NhanVienPage: React.FC = () => {
 
   const handleSaveAdvancePay = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!advPayModal.employeeId && !advPayModal.employeeName) {
+    if (!advPayModal.employeeId) {
       toast.warning('Vui lòng chọn nhân viên ứng lương');
       return;
     }
@@ -181,6 +206,8 @@ export const NhanVienPage: React.FC = () => {
       toast.success(`Đã ghi nhận ứng lương ${formatTien(amount)} cho ${empName}`);
       setAdvPayModal({ isOpen: false, employeeId: '', employeeName: '', amount: 0, date: today(), notes: '' });
       refetchAtt();
+      if ((advPayModal.date || today()).startsWith(historyMonth)) refetchHistory();
+      if ((advPayModal.date || today()).startsWith(payrollMonth)) refetchPayroll();
     } catch (err) {
       toast.error('Lỗi khi ghi nhận ứng lương');
       console.error(err);
@@ -210,27 +237,37 @@ export const NhanVienPage: React.FC = () => {
   const filteredEmployees = useMemo(() => {
     if (!searchQuery) return employees;
     const q = searchQuery.toLowerCase();
-    return employees.filter((e) => e.name.toLowerCase().includes(q) || (e.phone && e.phone.includes(q)));
+    return employees.filter(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        Boolean(e.phone?.includes(q)) ||
+        Boolean(e.address?.toLowerCase().includes(q)) ||
+        roleLabels[e.role].label.toLowerCase().includes(q),
+    );
   }, [employees, searchQuery]);
 
   const filteredAttendance = useMemo(() => {
-    if (!searchQuery) return attendanceList;
+    if (!searchQuery) return historyAttendance;
     const q = searchQuery.toLowerCase();
-    return attendanceList.filter((a) => a.employee_name.toLowerCase().includes(q) || a.date.includes(q));
-  }, [attendanceList, searchQuery]);
+    return historyAttendance.filter(
+      (a) =>
+        a.employee_name.toLowerCase().includes(q) ||
+        a.date.includes(q) ||
+        Boolean(a.notes?.toLowerCase().includes(q)),
+    );
+  }, [historyAttendance, searchQuery]);
 
   // Attendance Statistics
   const attStats = useMemo(() => {
-    const totalShifts = attendanceList.reduce((sum, a) => sum + (Number(a.work_shift) || 0), 0);
-    const totalPayroll = attendanceList.reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
-    const totalPaid = attendanceList
-      .filter((a) => a.payment_status === 'paid')
-      .reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
-    const totalUnpaid = attendanceList
-      .filter((a) => a.payment_status === 'unpaid')
-      .reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
-
-    return { totalShifts, totalPayroll, totalPaid, totalUnpaid };
+    const currentMonth = today().slice(0, 7);
+    const rows = attendanceList.filter((a) => a.date.startsWith(currentMonth));
+    const summary = computePayroll(rows, currentMonth);
+    return {
+      totalShifts: summary.totals.shifts,
+      overtimeHours: summary.totals.overtime_hours,
+      totalPayroll: summary.totals.net,
+      totalUnpaid: summary.totals.unpaid,
+    };
   }, [attendanceList]);
 
   // Quick Attendance State & View Mode
@@ -260,15 +297,11 @@ export const NhanVienPage: React.FC = () => {
   }, [selectedDate, employees, attendanceList]);
 
   const handlePrevDate = () => {
-    const d = new Date(selectedDate);
-    d.setDate(d.getDate() - 1);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    setSelectedDate(shiftISODate(selectedDate, -1));
   };
 
   const handleNextDate = () => {
-    const d = new Date(selectedDate);
-    d.setDate(d.getDate() + 1);
-    setSelectedDate(d.toISOString().slice(0, 10));
+    setSelectedDate(shiftISODate(selectedDate, 1));
   };
 
   const handleMarkAllFull = () => {
@@ -290,6 +323,8 @@ export const NhanVienPage: React.FC = () => {
       await attendanceService.batchUpsertAttendance(selectedDate, records);
       toast.success(`Đã lưu bảng chấm công ngày ${formatNgay(selectedDate)}`);
       refetchAtt();
+      if (selectedDate.startsWith(historyMonth)) refetchHistory();
+      if (selectedDate.startsWith(payrollMonth)) refetchPayroll();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu bảng chấm công');
       console.error('Lỗi khi lưu bảng chấm công:', err);
@@ -298,9 +333,10 @@ export const NhanVienPage: React.FC = () => {
     }
   };
 
-  // Kỳ lương đang xem, mặc định tháng hiện tại.
-  const [payrollMonth, setPayrollMonth] = useState(() => new Date().toISOString().slice(0, 7));
-  const payroll = useMemo(() => computePayroll(attendanceList, payrollMonth), [attendanceList, payrollMonth]);
+  const payroll = useMemo(
+    () => computePayroll(payrollAttendance, payrollMonth),
+    [payrollAttendance, payrollMonth],
+  );
 
   // Handle Employee Save
   const handleSaveEmployee = async (e: React.FormEvent) => {
@@ -311,6 +347,22 @@ export const NhanVienPage: React.FC = () => {
     const data = empForm.data;
     if (!data.name?.trim()) {
       toast.warning('Vui lòng nhập tên nhân viên');
+      return;
+    }
+    if (data.name.trim().length < 2) {
+      toast.warning('Tên nhân viên phải có ít nhất 2 ký tự');
+      return;
+    }
+    if (!Number.isFinite(Number(data.daily_salary)) || Number(data.daily_salary) <= 0) {
+      toast.warning('Đơn giá lương công phải lớn hơn 0');
+      return;
+    }
+    if (data.phone && !/^[0-9+().\s-]{8,20}$/.test(data.phone.trim())) {
+      toast.warning('Số điện thoại không đúng định dạng');
+      return;
+    }
+    if (data.join_date && data.join_date > today()) {
+      toast.warning('Ngày vào làm không được ở tương lai');
       return;
     }
 
@@ -337,14 +389,14 @@ export const NhanVienPage: React.FC = () => {
     setConfirmState({ isOpen: true, id, type: 'employee' });
   };
 
-  const confirmDeleteEmployee = async () => {
+  const confirmDeactivateEmployee = async () => {
     try {
-      await employeesService.delete(confirmState.id);
-      toast.success('Đã xóa hồ sơ nhân viên');
+      await employeesService.deactivate(confirmState.id);
+      toast.success('Đã chuyển nhân viên sang trạng thái đã nghỉ');
       refetchEmp();
     } catch (err) {
-      toast.error('Lỗi khi xóa nhân viên');
-      console.error('Lỗi khi xóa nhân viên:', err);
+      toast.error(err instanceof Error ? err.message : 'Không cập nhật được trạng thái nhân viên');
+      console.error('Lỗi khi cho nhân viên nghỉ:', err);
     }
     setConfirmState({ isOpen: false, id: '', type: 'employee' });
   };
@@ -356,8 +408,27 @@ export const NhanVienPage: React.FC = () => {
     if (savingAtt) return;
 
     const data = attForm.data;
-    if (!data.employee_id && !data.employee_name) {
+    if (!data.employee_id) {
       toast.warning('Vui lòng chọn nhân viên chấm công');
+      return;
+    }
+    if (!data.date) {
+      toast.warning('Vui lòng chọn ngày chấm công');
+      return;
+    }
+    const workShift = Number(data.work_shift);
+    const overtimeHours = Number(data.overtime_hours) || 0;
+    const dailyPayInput = Number(data.daily_pay);
+    if (!Number.isFinite(workShift) || workShift < 0 || workShift > 3) {
+      toast.warning('Số công phải từ 0 đến 3');
+      return;
+    }
+    if (!Number.isFinite(overtimeHours) || overtimeHours < 0 || overtimeHours > 24) {
+      toast.warning('Giờ tăng ca phải từ 0 đến 24 giờ');
+      return;
+    }
+    if (!Number.isFinite(dailyPayInput) || dailyPayInput <= 0) {
+      toast.warning('Mức lương ngày phải lớn hơn 0');
       return;
     }
 
@@ -365,7 +436,7 @@ export const NhanVienPage: React.FC = () => {
     try {
       const emp = employees.find((x) => x.id === data.employee_id);
       const empName = emp ? emp.name : data.employee_name || 'Công nhân';
-      const dailyPay = emp ? emp.daily_salary : data.daily_pay || 350000;
+      const dailyPay = dailyPayInput || emp?.daily_salary || 350000;
 
       if (data.id) {
         await attendanceService.updateAttendance(data.id, {
@@ -384,6 +455,8 @@ export const NhanVienPage: React.FC = () => {
       }
       closeAttModal();
       refetchAtt();
+      refetchHistory();
+      refetchPayroll();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu lượt chấm công');
       console.error('Lỗi khi lưu lượt chấm công:', err);
@@ -401,11 +474,33 @@ export const NhanVienPage: React.FC = () => {
       await attendanceService.deleteAttendance(confirmState.id);
       toast.success('Đã xóa lượt chấm công');
       refetchAtt();
+      refetchHistory();
+      refetchPayroll();
     } catch (err) {
       toast.error('Lỗi khi xóa lượt chấm công');
       console.error('Lỗi khi xóa lượt chấm công:', err);
     }
     setConfirmState({ isOpen: false, id: '', type: 'attendance' });
+  };
+
+  const requestPayrollSettlement = (employeeId: string | undefined, name: string) => {
+    if (!employeeId) {
+      toast.warning('Dữ liệu cũ chưa gắn hồ sơ nhân viên nên chưa thể chốt lương tự động');
+      return;
+    }
+    setConfirmState({ isOpen: true, id: employeeId, name, type: 'payroll' });
+  };
+
+  const confirmPayrollSettlement = async () => {
+    try {
+      await attendanceService.payMonthForEmployee(confirmState.id, payrollMonth);
+      toast.success(`Đã chốt thanh toán lương tháng ${payrollMonth} cho ${confirmState.name || 'nhân viên'}`);
+      await Promise.all([refetchAtt(), refetchHistory(), refetchPayroll()]);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Không chốt được thanh toán lương');
+      console.error('Lỗi khi chốt lương:', err);
+    }
+    setConfirmState({ isOpen: false, id: '', type: 'payroll' });
   };
 
   return (
@@ -436,7 +531,7 @@ export const NhanVienPage: React.FC = () => {
         <KpiCard
           title="Tổng ngày công"
           value={`${attStats.totalShifts} công`}
-          subtitle="Ghi nhận tháng này"
+          subtitle={`${attStats.overtimeHours} giờ tăng ca tháng này`}
           icon={Calendar}
           color="info"
         />
@@ -484,7 +579,7 @@ export const NhanVienPage: React.FC = () => {
           role="tab"
           aria-selected={activeTab === 'attendance'}
           onClick={() => handleTabChange('attendance')}
-          title={`Chấm công & Tính lương (${attendanceList.length})`}
+          title={`Chấm công (${attendanceList.length})`}
           className={cn(
             'tap-target sm:min-h-0 sm:min-w-0 flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
             activeTab === 'attendance'
@@ -496,7 +591,7 @@ export const NhanVienPage: React.FC = () => {
             size={16}
             className={activeTab === 'attendance' ? 'text-white' : 'text-[var(--text-muted)]'}
           />
-          <span className="hidden sm:inline">Chấm công & Tính lương</span>
+          <span className="hidden sm:inline">Chấm công</span>
           <span className="text-[11px] px-1.5 py-0.2 bg-black/10 dark:bg-white/20 rounded-full font-mono">
             {attendanceList.length}
           </span>
@@ -523,7 +618,7 @@ export const NhanVienPage: React.FC = () => {
       </div>
 
       {/* Table Toolbar */}
-      {activeTab !== 'payroll' && (
+      {(activeTab === 'employees' || (activeTab === 'attendance' && attViewMode === 'history')) && (
         <TableToolbar
           placeholder={
             activeTab === 'employees' ? 'Tìm theo tên hoặc SĐT...' : 'Tìm theo tên công nhân hoặc ngày...'
@@ -552,6 +647,9 @@ export const NhanVienPage: React.FC = () => {
                     <th className="th-cell text-right">Lương công (đ/ngày)</th>
                     <th scope="col" className="th-cell">
                       Số điện thoại
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Ngày vào làm
                     </th>
                     <th scope="col" className="th-cell">
                       Trạng thái
@@ -599,6 +697,9 @@ export const NhanVienPage: React.FC = () => {
                               '—'
                             )}
                           </td>
+                          <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
+                            {emp.join_date ? formatNgay(emp.join_date) : '—'}
+                          </td>
                           <td className="td-cell">
                             <span
                               className={cn(
@@ -632,9 +733,10 @@ export const NhanVienPage: React.FC = () => {
                                   handleDeleteEmployee(emp.id);
                                 }}
                                 className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer"
-                                title="Xóa"
+                                title="Cho nghỉ việc"
+                                disabled={emp.status === 'inactive'}
                               >
-                                <Trash2 size={16} />
+                                <UserMinus size={16} />
                               </button>
                             </div>
                           </td>
@@ -660,6 +762,8 @@ export const NhanVienPage: React.FC = () => {
                   fields: [
                     { label: 'Chức vụ', value: roleInfo.label },
                     { label: 'Lương công', value: <span className="font-mono">{formatTien(emp.daily_salary)}/ngày</span> },
+                    { label: 'Ngày vào làm', value: emp.join_date ? formatNgay(emp.join_date) : '—' },
+                    { label: 'Địa chỉ', value: emp.address || '—' },
                     { label: 'Ghi chú', value: emp.notes || '—' },
                   ],
                   actions: (
@@ -676,9 +780,10 @@ export const NhanVienPage: React.FC = () => {
                         type="button"
                         onClick={() => handleDeleteEmployee(emp.id)}
                         className="tap-target flex items-center justify-center rounded-xl text-rose-600 hover:bg-rose-50"
-                        aria-label={`Xóa ${emp.name}`}
+                        aria-label={`Cho ${emp.name} nghỉ việc`}
+                        disabled={emp.status === 'inactive'}
                       >
-                        <Trash2 size={18} />
+                        <UserMinus size={18} />
                       </button>
                     </>
                   ),
@@ -702,37 +807,63 @@ export const NhanVienPage: React.FC = () => {
           {/* Control Bar: Selector & View Toggle */}
           <div className="card flex flex-wrap items-center justify-between gap-3 bg-[var(--bg-surface)] p-3 rounded-2xl border border-[var(--border-color)]">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={handlePrevDate}
-                  className="btn-secondary px-2.5 py-1.5 text-xs flex items-center justify-center cursor-pointer"
-                  title="Ngày trước"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="input-field py-1 px-2.5 font-mono font-bold text-xs w-auto cursor-pointer"
-                />
-                <button
-                  type="button"
-                  onClick={handleNextDate}
-                  className="btn-secondary px-2.5 py-1.5 text-xs flex items-center justify-center cursor-pointer"
-                  title="Ngày sau"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedDate(today())}
-                className="btn-secondary px-3 py-1.5 text-xs font-extrabold cursor-pointer"
-              >
-                Hôm nay
-              </button>
+              {attViewMode === 'quick' ? (
+                <>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={handlePrevDate}
+                      className="btn-secondary px-2.5 py-1.5 text-xs flex items-center justify-center cursor-pointer"
+                      title="Ngày trước"
+                      aria-label="Chuyển sang ngày trước"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <input
+                      aria-label="Ngày chấm công nhanh"
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="input-field py-1 px-2.5 font-mono font-bold text-xs w-auto cursor-pointer"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleNextDate}
+                      className="btn-secondary px-2.5 py-1.5 text-xs flex items-center justify-center cursor-pointer"
+                      title="Ngày sau"
+                      aria-label="Chuyển sang ngày sau"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(today())}
+                    className="btn-secondary px-3 py-1.5 text-xs font-extrabold cursor-pointer"
+                  >
+                    Hôm nay
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Calendar size={16} className="text-[var(--primary-500)]" />
+                  <label htmlFor="attendance-history-month" className="text-xs font-bold text-[var(--text-secondary)]">
+                    Tháng lịch sử
+                  </label>
+                  <input
+                    id="attendance-history-month"
+                    type="month"
+                    value={historyMonth}
+                    onChange={(event) => {
+                      if (event.target.value) {
+                        setHistoryMonth(event.target.value);
+                        setCurrentPage(1);
+                      }
+                    }}
+                    className="input-field w-auto font-mono"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -750,6 +881,7 @@ export const NhanVienPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAttViewMode('quick')}
+                  aria-pressed={attViewMode === 'quick'}
                   className={cn(
                     'tap-target px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
                     attViewMode === 'quick'
@@ -762,6 +894,7 @@ export const NhanVienPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setAttViewMode('history')}
+                  aria-pressed={attViewMode === 'history'}
                   className={cn(
                     'tap-target px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer',
                     attViewMode === 'history'
@@ -829,7 +962,7 @@ export const NhanVienPage: React.FC = () => {
 
           {/* MODE B: LỊCH SỬ DẠNG BẢNG */}
           {attViewMode === 'history' && (
-            <DataState loading={attLoading} error={attError} isEmpty={filteredAttendance.length === 0}>
+            <DataState loading={historyLoading} error={historyError} isEmpty={filteredAttendance.length === 0}>
               <div className="card hidden lg:block bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -880,10 +1013,17 @@ export const NhanVienPage: React.FC = () => {
                               {att.advance_pay ? `-${formatTien(att.advance_pay)}` : '0 đ'}
                             </td>
                             <td className="td-cell text-right font-mono font-black text-xs text-emerald-600">
-                              {formatTien(att.net_pay)}
+                              {formatTien(Math.max(0, calculateAttendancePay(att).net))}
                             </td>
                             <td className="td-cell">
-                              <StatusBadge status={att.payment_status} />
+                              <div className="space-y-1">
+                                <StatusBadge status={att.payment_status} />
+                                {att.paid_at && (
+                                  <div className="text-[10px] text-[var(--text-muted)] font-mono">
+                                    Chốt {formatNgay(att.paid_at)}
+                                  </div>
+                                )}
+                              </div>
                             </td>
                             <td className="td-cell text-xs text-[var(--text-muted)] max-w-xs truncate">
                               {att.notes || '—'}
@@ -930,8 +1070,10 @@ export const NhanVienPage: React.FC = () => {
                     onClick: () => openAttModal(att),
                     fields: [
                       { label: 'Số công', value: `${att.work_shift} công` },
-                      { label: 'Thực lĩnh', value: <span className="font-mono text-emerald-600">{formatTien(att.net_pay)}</span> },
+                      { label: 'Tăng ca', value: att.overtime_hours ? `${att.overtime_hours} giờ` : '—' },
+                      { label: 'Thực lĩnh', value: <span className="font-mono text-emerald-600">{formatTien(Math.max(0, calculateAttendancePay(att).net))}</span> },
                       { label: 'Tạm ứng', value: att.advance_pay ? formatTien(att.advance_pay) : '0 đ' },
+                      { label: 'Ngày chốt', value: att.paid_at ? formatNgay(att.paid_at) : 'Chưa chốt' },
                       { label: 'Ghi chú', value: att.notes || '—' },
                     ],
                     actions: (
@@ -971,7 +1113,7 @@ export const NhanVienPage: React.FC = () => {
 
       {/* TAB 3: BẢNG LƯƠNG THÁNG */}
       {activeTab === 'payroll' && (
-        <DataState loading={attLoading} error={attError} isEmpty={false}>
+        <DataState loading={payrollLoading} error={payrollError} isEmpty={false}>
           <div className="space-y-4">
             <div className="card flex flex-wrap items-center justify-between gap-3 bg-[var(--bg-surface)] p-4">
               <div className="flex items-center gap-3">
@@ -984,7 +1126,9 @@ export const NhanVienPage: React.FC = () => {
                     id="payroll-month"
                     type="month"
                     value={payrollMonth}
-                    onChange={(e) => setPayrollMonth(e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value) setPayrollMonth(e.target.value);
+                    }}
                     className="input-field w-auto"
                   />
                 </div>
@@ -1034,6 +1178,7 @@ export const NhanVienPage: React.FC = () => {
                           Nhân viên
                         </th>
                         <th className="th-cell text-right">Số công</th>
+                        <th className="th-cell text-right">Tăng ca</th>
                         <th className="th-cell text-right">Lương gộp</th>
                         <th className="th-cell text-right">Đã tạm ứng</th>
                         <th className="th-cell text-right font-extrabold text-[var(--primary-600)]">
@@ -1044,9 +1189,12 @@ export const NhanVienPage: React.FC = () => {
                     </thead>
                     <tbody>
                       {payroll.rows.map((r) => (
-                        <tr key={r.name} onClick={() => setPayrollDetailName(r.name)} className="tr-hover cursor-pointer" title="Bấm để xem chi tiết chấm công & lương">
+                        <tr key={r.key} onClick={() => setPayrollDetailKey(r.key)} className="tr-hover cursor-pointer" title="Bấm để xem chi tiết chấm công & lương">
                           <td className="td-cell text-xs font-bold text-[var(--text-primary)]">{r.name}</td>
                           <td className="td-cell text-right font-mono text-xs">{r.shifts}</td>
+                          <td className="td-cell text-right font-mono text-xs">
+                            {r.overtime_hours > 0 ? `${r.overtime_hours} giờ` : '—'}
+                          </td>
                           <td className="td-cell text-right font-mono text-xs text-[var(--text-secondary)]">
                             {formatTien(r.gross)}
                           </td>
@@ -1059,7 +1207,7 @@ export const NhanVienPage: React.FC = () => {
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  openAdvPayModal(r.name);
+                                  openAdvPayModal(r.employee_id, r.name);
                                 }}
                                 className="px-1.5 py-0.5 text-[10px] font-bold text-amber-900 bg-amber-300 dark:text-amber-100 dark:bg-amber-800/60 rounded hover:bg-amber-400 cursor-pointer"
                                 title={`Ghi nhận ứng lương cho ${r.name}`}
@@ -1074,9 +1222,23 @@ export const NhanVienPage: React.FC = () => {
                                 ⚠️ NV Nợ Xưởng {formatTien(Math.abs(r.net))}
                               </span>
                             ) : r.unpaid > 0 ? (
-                              <span className="text-rose-600 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800/40">
-                                {formatTien(r.unpaid)}
-                              </span>
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="text-rose-600 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800/40">
+                                  {formatTien(r.unpaid)}
+                                </span>
+                                {r.employee_id && (
+                                  <button
+                                    type="button"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      requestPayrollSettlement(r.employee_id, r.name);
+                                    }}
+                                    className="tap-target px-2.5 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700"
+                                  >
+                                    Chốt trả
+                                  </button>
+                                )}
+                              </div>
                             ) : (
                               <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/40 font-bold">
                                 🟢 Đã trả đủ (0 đ)
@@ -1090,6 +1252,7 @@ export const NhanVienPage: React.FC = () => {
                       <tr className="bg-[var(--bg-subtle)] font-bold">
                         <td className="td-cell text-xs uppercase">Tổng cộng</td>
                         <td className="td-cell text-right font-mono text-xs">{payroll.totals.shifts}</td>
+                        <td className="td-cell text-right font-mono text-xs">{payroll.totals.overtime_hours} giờ</td>
                         <td className="td-cell text-right font-mono text-xs">
                           {formatTien(payroll.totals.gross)}
                         </td>
@@ -1106,10 +1269,10 @@ export const NhanVienPage: React.FC = () => {
               </div>
               <MobileCardList
                 items={payroll.rows.map((row) => ({
-                  id: row.name,
+                  id: row.key,
                   title: row.name,
                   subtitle: `${row.shifts} công trong tháng • Bấm xem chi tiết`,
-                  onClick: () => setPayrollDetailName(row.name),
+                  onClick: () => setPayrollDetailKey(row.key),
                   badge: (
                     <span
                       className={cn(
@@ -1127,6 +1290,7 @@ export const NhanVienPage: React.FC = () => {
                   accentColor: row.net < 0 ? '#f59e0b' : row.unpaid > 0 ? '#f43f5e' : '#10b981',
                   fields: [
                     { label: 'Lương gộp', value: <span className="font-mono">{formatTien(row.gross)}</span> },
+                    { label: 'Tăng ca', value: `${row.overtime_hours} giờ • ${formatTien(row.overtime)}` },
                     {
                       label: 'Đã tạm ứng',
                       value: (
@@ -1136,7 +1300,7 @@ export const NhanVienPage: React.FC = () => {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              openAdvPayModal(row.name);
+                              openAdvPayModal(row.employee_id, row.name);
                             }}
                             className="px-2 py-0.5 text-[11px] font-black text-amber-900 bg-amber-300 dark:text-amber-100 dark:bg-amber-800/80 rounded-lg border border-amber-400 hover:bg-amber-400 cursor-pointer shadow-xs"
                           >
@@ -1154,6 +1318,15 @@ export const NhanVienPage: React.FC = () => {
                       ),
                     },
                   ],
+                  actions: row.unpaid > 0 && row.employee_id ? (
+                    <button
+                      type="button"
+                      onClick={() => requestPayrollSettlement(row.employee_id, row.name)}
+                      className="tap-target px-3 rounded-xl bg-emerald-600 text-white text-xs font-extrabold"
+                    >
+                      Chốt đã trả
+                    </button>
+                  ) : undefined,
                 }))}
                 emptyMessage="Chưa có dữ liệu lương trong tháng"
               />
@@ -1211,7 +1384,29 @@ export const NhanVienPage: React.FC = () => {
             </FormField>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField label="Ngày vào làm">
+              <input
+                type="date"
+                max={today()}
+                className="input-field font-mono"
+                value={empForm.data?.join_date || ''}
+                onChange={(e) => handleEmpChange('join_date', e.target.value)}
+              />
+            </FormField>
+
+            <FormField label="Địa chỉ">
+              <input
+                type="text"
+                className="input-field"
+                placeholder="Địa chỉ liên hệ"
+                value={empForm.data?.address || ''}
+                onChange={(e) => handleEmpChange('address', e.target.value)}
+              />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Số điện thoại liên hệ">
               <input
                 type="tel"
@@ -1290,25 +1485,28 @@ export const NhanVienPage: React.FC = () => {
               }}
             >
               <option value="">-- Chọn công nhân --</option>
-              {employees.map((emp) => (
+              {employees
+                .filter((emp) => emp.status === 'active' || emp.id === attForm.data?.employee_id)
+                .map((emp) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.name} - {roleLabels[emp.role]?.label || emp.role} ({formatTien(emp.daily_salary)}/ngày)
                 </option>
-              ))}
+                ))}
             </select>
           </FormField>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FormField label="Số ngày công" required>
               <select
                 className="input-field font-mono font-bold"
-                value={attForm.data?.work_shift || 1}
+                value={attForm.data?.work_shift ?? 1}
                 onChange={(e) => handleAttChange('work_shift', Number(e.target.value))}
               >
                 <option value={1}>1.0 công (Cả ngày)</option>
                 <option value={0.5}>0.5 công (Nửa ngày)</option>
                 <option value={1.5}>1.5 công (Tăng ca)</option>
                 <option value={2}>2.0 công (2 ca)</option>
+                {attForm.data?.id && <option value={0}>0 công (chỉ tạm ứng)</option>}
               </select>
             </FormField>
 
@@ -1325,6 +1523,23 @@ export const NhanVienPage: React.FC = () => {
             </FormField>
           </div>
 
+          <FormField label="Giờ tăng ca (tính 150% đơn giá giờ)">
+            <div className="relative">
+              <Clock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                max="24"
+                step="0.5"
+                className="input-field pl-10 font-mono"
+                value={attForm.data?.overtime_hours || ''}
+                onChange={(e) => handleAttChange('overtime_hours', Number(e.target.value) || 0)}
+                placeholder="0"
+              />
+            </div>
+          </FormField>
+
           <FormField label="Tiền tạm ứng trước (nếu có)">
             <input
               type="number"
@@ -1338,19 +1553,32 @@ export const NhanVienPage: React.FC = () => {
             />
           </FormField>
 
-          {/* Computed Net Pay Preview */}
-          <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center text-xs">
-            <span className="text-[var(--text-muted)] font-semibold">TỔNG THỰC LĨNH LƯƠNG:</span>
-            <span className="font-mono font-black text-sm text-emerald-600">
-              {formatTien(
-                Math.max(
-                  0,
-                  (Number(attForm.data?.work_shift) || 1) * (Number(attForm.data?.daily_pay) || 350000) -
-                    (Number(attForm.data?.advance_pay) || 0),
-                ),
-              )}
-            </span>
-          </div>
+          {/* Computed Pay Preview */}
+          {(() => {
+            const preview = calculateAttendancePay(attForm.data || {});
+            return (
+              <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-2 text-xs">
+                <div className="flex justify-between gap-3 text-[var(--text-muted)]">
+                  <span>Lương công</span>
+                  <span className="font-mono">{formatTien(preview.regular)}</span>
+                </div>
+                <div className="flex justify-between gap-3 text-[var(--text-muted)]">
+                  <span>Tăng ca 150%</span>
+                  <span className="font-mono">+{formatTien(preview.overtime)}</span>
+                </div>
+                <div className="flex justify-between gap-3 text-rose-600">
+                  <span>Tạm ứng</span>
+                  <span className="font-mono">-{formatTien(preview.advance)}</span>
+                </div>
+                <div className="pt-2 border-t border-[var(--border-color)] flex justify-between items-center">
+                  <span className="text-[var(--text-secondary)] font-extrabold">THỰC LĨNH</span>
+                  <span className={cn('font-mono font-black text-base', preview.net < 0 ? 'text-amber-700' : 'text-emerald-600')}>
+                    {formatTien(Math.abs(preview.net))}{preview.net < 0 ? ' (NV nợ xưởng)' : ''}
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           <FormField label="Trạng thái thanh toán">
             <select
@@ -1409,23 +1637,33 @@ export const NhanVienPage: React.FC = () => {
       
       {/* MODAL CHI TIẾT LƯƠNG NHÂN VIÊN */}
       <Modal
-        isOpen={Boolean(payrollDetailName)}
-        onClose={() => setPayrollDetailName(null)}
-        title={`Chi tiết lương tháng ${payrollMonth} — ${payrollDetailName}`}
+        isOpen={Boolean(payrollDetailKey)}
+        onClose={() => setPayrollDetailKey(null)}
+        title={`Chi tiết lương tháng ${payrollMonth}`}
       >
         <div className="space-y-4">
           {(() => {
-            const detailRow = payroll.rows.find((r) => r.name === payrollDetailName);
-            const detailAtt = attendanceList.filter((att: Attendance) => att.employee_name === payrollDetailName);
+            const detailRow = payroll.rows.find((r) => r.key === payrollDetailKey);
+            const detailAtt = detailRow
+              ? payrollAttendance.filter((att: Attendance) =>
+                  detailRow.employee_id
+                    ? att.employee_id === detailRow.employee_id
+                    : att.employee_name.trim().toLocaleLowerCase('vi') === detailRow.name.trim().toLocaleLowerCase('vi'),
+                )
+              : [];
 
             if (!detailRow) return null;
 
             return (
               <>
-                <div className="p-3 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <div className="p-3 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
                   <div>
                     <span className="text-[var(--text-muted)] block">Tổng công</span>
                     <b className="font-mono text-sm text-[var(--text-primary)]">{detailRow.shifts} công</b>
+                  </div>
+                  <div>
+                    <span className="text-[var(--text-muted)] block">Tăng ca</span>
+                    <b className="font-mono text-sm text-purple-600">{detailRow.overtime_hours} giờ</b>
                   </div>
                   <div>
                     <span className="text-[var(--text-muted)] block">Lương gộp</span>
@@ -1445,18 +1683,31 @@ export const NhanVienPage: React.FC = () => {
                   <h4 className="text-xs font-extrabold text-[var(--text-secondary)] uppercase tracking-wider">
                     Nhật ký chấm công & ứng tiền ({detailAtt.length} lượt)
                   </h4>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const name = payrollDetailName;
-                      setPayrollDetailName(null);
-                      openAdvPayModal(name || undefined);
-                    }}
-                    className="px-2.5 py-1 text-xs font-black text-amber-900 bg-amber-300 dark:text-amber-100 dark:bg-amber-800 rounded-lg hover:bg-amber-400 cursor-pointer flex items-center gap-1"
-                  >
-                    <DollarSign size={13} />
-                    + Ứng lương
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {detailRow.unpaid > 0 && detailRow.employee_id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPayrollDetailKey(null);
+                          requestPayrollSettlement(detailRow.employee_id, detailRow.name);
+                        }}
+                        className="tap-target px-2.5 text-xs font-black text-white bg-emerald-600 rounded-lg hover:bg-emerald-700"
+                      >
+                        Chốt đã trả
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPayrollDetailKey(null);
+                        openAdvPayModal(detailRow.employee_id, detailRow.name);
+                      }}
+                      className="tap-target px-2.5 text-xs font-black text-amber-900 bg-amber-300 dark:text-amber-100 dark:bg-amber-800 rounded-lg hover:bg-amber-400 cursor-pointer flex items-center gap-1"
+                    >
+                      <DollarSign size={13} />
+                      + Ứng lương
+                    </button>
+                  </div>
                 </div>
 
                 {detailAtt.length === 0 ? (
@@ -1488,7 +1739,7 @@ export const NhanVienPage: React.FC = () => {
                               </span>
                             )}
                             <span className="block font-black text-emerald-600">
-                              {formatTien(att.net_pay)}
+                              {formatTien(Math.max(0, calculateAttendancePay(att).net))}
                             </span>
                           </div>
 
@@ -1496,7 +1747,7 @@ export const NhanVienPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => {
-                                setPayrollDetailName(null);
+                                setPayrollDetailKey(null);
                                 openAttModal(att);
                               }}
                               className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
@@ -1507,7 +1758,7 @@ export const NhanVienPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => {
-                                setPayrollDetailName(null);
+                                setPayrollDetailKey(null);
                                 handleDeleteAttendance(att.id);
                               }}
                               className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
@@ -1549,7 +1800,7 @@ export const NhanVienPage: React.FC = () => {
               }}
             >
               <option value="">-- Chọn nhân viên --</option>
-              {employees.map((emp) => (
+              {employees.filter((emp) => emp.status === 'active').map((emp) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.name} ({formatTien(emp.daily_salary)}/ngày)
                 </option>
@@ -1614,15 +1865,29 @@ export const NhanVienPage: React.FC = () => {
       <ConfirmDialog
         isOpen={confirmState.isOpen}
         onClose={() => setConfirmState({ isOpen: false, id: '', type: 'employee' })}
-        onConfirm={confirmState.type === 'employee' ? confirmDeleteEmployee : confirmDeleteAttendance}
-        title={confirmState.type === 'employee' ? 'Xóa hồ sơ nhân viên' : 'Xóa lượt chấm công'}
+        onConfirm={
+          confirmState.type === 'employee'
+            ? confirmDeactivateEmployee
+            : confirmState.type === 'payroll'
+              ? confirmPayrollSettlement
+              : confirmDeleteAttendance
+        }
+        title={
+          confirmState.type === 'employee'
+            ? 'Xác nhận nhân viên nghỉ việc'
+            : confirmState.type === 'payroll'
+              ? 'Chốt thanh toán lương'
+              : 'Xóa lượt chấm công'
+        }
         message={
           confirmState.type === 'employee'
-            ? 'Bạn có chắc chắn muốn xóa hồ sơ nhân viên này? Hành động này không thể hoàn tác.'
-            : 'Bạn có chắc chắn muốn xóa lượt chấm công này? Hành động này không thể hoàn tác.'
+            ? 'Nhân viên sẽ được chuyển sang trạng thái đã nghỉ và không còn xuất hiện trong bảng chấm công mới. Toàn bộ lịch sử công và lương vẫn được giữ lại.'
+            : confirmState.type === 'payroll'
+              ? `Xác nhận đã thanh toán đủ lương tháng ${payrollMonth} cho ${confirmState.name || 'nhân viên này'}? Sau khi chốt, các lượt trong kỳ sẽ chuyển sang Đã thanh toán.`
+              : 'Bạn có chắc chắn muốn xóa lượt chấm công này? Hành động này không thể hoàn tác.'
         }
-        variant="danger"
-        confirmText="Xóa"
+        variant={confirmState.type === 'attendance' ? 'danger' : 'warning'}
+        confirmText={confirmState.type === 'employee' ? 'Cho nghỉ việc' : confirmState.type === 'payroll' ? 'Chốt đã trả' : 'Xóa'}
         cancelText="Hủy"
       />
     </div>

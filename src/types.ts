@@ -156,6 +156,20 @@ export interface Attendance {
   advance_pay?: number;
   net_pay: number;
   payment_status: PaymentStatus;
+  paid_at?: string;
+  paid_by?: string;
   notes?: string;
   created_at?: string;
+}
+
+export interface PayrollSettlement {
+  id: string;
+  employee_id: string;
+  period: string;
+  gross_amount: number;
+  advance_amount: number;
+  net_amount: number;
+  paid_at: string;
+  paid_by?: string;
+  notes?: string;
 }

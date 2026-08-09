@@ -24,3 +24,22 @@ export function daysAgo(n: number): string {
   d.setDate(d.getDate() - n);
   return toISODate(d);
 }
+
+/** Trả về ngày đầu/cuối tháng từ chuỗi yyyy-mm, không phụ thuộc múi giờ UTC. */
+export function monthRange(month: string): { from: string; to: string } {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    throw new Error('Kỳ lương không hợp lệ.');
+  }
+
+  const [year, monthNumber] = month.split('-').map(Number);
+  const lastDay = new Date(year, monthNumber, 0).getDate();
+  return { from: `${month}-01`, to: `${month}-${String(lastDay).padStart(2, '0')}` };
+}
+
+/** Dịch một ngày yyyy-mm-dd theo lịch địa phương, tránh lỗi lệch ngày do UTC. */
+export function shiftISODate(date: string, amount: number): string {
+  const [year, month, day] = date.split('-').map(Number);
+  const value = new Date(year, month - 1, day);
+  value.setDate(value.getDate() + amount);
+  return toISODate(value);
+}

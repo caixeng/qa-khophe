@@ -1,32 +1,46 @@
 import { supabase } from '../lib/supabase';
 import { runQuery, MAX_ROWS, type DateRangeFilter } from '../lib/serviceError';
 import type { Employee, Attendance } from '../types';
-import { today } from '../lib/date';
+import { monthRange, today } from '../lib/date';
 
-export const DEFAULT_EMPLOYEES: Employee[] = [
-  { id: 'emp-001', name: 'Phạm Xuân Tú', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
-  { id: 'emp-002', name: 'Võ Thị Hoa', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
-  { id: 'emp-003', name: 'Trần Quốc Mạnh', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
-  { id: 'emp-004', name: 'Phan Văn Hoàng', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
-  { id: 'emp-005', name: 'Bùi Xuân Lệ', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
-  { id: 'emp-006', name: 'Anh Tiếp', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
-  { id: 'emp-007', name: 'Anh Tam', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
-  { id: 'emp-008', name: 'Chị Hoa', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
-];
+function nonNegative(value: unknown, fallback = 0): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function clean(value: unknown): string | null {
+  const result = String(value ?? '').trim();
+  return result || null;
+}
+
+export function normalizeAttendanceRecord(item: any, fallbackName?: string): Attendance {
+  return {
+    id: item.id,
+    date: item.date,
+    employee_id: item.employee_id || undefined,
+    employee_name:
+      item.employees?.name ||
+      item.employee_name_snapshot ||
+      fallbackName ||
+      `Hồ sơ cũ #${String(item.id || '').slice(0, 6)}`,
+    work_shift: nonNegative(item.work_shift),
+    overtime_hours: nonNegative(item.overtime_hours),
+    daily_pay: nonNegative(item.daily_pay),
+    advance_pay: nonNegative(item.advance_pay),
+    net_pay: Number(item.net_pay) || 0,
+    payment_status: item.payment_status || 'unpaid',
+    paid_at: item.paid_at || undefined,
+    paid_by: item.paid_by || undefined,
+    notes: item.notes || undefined,
+    created_at: item.created_at,
+  };
+}
 
 export const employeesService = {
   async getAll(): Promise<Employee[]> {
-    try {
-      const data = await runQuery<Employee[]>('tải danh sách nhân viên', () =>
-        supabase.from('employees').select('*').order('name', { ascending: true }),
-      );
-      if (data && data.length > 0) {
-        return data;
-      }
-    } catch (err) {
-      console.warn('Lỗi hoặc chưa phân quyền RLS cho employees, dùng danh sách mặc định:', err);
-    }
-    return DEFAULT_EMPLOYEES;
+    return runQuery<Employee[]>('tải danh sách nhân viên', () =>
+      supabase.from('employees').select('*').order('status', { ascending: true }).order('name', { ascending: true }),
+    );
   },
 
   async create(employee: Partial<Employee>): Promise<Employee> {
@@ -34,14 +48,14 @@ export const employeesService = {
       supabase
         .from('employees')
         .insert({
-          name: employee.name,
+          name: clean(employee.name),
           role: employee.role || 'grinder',
           daily_salary: Number(employee.daily_salary) || 0,
-          phone: employee.phone || null,
-          address: employee.address || null,
+          phone: clean(employee.phone),
+          address: clean(employee.address),
           join_date: employee.join_date || today(),
           status: employee.status || 'active',
-          notes: employee.notes || null,
+          notes: clean(employee.notes),
         })
         .select()
         .single(),
@@ -53,14 +67,14 @@ export const employeesService = {
       supabase
         .from('employees')
         .update({
-          name: employee.name,
+          name: clean(employee.name),
           role: employee.role,
           daily_salary: Number(employee.daily_salary) || 0,
-          phone: employee.phone || null,
-          address: employee.address || null,
+          phone: clean(employee.phone),
+          address: clean(employee.address),
           join_date: employee.join_date,
           status: employee.status,
-          notes: employee.notes || null,
+          notes: clean(employee.notes),
         })
         .eq('id', id)
         .select('id')
@@ -68,9 +82,9 @@ export const employeesService = {
     );
   },
 
-  async delete(id: string): Promise<void> {
-    await runQuery('xoá nhân viên', () =>
-      supabase.from('employees').delete().eq('id', id).select('id').single(),
+  async deactivate(id: string): Promise<void> {
+    await runQuery('chuyển nhân viên sang trạng thái đã nghỉ', () =>
+      supabase.from('employees').update({ status: 'inactive' }).eq('id', id).select('id').single(),
     );
   },
 };
@@ -84,20 +98,7 @@ export const attendanceService = {
       return q.order('date', { ascending: false }).limit(filter.limit ?? MAX_ROWS);
     });
 
-    return data.map((item) => ({
-      id: item.id,
-      date: item.date,
-      employee_id: item.employee_id,
-      employee_name: item.employees?.name || 'Công nhân',
-      work_shift: Number(item.work_shift) || 1,
-      overtime_hours: Number(item.overtime_hours) || 0,
-      daily_pay: Number(item.daily_pay) || 0,
-      advance_pay: Number(item.advance_pay) || 0,
-      net_pay: Number(item.net_pay) || 0,
-      payment_status: item.payment_status || 'unpaid',
-      notes: item.notes,
-      created_at: item.created_at,
-    }));
+    return data.map((item) => normalizeAttendanceRecord(item));
   },
 
   async createAttendance(att: Partial<Attendance>): Promise<Attendance> {
@@ -107,31 +108,19 @@ export const attendanceService = {
         .insert({
           date: att.date || today(),
           employee_id: att.employee_id || null,
-          work_shift: Number(att.work_shift) || 1,
-          overtime_hours: Number(att.overtime_hours) || 0,
-          daily_pay: Number(att.daily_pay) || 0,
-          advance_pay: Number(att.advance_pay) || 0,
+          work_shift: nonNegative(att.work_shift, 1),
+          overtime_hours: nonNegative(att.overtime_hours),
+          daily_pay: nonNegative(att.daily_pay),
+          advance_pay: nonNegative(att.advance_pay),
           payment_status: att.payment_status || 'unpaid',
-          notes: att.notes || null,
+          paid_at: att.payment_status === 'paid' ? new Date().toISOString() : null,
+          notes: clean(att.notes),
         })
         .select('*, employees(name)')
         .single(),
     );
 
-    return {
-      id: data.id,
-      date: data.date,
-      employee_id: data.employee_id,
-      employee_name: data.employees?.name || att.employee_name || 'Công nhân',
-      work_shift: Number(data.work_shift) || 1,
-      overtime_hours: Number(data.overtime_hours) || 0,
-      daily_pay: Number(data.daily_pay) || 0,
-      advance_pay: Number(data.advance_pay) || 0,
-      net_pay: Number(data.net_pay) || 0,
-      payment_status: data.payment_status,
-      notes: data.notes,
-      created_at: data.created_at,
-    };
+    return normalizeAttendanceRecord(data, att.employee_name);
   },
 
   async updateAttendance(id: string, att: Partial<Attendance>): Promise<void> {
@@ -141,12 +130,13 @@ export const attendanceService = {
         .update({
           date: att.date,
           employee_id: att.employee_id || null,
-          work_shift: Number(att.work_shift) || 1,
-          overtime_hours: Number(att.overtime_hours) || 0,
-          daily_pay: Number(att.daily_pay) || 0,
-          advance_pay: Number(att.advance_pay) || 0,
+          work_shift: nonNegative(att.work_shift, 1),
+          overtime_hours: nonNegative(att.overtime_hours),
+          daily_pay: nonNegative(att.daily_pay),
+          advance_pay: nonNegative(att.advance_pay),
           payment_status: att.payment_status,
-          notes: att.notes || null,
+          paid_at: att.payment_status === 'paid' ? att.paid_at || new Date().toISOString() : null,
+          notes: clean(att.notes),
         })
         .eq('id', id)
         .select('id')
@@ -179,12 +169,12 @@ export const attendanceService = {
       const item: Record<string, any> = {
         date,
         employee_id: r.employee_id,
-        work_shift: Number(r.work_shift) || 0,
-        overtime_hours: Number(r.overtime_hours) || 0,
-        daily_pay: Number(r.daily_pay) || 0,
-        advance_pay: Number(r.advance_pay) || 0,
+        work_shift: nonNegative(r.work_shift),
+        overtime_hours: nonNegative(r.overtime_hours),
+        daily_pay: nonNegative(r.daily_pay),
+        advance_pay: nonNegative(r.advance_pay),
         payment_status: r.payment_status || 'unpaid',
-        notes: r.notes || null,
+        notes: clean(r.notes),
       };
       if (r.id) item.id = r.id;
       return item;
@@ -196,16 +186,12 @@ export const attendanceService = {
   },
 
   async payMonthForEmployee(employeeId: string, month: string): Promise<void> {
-    const startDate = `${month}-01`;
-    const endDate = `${month}-31`;
+    const { from: startDate } = monthRange(month);
     await runQuery('chốt thanh toán lương tháng cho nhân viên', () =>
-      supabase
-        .from('attendance')
-        .update({ payment_status: 'paid' })
-        .eq('employee_id', employeeId)
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .select('id'),
+      supabase.rpc('settle_employee_payroll', {
+        p_employee_id: employeeId,
+        p_period: startDate,
+      }),
     );
   },
 };
