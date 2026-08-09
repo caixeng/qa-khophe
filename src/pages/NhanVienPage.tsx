@@ -1482,9 +1482,9 @@ export const NhanVienPage: React.FC = () => {
 
                         <div className="flex items-center gap-3">
                           <div className="text-right font-mono">
-                            {att.advance_pay > 0 && (
+                            {(att.advance_pay || 0) > 0 && (
                               <span className="block text-amber-600 font-bold text-[11px]">
-                                Ứng -{formatTien(att.advance_pay)}
+                                Ứng -{formatTien(att.advance_pay || 0)}
                               </span>
                             )}
                             <span className="block font-black text-emerald-600">
