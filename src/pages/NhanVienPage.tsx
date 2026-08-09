@@ -964,7 +964,7 @@ export const NhanVienPage: React.FC = () => {
                     </thead>
                     <tbody>
                       {payroll.rows.map((r) => (
-                        <tr key={r.name} className="tr-hover">
+                        <tr key={r.name} onClick={() => { setActiveTab('attendance'); setSearchQuery(r.name); toast.info(`Đã lọc danh sách chấm công của ${r.name}`); }} className="tr-hover cursor-pointer" title="Bấm để xem và xoá lượt chấm công">
                           <td className="td-cell text-xs font-bold text-[var(--text-primary)]">{r.name}</td>
                           <td className="td-cell text-right font-mono text-xs">{r.shifts}</td>
                           <td className="td-cell text-right font-mono text-xs text-[var(--text-secondary)]">
@@ -1013,7 +1013,12 @@ export const NhanVienPage: React.FC = () => {
                 items={payroll.rows.map((row) => ({
                   id: row.name,
                   title: row.name,
-                  subtitle: `${row.shifts} công trong tháng`,
+                  subtitle: `${row.shifts} công trong tháng • Bấm để xem/xoá`,
+                  onClick: () => {
+                    setActiveTab('attendance');
+                    setSearchQuery(row.name);
+                    toast.info(`Đã lọc danh sách chấm công của ${row.name}`);
+                  },
                   badge: (
                     <span
                       className={cn(
@@ -1259,17 +1264,35 @@ export const NhanVienPage: React.FC = () => {
             />
           </FormField>
 
-          <div className="flex justify-end space-x-3 pt-4 border-t border-[var(--border-color)]">
-            <button type="button" onClick={closeAttModal} className="btn-secondary">
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={savingAtt}
-              className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {savingAtt ? 'Đang lưu...' : attForm.data?.id ? 'Cập nhật' : 'Lưu lượt chấm công'}
-            </button>
+          <div className="flex justify-between items-center pt-4 border-t border-[var(--border-color)]">
+            {attForm.data?.id ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const idToDelete = attForm.data!.id!;
+                  closeAttModal();
+                  handleDeleteAttendance(idToDelete);
+                }}
+                className="py-2 px-3 text-xs font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl hover:bg-rose-100 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 size={16} />
+                Xóa lượt này
+              </button>
+            ) : (
+              <div />
+            )}
+            <div className="flex space-x-3">
+              <button type="button" onClick={closeAttModal} className="btn-secondary">
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={savingAtt}
+                className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {savingAtt ? 'Đang lưu...' : attForm.data?.id ? 'Cập nhật' : 'Lưu lượt chấm công'}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>

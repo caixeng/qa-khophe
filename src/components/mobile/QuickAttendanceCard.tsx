@@ -137,19 +137,19 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
           type="button"
           onClick={() => setShowCustom(!showCustom)}
           className={cn(
-            'h-11 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-0.5 cursor-pointer border px-1',
-            showCustom || isCustom
+            'h-11 rounded-xl text-[11px] font-black transition-all flex items-center justify-center gap-0.5 cursor-pointer border px-1',
+            showCustom || isCustom || state.advance_pay > 0
               ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
               : 'bg-[var(--bg-surface)] text-[var(--text-primary)] border-[var(--border-color)] hover:bg-blue-50 hover:text-blue-800 dark:hover:bg-blue-950/40',
           )}
         >
-          <span>🔵 Thêm</span>
+          <span>💸 Ứng/Khác</span>
           {showCustom ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         </button>
       </div>
 
       {/* Custom Options Panel (Tăng ca, Tạm ứng, Ghi chú) */}
-      {showCustom && (
+      {(showCustom || state.advance_pay > 0 || state.overtime_hours > 0) && (
         <div className="mt-3 pt-3 border-t border-[var(--border-color)] space-y-3 animate-fade-in text-xs">
           <div className="grid grid-cols-2 gap-3">
             <div>
