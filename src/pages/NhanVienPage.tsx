@@ -119,6 +119,76 @@ export const NhanVienPage: React.FC = () => {
     },
   });
 
+  // Advance Pay Modal State
+  const [payrollDetailName, setPayrollDetailName] = useState<string | null>(null);
+
+    const [advPayModal, setAdvPayModal] = useState<{
+    isOpen: boolean;
+    employeeId: string;
+    employeeName: string;
+    amount: number;
+    date: string;
+    notes: string;
+  }>({
+    isOpen: false,
+    employeeId: '',
+    employeeName: '',
+    amount: 0,
+    date: today(),
+    notes: '',
+  });
+  const [savingAdvPay, setSavingAdvPay] = useState(false);
+
+  const openAdvPayModal = (employeeName?: string) => {
+    const emp = employees.find((e) => e.name === employeeName);
+    setAdvPayModal({
+      isOpen: true,
+      employeeId: emp ? emp.id : '',
+      employeeName: employeeName || '',
+      amount: 0,
+      date: today(),
+      notes: '',
+    });
+  };
+
+  const handleSaveAdvancePay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!advPayModal.employeeId && !advPayModal.employeeName) {
+      toast.warning('Vui lòng chọn nhân viên ứng lương');
+      return;
+    }
+    const amount = Number(advPayModal.amount) || 0;
+    if (amount <= 0) {
+      toast.warning('Số tiền tạm ứng phải lớn hơn 0');
+      return;
+    }
+    setSavingAdvPay(true);
+    try {
+      const emp = employees.find((x) => x.id === advPayModal.employeeId);
+      const empName = emp ? emp.name : advPayModal.employeeName || 'Công nhân';
+      const dailyPay = emp ? emp.daily_salary : 350000;
+
+      await attendanceService.createAttendance({
+        date: advPayModal.date || today(),
+        employee_id: advPayModal.employeeId,
+        employee_name: empName,
+        work_shift: 0,
+        daily_pay: dailyPay,
+        advance_pay: amount,
+        payment_status: 'unpaid',
+        notes: advPayModal.notes || `Ứng lương tháng ${payrollMonth}`,
+      });
+      toast.success(`Đã ghi nhận ứng lương ${formatTien(amount)} cho ${empName}`);
+      setAdvPayModal({ isOpen: false, employeeId: '', employeeName: '', amount: 0, date: today(), notes: '' });
+      refetchAtt();
+    } catch (err) {
+      toast.error('Lỗi khi ghi nhận ứng lương');
+      console.error(err);
+    } finally {
+      setSavingAdvPay(false);
+    }
+  };
+
   // Attendance Form State
   const {
     formState: attForm,
@@ -904,18 +974,28 @@ export const NhanVienPage: React.FC = () => {
         <DataState loading={attLoading} error={attError} isEmpty={false}>
           <div className="space-y-4">
             <div className="card flex flex-wrap items-center justify-between gap-3 bg-[var(--bg-surface)] p-4">
-              <div className="flex items-center gap-2">
-                <Calendar size={16} className="text-[var(--primary-500)]" />
-                <label htmlFor="payroll-month" className="text-xs font-bold text-[var(--text-secondary)]">
-                  Kỳ lương tháng
-                </label>
-                <input
-                  id="payroll-month"
-                  type="month"
-                  value={payrollMonth}
-                  onChange={(e) => setPayrollMonth(e.target.value)}
-                  className="input-field w-auto"
-                />
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Calendar size={16} className="text-[var(--primary-500)]" />
+                  <label htmlFor="payroll-month" className="text-xs font-bold text-[var(--text-secondary)]">
+                    Kỳ lương tháng
+                  </label>
+                  <input
+                    id="payroll-month"
+                    type="month"
+                    value={payrollMonth}
+                    onChange={(e) => setPayrollMonth(e.target.value)}
+                    className="input-field w-auto"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openAdvPayModal()}
+                  className="px-3 py-1.5 rounded-xl text-xs font-black text-amber-900 bg-amber-400 hover:bg-amber-500 dark:text-amber-100 dark:bg-amber-700/80 hover:dark:bg-amber-600 transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <DollarSign size={14} />
+                  + Ứng Lương
+                </button>
               </div>
               <div className="flex flex-wrap gap-4 text-xs">
                 <span className="text-[var(--text-muted)]">
@@ -964,14 +1044,29 @@ export const NhanVienPage: React.FC = () => {
                     </thead>
                     <tbody>
                       {payroll.rows.map((r) => (
-                        <tr key={r.name} onClick={() => { setActiveTab('attendance'); setSearchQuery(r.name); toast.info(`Đã lọc danh sách chấm công của ${r.name}`); }} className="tr-hover cursor-pointer" title="Bấm để xem và xoá lượt chấm công">
+                        <tr key={r.name} onClick={() => setPayrollDetailName(r.name)} className="tr-hover cursor-pointer" title="Bấm để xem chi tiết chấm công & lương">
                           <td className="td-cell text-xs font-bold text-[var(--text-primary)]">{r.name}</td>
                           <td className="td-cell text-right font-mono text-xs">{r.shifts}</td>
                           <td className="td-cell text-right font-mono text-xs text-[var(--text-secondary)]">
                             {formatTien(r.gross)}
                           </td>
-                          <td className="td-cell text-right font-mono text-xs font-bold text-amber-600">
-                            {r.advance > 0 ? `-${formatTien(r.advance)}` : '—'}
+                          <td className="td-cell text-right font-mono text-xs">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <span className="font-bold text-amber-600">
+                                {r.advance > 0 ? `-${formatTien(r.advance)}` : '0 đ'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openAdvPayModal(r.name);
+                                }}
+                                className="px-1.5 py-0.5 text-[10px] font-bold text-amber-900 bg-amber-300 dark:text-amber-100 dark:bg-amber-800/60 rounded hover:bg-amber-400 cursor-pointer"
+                                title={`Ghi nhận ứng lương cho ${r.name}`}
+                              >
+                                + Ứng
+                              </button>
+                            </div>
                           </td>
                           <td className="td-cell text-right font-mono text-xs font-black">
                             {r.net < 0 ? (
@@ -1013,12 +1108,8 @@ export const NhanVienPage: React.FC = () => {
                 items={payroll.rows.map((row) => ({
                   id: row.name,
                   title: row.name,
-                  subtitle: `${row.shifts} công trong tháng • Bấm để xem/xoá`,
-                  onClick: () => {
-                    setActiveTab('attendance');
-                    setSearchQuery(row.name);
-                    toast.info(`Đã lọc danh sách chấm công của ${row.name}`);
-                  },
+                  subtitle: `${row.shifts} công trong tháng • Bấm xem chi tiết`,
+                  onClick: () => setPayrollDetailName(row.name),
                   badge: (
                     <span
                       className={cn(
@@ -1036,7 +1127,24 @@ export const NhanVienPage: React.FC = () => {
                   accentColor: row.net < 0 ? '#f59e0b' : row.unpaid > 0 ? '#f43f5e' : '#10b981',
                   fields: [
                     { label: 'Lương gộp', value: <span className="font-mono">{formatTien(row.gross)}</span> },
-                    { label: 'Đã tạm ứng', value: <span className="font-mono text-amber-600">{formatTien(row.advance)}</span> },
+                    {
+                      label: 'Đã tạm ứng',
+                      value: (
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-amber-600 font-bold">{formatTien(row.advance)}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openAdvPayModal(row.name);
+                            }}
+                            className="px-2 py-0.5 text-[11px] font-black text-amber-900 bg-amber-300 dark:text-amber-100 dark:bg-amber-800/80 rounded-lg border border-amber-400 hover:bg-amber-400 cursor-pointer shadow-xs"
+                          >
+                            + Ứng lương
+                          </button>
+                        </div>
+                      ),
+                    },
                     {
                       label: row.net < 0 ? 'NV nợ xưởng' : 'Thực lĩnh còn nợ',
                       value: (
@@ -1293,6 +1401,211 @@ export const NhanVienPage: React.FC = () => {
                 {savingAtt ? 'Đang lưu...' : attForm.data?.id ? 'Cập nhật' : 'Lưu lượt chấm công'}
               </button>
             </div>
+          </div>
+        </form>
+      </Modal>
+
+      
+      
+      {/* MODAL CHI TIẾT LƯƠNG NHÂN VIÊN */}
+      <Modal
+        isOpen={Boolean(payrollDetailName)}
+        onClose={() => setPayrollDetailName(null)}
+        title={`Chi tiết lương tháng ${payrollMonth} — ${payrollDetailName}`}
+      >
+        <div className="space-y-4">
+          {(() => {
+            const detailRow = payroll.rows.find((r) => r.name === payrollDetailName);
+            const detailAtt = attendanceList.filter((att: Attendance) => att.employee_name === payrollDetailName);
+
+            if (!detailRow) return null;
+
+            return (
+              <>
+                <div className="p-3 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div>
+                    <span className="text-[var(--text-muted)] block">Tổng công</span>
+                    <b className="font-mono text-sm text-[var(--text-primary)]">{detailRow.shifts} công</b>
+                  </div>
+                  <div>
+                    <span className="text-[var(--text-muted)] block">Lương gộp</span>
+                    <b className="font-mono text-sm text-[var(--text-primary)]">{formatTien(detailRow.gross)}</b>
+                  </div>
+                  <div>
+                    <span className="text-[var(--text-muted)] block">Đã tạm ứng</span>
+                    <b className="font-mono text-sm text-amber-600">-{formatTien(detailRow.advance)}</b>
+                  </div>
+                  <div>
+                    <span className="text-[var(--text-muted)] block">Thực lĩnh còn nợ</span>
+                    <b className="font-mono text-sm text-rose-600">{formatTien(detailRow.unpaid)}</b>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-extrabold text-[var(--text-secondary)] uppercase tracking-wider">
+                    Nhật ký chấm công & ứng tiền ({detailAtt.length} lượt)
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const name = payrollDetailName;
+                      setPayrollDetailName(null);
+                      openAdvPayModal(name || undefined);
+                    }}
+                    className="px-2.5 py-1 text-xs font-black text-amber-900 bg-amber-300 dark:text-amber-100 dark:bg-amber-800 rounded-lg hover:bg-amber-400 cursor-pointer flex items-center gap-1"
+                  >
+                    <DollarSign size={13} />
+                    + Ứng lương
+                  </button>
+                </div>
+
+                {detailAtt.length === 0 ? (
+                  <p className="text-xs text-[var(--text-muted)] text-center py-6">
+                    Chưa có nhật ký chấm công chi tiết trong tháng này.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                    {detailAtt.map((att: Attendance) => (
+                      <div
+                        key={att.id}
+                        className="p-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] flex items-center justify-between gap-2 text-xs"
+                      >
+                        <div>
+                          <div className="font-bold font-mono text-[var(--text-primary)]">
+                            {formatNgay(att.date)}
+                          </div>
+                          <div className="text-[11px] text-[var(--text-muted)]">
+                            {att.work_shift > 0 ? `${att.work_shift} công (${formatTien(att.daily_pay)}/ngày)` : 'Chỉ tạm ứng tiền'}
+                            {att.notes ? ` • ${att.notes}` : ''}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="text-right font-mono">
+                            {att.advance_pay > 0 && (
+                              <span className="block text-amber-600 font-bold text-[11px]">
+                                Ứng -{formatTien(att.advance_pay)}
+                              </span>
+                            )}
+                            <span className="block font-black text-emerald-600">
+                              {formatTien(att.net_pay)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPayrollDetailName(null);
+                                openAttModal(att);
+                              }}
+                              className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer"
+                              title="Sửa"
+                            >
+                              <Edit size={15} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPayrollDetailName(null);
+                                handleDeleteAttendance(att.id);
+                              }}
+                              className="p-1.5 rounded-lg text-[var(--text-muted)] hover:bg-rose-50 hover:text-rose-600 cursor-pointer"
+                              title="Xóa"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      </Modal>
+
+      {/* MODAL ỨNG LƯƠNG NHÂN VIÊN */}
+      <Modal
+        isOpen={advPayModal.isOpen}
+        onClose={() => setAdvPayModal({ ...advPayModal, isOpen: false })}
+        title="Phiếu ứng lương nhân viên"
+      >
+        <form onSubmit={handleSaveAdvancePay} className="space-y-4">
+          <FormField label="Chọn nhân viên ứng lương" required>
+            <select
+              className="input-field font-bold"
+              value={advPayModal.employeeId || ''}
+              onChange={(e) => {
+                const empId = e.target.value;
+                const emp = employees.find((x) => x.id === empId);
+                setAdvPayModal({
+                  ...advPayModal,
+                  employeeId: empId,
+                  employeeName: emp ? emp.name : '',
+                });
+              }}
+            >
+              <option value="">-- Chọn nhân viên --</option>
+              {employees.map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name} ({formatTien(emp.daily_salary)}/ngày)
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          <FormField label="Ngày ứng lương" required>
+            <input
+              type="date"
+              required
+              className="input-field font-mono"
+              value={advPayModal.date}
+              onChange={(e) => setAdvPayModal({ ...advPayModal, date: e.target.value })}
+            />
+          </FormField>
+
+          <FormField label="Số tiền tạm ứng (đ)" required>
+            <input
+              type="number"
+              inputMode="numeric"
+              required
+              min="10000"
+              step="10000"
+              className="input-field font-mono font-black text-lg text-rose-600"
+              placeholder="Ví dụ: 500000"
+              value={advPayModal.amount || ''}
+              onChange={(e) => setAdvPayModal({ ...advPayModal, amount: Number(e.target.value) || 0 })}
+            />
+          </FormField>
+
+          <FormField label="Ghi chú ứng lương">
+            <input
+              type="text"
+              className="input-field text-xs"
+              placeholder="Ví dụ: Tạm ứng lương giữa tháng..."
+              value={advPayModal.notes}
+              onChange={(e) => setAdvPayModal({ ...advPayModal, notes: e.target.value })}
+            />
+          </FormField>
+
+          <div className="flex justify-end space-x-3 pt-4 border-t border-[var(--border-color)]">
+            <button
+              type="button"
+              onClick={() => setAdvPayModal({ ...advPayModal, isOpen: false })}
+              className="btn-secondary"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={savingAdvPay}
+              className="btn-primary bg-amber-500 hover:bg-amber-600 text-slate-950 font-black disabled:opacity-60"
+            >
+              {savingAdvPay ? 'Đang lưu...' : 'Xác nhận ứng lương'}
+            </button>
           </div>
         </form>
       </Modal>

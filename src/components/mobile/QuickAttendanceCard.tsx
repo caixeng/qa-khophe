@@ -148,31 +148,6 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
         </button>
       </div>
 
-      {/* Mục riêng biệt: Tạm ứng tiền trong ngày */}
-      <div className="mt-2.5 pt-2 border-t border-[var(--border-color)]">
-        <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/30">
-          <label
-            htmlFor={`advance-input-${employee.id}`}
-            className="text-xs font-black text-amber-800 dark:text-amber-300 shrink-0 flex items-center gap-1 cursor-pointer"
-          >
-            💸 Tạm ứng:
-          </label>
-          <div className="relative flex-1 max-w-[180px]">
-            <input
-              id={`advance-input-${employee.id}`}
-              type="number"
-              inputMode="numeric"
-              step="10000"
-              min="0"
-              placeholder="0 đ (gõ tiền ứng)"
-              value={state.advance_pay || ''}
-              onChange={(e) => onChange({ ...state, advance_pay: Number(e.target.value) || 0 })}
-              className="input-field py-1 px-2.5 font-mono text-xs font-black text-rose-600 dark:text-rose-400 bg-[var(--bg-surface)] border-amber-300 dark:border-amber-800 text-right w-full"
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Custom Options Panel (Số công lẻ, Tăng ca, Ghi chú) */}
       {showCustom && (
         <div className="mt-3 pt-3 border-t border-[var(--border-color)] space-y-3 animate-fade-in text-xs">
