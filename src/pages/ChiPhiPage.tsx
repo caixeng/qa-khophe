@@ -158,7 +158,7 @@ export const ChiPhiPage: React.FC = () => {
   const totalHoan = advances
     .filter((a) => a.type === 'settlement' || (a.type as string) === 'hoan')
     .reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
-  const totalConLai = totalUng - totalHoan;
+  const totalConLai = totalUng - totalExpense - totalHoan;
 
   const handleSaveExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -437,7 +437,7 @@ export const ChiPhiPage: React.FC = () => {
 
       {activeTab === 'ungtien' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             <KpiCard
               title="Tổng ứng vốn"
               value={formatTien(totalUng)}
@@ -445,12 +445,23 @@ export const ChiPhiPage: React.FC = () => {
               color="warning"
             />
             <KpiCard
+              title="Tổng chi phí xưởng"
+              value={formatTien(totalExpense)}
+              icon={Wallet}
+              color="danger"
+            />
+            <KpiCard
               title="Tổng hoàn ứng"
               value={formatTien(totalHoan)}
               icon={ArrowUpRight}
               color="success"
             />
-            <KpiCard title="Vốn còn lại" value={formatTien(totalConLai)} icon={DollarSign} color="primary" />
+            <KpiCard
+              title="Vốn ứng còn lại"
+              value={formatTien(totalConLai)}
+              icon={DollarSign}
+              color="primary"
+            />
           </div>
 
           <DataState
