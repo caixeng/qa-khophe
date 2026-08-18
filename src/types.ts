@@ -42,6 +42,9 @@ export interface Contact {
   updated_at?: string;
 }
 
+export type ImportType = 'nvl' | 'thanh_pham';
+export type ExportType = 'nvl' | 'thanh_pham';
+
 export interface Import {
   id: string;
   date: string;
@@ -49,6 +52,7 @@ export interface Import {
   contact_name?: string;
   quantity_kg: number;
   material_type: string;
+  import_type?: ImportType;
   price_per_kg: number;
   total_amount: number;
   payment_status: PaymentStatus;
@@ -80,6 +84,7 @@ export interface Export {
   contact_name?: string;
   bags_count: number;
   total_kg?: number;
+  export_type?: ExportType;
   price_per_kg: number;
   total_amount: number;
   payment_status: PaymentStatus;

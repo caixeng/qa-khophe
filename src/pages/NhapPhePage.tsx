@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Edit, Trash2, Package, Clock, DollarSign, Printer } from 'lucide-react';
-import { formatTien, formatNgay, formatKg } from '../lib/utils';
+import { formatTien, formatNgay, formatKg, cn } from '../lib/utils';
 import { Modal, FormField } from '../components/Modal';
 import { AttachmentUploader } from '../components/AttachmentUploader';
 import { printPhieuNhap } from '../lib/print';
@@ -23,7 +23,7 @@ import { useDateRange } from '../hooks/useDateRange';
 import { importsService } from '../services/importsService';
 import { contactsService } from '../services/contactsService';
 import { sortByDateDesc } from '../lib/storage';
-import type { Import, PaymentStatus, ProcessingStatus } from '../types';
+import type { Import, ImportType, PaymentStatus, ProcessingStatus } from '../types';
 import { today } from '../lib/date';
 
 interface NhapPhePageProps {
@@ -32,6 +32,8 @@ interface NhapPhePageProps {
 
 export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
   const { range, setRange } = useDateRange();
+  const [importTypeFilter, setImportTypeFilter] = useState<'all' | 'nvl' | 'thanh_pham'>('all');
+
   // Lọc ngay ở truy vấn: chỉ kéo về phiếu trong kỳ đang xem, không phải cả lịch sử.
   const {
     data: imports,
@@ -70,6 +72,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
     initialData: {
       date: today(),
       material_type: 'Tấm nhựa nano',
+      import_type: 'nvl',
       quantity_kg: 0,
       price_per_kg: 4000,
       payment_status: 'paid',
@@ -77,15 +80,27 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
     },
   });
 
+  const handleOpenNewModal = React.useCallback(() => {
+    openModal({
+      date: today(),
+      material_type: importTypeFilter === 'thanh_pham' ? 'Phế thành phẩm' : 'Phế nhựa NVL',
+      import_type: importTypeFilter === 'thanh_pham' ? 'thanh_pham' : 'nvl',
+      quantity_kg: 0,
+      price_per_kg: 4000,
+      payment_status: 'paid',
+      processing_status: 'pending',
+    });
+  }, [openModal, importTypeFilter]);
+
   const [searchParams] = useSearchParams();
 
   React.useEffect(() => {
-    if (actionRef) actionRef.current = openModal;
+    if (actionRef) actionRef.current = handleOpenNewModal;
   });
 
   React.useEffect(() => {
     if (searchParams.get('open') === 'true') {
-      openModal();
+      handleOpenNewModal();
       const params = new URLSearchParams(window.location.search);
       if (params.has('open')) {
         params.delete('open');
@@ -93,10 +108,12 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
         window.history.replaceState({}, '', newUrl);
       }
     }
-  }, [searchParams, openModal]);
+  }, [searchParams, handleOpenNewModal]);
 
   const filteredData = useMemo(() => {
     const list = imports.filter((item) => {
+      const type = item.import_type || 'nvl';
+      if (importTypeFilter !== 'all' && type !== importTypeFilter) return false;
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       const contactName = item.contact_name || '';
@@ -108,19 +125,24 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
       );
     });
     return sortByDateDesc(list);
-  }, [imports, searchQuery]);
+  }, [imports, searchQuery, importTypeFilter]);
 
-  // Calculated Stats
+  // Calculated Stats (Cập nhật theo loại phế đang lọc)
   const stats = useMemo(() => {
-    const totalKg = imports.reduce((acc, item) => acc + (Number(item.quantity_kg) || 0), 0);
-    const totalLots = imports.length;
-    const pendingLots = imports.filter((i) => i.processing_status === 'pending').length;
-    const unpaidAmount = imports
+    const filteredForStats =
+      importTypeFilter === 'all'
+        ? imports
+        : imports.filter((i) => (i.import_type || 'nvl') === importTypeFilter);
+
+    const totalKg = filteredForStats.reduce((acc, item) => acc + (Number(item.quantity_kg) || 0), 0);
+    const totalLots = filteredForStats.length;
+    const pendingLots = filteredForStats.filter((i) => i.processing_status === 'pending').length;
+    const unpaidAmount = filteredForStats
       .filter((i) => i.payment_status === 'unpaid')
       .reduce((acc, item) => acc + (Number(item.total_amount) || 0), 0);
 
     return { totalKg, totalLots, pendingLots, unpaidAmount };
-  }, [imports]);
+  }, [imports, importTypeFilter]);
 
   // Trang hiện tại, dùng chung cho bảng (desktop) và card (mobile) để hai
   // chế độ hiển thị không bao giờ lệch nhau.
@@ -133,9 +155,6 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Chặn bấm Lưu nhiều lần: ở xưởng mạng chậm, người dùng hay bấm lại vì
-    // tưởng chưa ăn — mỗi lần bấm thêm là một phiếu trùng, làm sai cả tồn kho
-    // lẫn công nợ của nhà cung cấp.
     if (saving) return;
 
     const data = formState.data;
@@ -151,10 +170,12 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
     try {
       const selectedContact = suppliers.find((s) => s.id === data.contact_id);
       const contactName = selectedContact ? selectedContact.name : data.contact_name || 'Khách lẻ';
+      const importType: ImportType = data.import_type || 'nvl';
 
       if (data.id) {
         await importsService.update(data.id, {
           ...data,
+          import_type: importType,
           contact_name: contactName,
           total_amount: qty * price,
         });
@@ -164,7 +185,8 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           date: data.date || today(),
           contact_id: data.contact_id || undefined,
           contact_name: contactName,
-          material_type: data.material_type || 'Tấm nhựa nano',
+          material_type: data.material_type || (importType === 'thanh_pham' ? 'Phế thành phẩm' : 'Phế nhựa NVL'),
+          import_type: importType,
           quantity_kg: qty,
           price_per_kg: price,
           total_amount: qty * price,
@@ -261,7 +283,54 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
         </div>
       </div>
 
-      <PeriodFilter range={range} onChange={setRange} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-surface)] p-2 rounded-2xl border border-[var(--border-color)] shadow-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <button
+            type="button"
+            onClick={() => setImportTypeFilter('all')}
+            className={cn(
+              'tap-target sm:min-h-0 sm:min-w-0 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              importTypeFilter === 'all'
+                ? 'bg-[var(--primary-500)] text-white shadow-xs'
+                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
+            )}
+          >
+            Tất cả ({imports.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setImportTypeFilter('nvl')}
+            className={cn(
+              'tap-target sm:min-h-0 sm:min-w-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              importTypeFilter === 'nvl'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 dark:text-emerald-400',
+            )}
+          >
+            <span>📦 Phế NVL</span>
+            <span className="text-[10px] px-1.5 py-0.2 bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 rounded-full font-mono font-black">
+              {imports.filter((i) => (i.import_type || 'nvl') === 'nvl').length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setImportTypeFilter('thanh_pham')}
+            className={cn(
+              'tap-target sm:min-h-0 sm:min-w-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              importTypeFilter === 'thanh_pham'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 dark:text-indigo-400',
+            )}
+          >
+            <span>🏭 Phế Thành phẩm</span>
+            <span className="text-[10px] px-1.5 py-0.2 bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 rounded-full font-mono font-black">
+              {imports.filter((i) => i.import_type === 'thanh_pham').length}
+            </span>
+          </button>
+        </div>
+
+        <PeriodFilter range={range} onChange={setRange} />
+      </div>
 
       {/* Toolbar */}
       <TableToolbar
@@ -286,6 +355,9 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                 <tr>
                   <SortableHeader sortKey="date" sortConfig={sortConfig} onSort={handleSort}>
                     Ngày nhập
+                  </SortableHeader>
+                  <SortableHeader sortKey="import_type" sortConfig={sortConfig} onSort={handleSort}>
+                    Loại phế
                   </SortableHeader>
                   <SortableHeader sortKey="contact_name" sortConfig={sortConfig} onSort={handleSort}>
                     Người bán (NCC)
@@ -334,6 +406,17 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                     <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
                       {formatNgay(item.date)}
                     </td>
+                    <td className="td-cell">
+                      {item.import_type === 'thanh_pham' ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:border-indigo-800 whitespace-nowrap">
+                          🏭 Phế TP
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 whitespace-nowrap">
+                          📦 Phế NVL
+                        </span>
+                      )}
+                    </td>
                     <td className="td-cell font-bold text-xs text-[var(--text-primary)]">
                       {item.contact_name || 'Khách lẻ'}
                     </td>
@@ -375,11 +458,12 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           items={pageItems.map((item) => ({
             id: item.id,
             title: item.contact_name || 'Khách lẻ',
-            subtitle: formatNgay(item.date),
+            subtitle: `${formatNgay(item.date)} • ${item.import_type === 'thanh_pham' ? '🏭 Phế Thành phẩm' : '📦 Phế NVL'}`,
             badge: <StatusBadge status={item.payment_status} />,
-            accentColor: item.processing_status === 'pending' ? '#f59e0b' : '#10b981',
+            accentColor: item.import_type === 'thanh_pham' ? '#6366f1' : item.processing_status === 'pending' ? '#f59e0b' : '#10b981',
             onClick: () => setSelectedDetail(item),
             fields: [
+              { label: 'Loại phế', value: item.import_type === 'thanh_pham' ? 'Phế Thành phẩm' : 'Phế NVL' },
               { label: 'Khối lượng', value: formatKg(item.quantity_kg) },
               { label: 'Đơn giá', value: `${formatTien(item.price_per_kg)}/kg` },
               { label: 'Thành tiền', value: formatTien(item.total_amount) },
@@ -411,6 +495,12 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">Ngày nhập</span>
                 <span className="font-mono font-bold text-sm text-[var(--text-primary)]">
                   {formatNgay(selectedDetail.date)}
+                </span>
+              </div>
+              <div>
+                <span className="text-[var(--text-muted)] block font-semibold uppercase">Loại phế</span>
+                <span className="font-bold text-sm text-[var(--text-primary)]">
+                  {selectedDetail.import_type === 'thanh_pham' ? '🏭 Phế Thành phẩm' : '📦 Phế Nguyên Vật Liệu'}
                 </span>
               </div>
               <div>
@@ -514,6 +604,45 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
         title={formState.data?.id ? 'Sửa phiếu nhập phế' : 'Thêm phiếu nhập phế mới'}
       >
         <form onSubmit={handleSave} className="space-y-4">
+          <FormField label="Loại phế nhập" required>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  handleChange('import_type', 'nvl');
+                  if (!formState.data?.id && formState.data?.material_type === 'Phế thành phẩm') {
+                    handleChange('material_type', 'Phế nhựa NVL');
+                  }
+                }}
+                className={cn(
+                  'tap-target flex items-center justify-center gap-1.5 p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer',
+                  (formState.data?.import_type || 'nvl') === 'nvl'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:border-emerald-600 dark:text-emerald-200 shadow-xs'
+                    : 'border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
+                )}
+              >
+                <span>📦 Phế NVL</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handleChange('import_type', 'thanh_pham');
+                  if (!formState.data?.id && (formState.data?.material_type === 'Phế nhựa NVL' || formState.data?.material_type === 'Tấm nhựa nano')) {
+                    handleChange('material_type', 'Phế thành phẩm');
+                  }
+                }}
+                className={cn(
+                  'tap-target flex items-center justify-center gap-1.5 p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer',
+                  formState.data?.import_type === 'thanh_pham'
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-800 dark:bg-indigo-950/60 dark:border-indigo-600 dark:text-indigo-200 shadow-xs'
+                    : 'border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
+                )}
+              >
+                <span>🏭 Phế Thành phẩm</span>
+              </button>
+            </div>
+          </FormField>
+
           <FormField label="Ngày nhập" required>
             <input
               type="date"

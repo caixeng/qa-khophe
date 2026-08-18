@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Edit, Trash2, Truck, DollarSign, Package, TrendingUp, Printer } from 'lucide-react';
-import { formatTien, formatNgay, formatKg } from '../lib/utils';
+import { formatTien, formatNgay, formatKg, cn } from '../lib/utils';
 import { Modal, FormField } from '../components/Modal';
 import { AttachmentUploader } from '../components/AttachmentUploader';
 import { StatusBadge } from '../components/StatusBadge';
@@ -34,6 +34,8 @@ interface XuatPhePageProps {
 
 export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   const { range, setRange } = useDateRange();
+  const [exportTypeFilter, setExportTypeFilter] = useState<'all' | 'thanh_pham' | 'nvl'>('all');
+
   // Lọc ngay ở truy vấn: chỉ kéo về phiếu trong kỳ đang xem.
   const {
     data: exports,
@@ -48,7 +50,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
 
   const kgPerBag = kgPerBagData ?? 900;
   const customers = useMemo(
-    () => contacts.filter((c) => c.type === 'customer' || c.type === 'partner'),
+    () => contacts.filter((c) => c.type === 'customer' || c.type === 'partner' || c.type === 'supplier'),
     [contacts],
   );
 
@@ -76,12 +78,24 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   const { formState, openModal, closeModal, handleChange } = useCrudForm<ExportType>({
     initialData: {
       date: today(),
+      export_type: 'thanh_pham',
       bags_count: 18,
       total_kg: 16200,
       price_per_kg: 6000,
       payment_status: 'unpaid',
     },
   });
+
+  const handleOpenNewModal = React.useCallback(() => {
+    openModal({
+      date: today(),
+      export_type: exportTypeFilter === 'nvl' ? 'nvl' : 'thanh_pham',
+      bags_count: 18,
+      total_kg: 16200,
+      price_per_kg: 6000,
+      payment_status: 'unpaid',
+    });
+  }, [openModal, exportTypeFilter]);
 
   // Phiên cân chọn được: chưa gắn phiếu xuất nào, HOẶC đang là phiên đã gắn
   // với đúng phiếu đang sửa (không thì mở phiếu cũ ra sẽ không thấy lựa chọn
@@ -94,12 +108,12 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   const [searchParams] = useSearchParams();
 
   React.useEffect(() => {
-    if (actionRef) actionRef.current = openModal;
+    if (actionRef) actionRef.current = handleOpenNewModal;
   });
 
   React.useEffect(() => {
     if (searchParams.get('open') === 'true') {
-      openModal();
+      handleOpenNewModal();
       const params = new URLSearchParams(window.location.search);
       if (params.has('open')) {
         params.delete('open');
@@ -107,10 +121,12 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
         window.history.replaceState({}, '', newUrl);
       }
     }
-  }, [searchParams, openModal]);
+  }, [searchParams, handleOpenNewModal]);
 
   const filteredData = useMemo(() => {
     const list = exports.filter((item) => {
+      const type = item.export_type || 'thanh_pham';
+      if (exportTypeFilter !== 'all' && type !== exportTypeFilter) return false;
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       return (
@@ -120,19 +136,24 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
       );
     });
     return sortByDateDesc(list);
-  }, [exports, searchQuery]);
+  }, [exports, searchQuery, exportTypeFilter]);
 
   // Stats
   const stats = useMemo(() => {
-    const totalKg = exports.reduce((acc, item) => acc + (Number(item.total_kg) || 0), 0);
-    const totalBags = exports.reduce((acc, item) => acc + (Number(item.bags_count) || 0), 0);
-    const totalRevenue = exports.reduce((acc, item) => acc + (Number(item.total_amount) || 0), 0);
-    const unpaidAmount = exports
+    const filteredForStats =
+      exportTypeFilter === 'all'
+        ? exports
+        : exports.filter((e) => (e.export_type || 'thanh_pham') === exportTypeFilter);
+
+    const totalKg = filteredForStats.reduce((acc, item) => acc + (Number(item.total_kg) || 0), 0);
+    const totalBags = filteredForStats.reduce((acc, item) => acc + (Number(item.bags_count) || 0), 0);
+    const totalRevenue = filteredForStats.reduce((acc, item) => acc + (Number(item.total_amount) || 0), 0);
+    const unpaidAmount = filteredForStats
       .filter((e) => e.payment_status === 'unpaid')
       .reduce((acc, item) => acc + (Number(item.total_amount) || 0), 0);
 
     return { totalKg, totalBags, totalRevenue, unpaidAmount };
-  }, [exports]);
+  }, [exports, exportTypeFilter]);
 
   // Trang hiện tại, dùng chung cho bảng (desktop) và card (mobile) để hai
   // chế độ hiển thị không bao giờ lệch nhau.
@@ -164,6 +185,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
       if (data.id) {
         await exportsService.update(data.id, {
           ...data,
+          export_type: data.export_type || 'thanh_pham',
           contact_name: contactName,
           total_kg: qty,
           total_amount: qty * price,
@@ -174,6 +196,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
           date: data.date || today(),
           contact_id: data.contact_id || undefined,
           contact_name: contactName,
+          export_type: data.export_type || 'thanh_pham',
           bags_count: Number(data.bags_count) || 0,
           total_kg: qty,
           price_per_kg: price,
@@ -266,7 +289,54 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
       </div>
 
       {/* Table Toolbar */}
-      <PeriodFilter range={range} onChange={setRange} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-surface)] p-2 rounded-2xl border border-[var(--border-color)] shadow-xs">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <button
+            type="button"
+            onClick={() => setExportTypeFilter('all')}
+            className={cn(
+              'tap-target sm:min-h-0 sm:min-w-0 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              exportTypeFilter === 'all'
+                ? 'bg-[var(--primary-500)] text-white shadow-xs'
+                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
+            )}
+          >
+            Tất cả ({exports.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setExportTypeFilter('thanh_pham')}
+            className={cn(
+              'tap-target sm:min-h-0 sm:min-w-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              exportTypeFilter === 'thanh_pham'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 dark:text-blue-400',
+            )}
+          >
+            <span>🏭 Xuất Thành phẩm</span>
+            <span className="text-[10px] px-1.5 py-0.2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full font-mono font-black">
+              {exports.filter((e) => (e.export_type || 'thanh_pham') === 'thanh_pham').length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setExportTypeFilter('nvl')}
+            className={cn(
+              'tap-target sm:min-h-0 sm:min-w-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              exportTypeFilter === 'nvl'
+                ? 'bg-amber-600 text-white shadow-xs'
+                : 'text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 dark:text-amber-400',
+            )}
+          >
+            <span>📦 Xuất Phế NVL (Thô)</span>
+            <span className="text-[10px] px-1.5 py-0.2 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 rounded-full font-mono font-black">
+              {exports.filter((e) => e.export_type === 'nvl').length}
+            </span>
+          </button>
+        </div>
+
+        <PeriodFilter range={range} onChange={setRange} />
+      </div>
 
       <TableToolbar
         placeholder="Tìm theo khách mua, ngày xuất hoặc ghi chú..."
@@ -285,6 +355,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                 <tr>
                   <SortableHeader sortKey="date" sortConfig={sortConfig} onSort={handleSort}>
                     Ngày xuất
+                  </SortableHeader>
+                  <SortableHeader sortKey="export_type" sortConfig={sortConfig} onSort={handleSort}>
+                    Loại phế
                   </SortableHeader>
                   <SortableHeader sortKey="contact_name" sortConfig={sortConfig} onSort={handleSort}>
                     Khách mua (Đại lý)
@@ -340,6 +413,17 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                       <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
                         {formatNgay(item.date)}
                       </td>
+                      <td className="td-cell">
+                        {item.export_type === 'nvl' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:border-amber-800 whitespace-nowrap">
+                            📦 Phế NVL
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:border-blue-800 whitespace-nowrap">
+                            🏭 Thành phẩm
+                          </span>
+                        )}
+                      </td>
                       <td className="td-cell font-bold text-xs text-[var(--text-primary)]">
                         {item.contact_name || 'Khách bán lẻ'}
                       </td>
@@ -382,11 +466,12 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
           items={pageItems.map((item) => ({
             id: item.id,
             title: item.contact_name || 'Khách lẻ',
-            subtitle: formatNgay(item.date),
+            subtitle: `${formatNgay(item.date)} • ${item.export_type === 'nvl' ? '📦 Phế NVL (Thô)' : '🏭 Thành phẩm'}`,
             badge: <StatusBadge status={item.payment_status} />,
-            accentColor: item.payment_status === 'unpaid' ? '#f43f5e' : '#10b981',
+            accentColor: item.export_type === 'nvl' ? '#f59e0b' : item.payment_status === 'unpaid' ? '#f43f5e' : '#10b981',
             onClick: () => setSelectedDetail(item),
             fields: [
+              { label: 'Loại phế', value: item.export_type === 'nvl' ? 'Phế NVL (Thô/Trả NCC)' : 'Thành phẩm' },
               { label: 'Số bao', value: `${item.bags_count} bao` },
               { label: 'Khối lượng', value: formatKg(item.total_kg || 0) },
               { label: 'Đơn giá', value: `${formatTien(item.price_per_kg)}/kg` },
@@ -418,6 +503,12 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">NGÀY XUẤT</span>
                 <span className="font-mono font-bold text-sm text-[var(--text-primary)]">
                   {formatNgay(selectedDetail.date)}
+                </span>
+              </div>
+              <div>
+                <span className="text-[var(--text-muted)] block font-semibold uppercase">LOẠI PHẾ XUẤT</span>
+                <span className="font-bold text-sm text-[var(--text-primary)]">
+                  {selectedDetail.export_type === 'nvl' ? '📦 Phế NVL (Phế thô/Trả NCC)' : '🏭 Thành phẩm (Đã xay)'}
                 </span>
               </div>
               <div>
@@ -520,6 +611,35 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
         title={formState.data?.id ? 'Chỉnh sửa phiếu xuất phế' : 'Tạo phiếu xuất phế mới'}
       >
         <form onSubmit={handleSave} className="space-y-4">
+          <FormField label="Loại phế xuất" required>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleChange('export_type' as any, 'thanh_pham')}
+                className={cn(
+                  'tap-target flex items-center justify-center gap-1.5 p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer',
+                  ((formState.data as any)?.export_type || 'thanh_pham') === 'thanh_pham'
+                    ? 'border-blue-500 bg-blue-50 text-blue-800 dark:bg-blue-950/60 dark:border-blue-600 dark:text-blue-200 shadow-xs'
+                    : 'border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
+                )}
+              >
+                <span>🏭 Xuất Thành phẩm</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChange('export_type' as any, 'nvl')}
+                className={cn(
+                  'tap-target flex items-center justify-center gap-1.5 p-3 rounded-xl border text-xs font-bold transition-all cursor-pointer',
+                  (formState.data as any)?.export_type === 'nvl'
+                    ? 'border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:border-amber-600 dark:text-amber-200 shadow-xs'
+                    : 'border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
+                )}
+              >
+                <span>📦 Xuất Phế NVL (Thô)</span>
+              </button>
+            </div>
+          </FormField>
+
           <FormField label="Ngày xuất phế" required>
             <input
               type="date"

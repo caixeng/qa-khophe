@@ -19,6 +19,7 @@ type ImportRow = {
   contacts: { name: string } | null;
   quantity_kg: number | string | null;
   material_type: string | null;
+  import_type: Import['import_type'] | null;
   price_per_kg: number | string | null;
   total_amount: number | string | null;
   payment_status: Import['payment_status'] | null;
@@ -28,7 +29,7 @@ type ImportRow = {
 };
 
 const SELECT_COLUMNS =
-  'id, date, contact_id, quantity_kg, material_type, price_per_kg, total_amount, payment_status, processing_status, notes, created_at, contacts(name)';
+  'id, date, contact_id, quantity_kg, material_type, import_type, price_per_kg, total_amount, payment_status, processing_status, notes, created_at, contacts(name)';
 
 function mapRow(item: ImportRow): Import {
   const qty = Number(item.quantity_kg) || 0;
@@ -40,6 +41,7 @@ function mapRow(item: ImportRow): Import {
     contact_name: item.contacts?.name || 'Khách lẻ',
     quantity_kg: qty,
     material_type: item.material_type || 'Tấm nhựa nano',
+    import_type: item.import_type || 'nvl',
     price_per_kg: price,
     total_amount: Number(item.total_amount) || qty * price,
     payment_status: item.payment_status || 'unpaid',
@@ -78,6 +80,7 @@ export const importsService = {
           date: item.date || today(),
           contact_id: item.contact_id || null,
           material_type: item.material_type || 'Tấm nhựa nano',
+          import_type: item.import_type || 'nvl',
           quantity_kg: qty,
           price_per_kg: price,
           payment_status: item.payment_status || 'unpaid',
@@ -107,6 +110,7 @@ export const importsService = {
           contact_id: item.contact_id || null,
           quantity_kg: qty,
           material_type: item.material_type,
+          import_type: item.import_type || 'nvl',
           price_per_kg: price,
           payment_status: item.payment_status,
           processing_status: item.processing_status,

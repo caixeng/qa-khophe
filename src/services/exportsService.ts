@@ -10,6 +10,7 @@ type ExportRow = {
   contacts: { name: string } | null;
   bags_count: number | string | null;
   total_kg: number | string | null;
+  export_type: Export['export_type'] | null;
   price_per_kg: number | string | null;
   total_amount: number | string | null;
   payment_status: Export['payment_status'] | null;
@@ -19,7 +20,7 @@ type ExportRow = {
 };
 
 const SELECT_COLUMNS =
-  'id, date, contact_id, bags_count, total_kg, price_per_kg, total_amount, payment_status, weighing_session_id, notes, created_at, contacts(name)';
+  'id, date, contact_id, bags_count, total_kg, export_type, price_per_kg, total_amount, payment_status, weighing_session_id, notes, created_at, contacts(name)';
 
 function mapRow(item: ExportRow): Export {
   const kg = Number(item.total_kg) || 0;
@@ -31,6 +32,7 @@ function mapRow(item: ExportRow): Export {
     contact_name: item.contacts?.name || 'Khách lẻ',
     bags_count: Number(item.bags_count) || 0,
     total_kg: kg,
+    export_type: item.export_type || 'thanh_pham',
     price_per_kg: price,
     total_amount: Number(item.total_amount) || kg * price,
     payment_status: item.payment_status || 'unpaid',
@@ -70,6 +72,7 @@ export const exportsService = {
           contact_id: item.contact_id || null,
           bags_count: Number(item.bags_count) || 0,
           total_kg: kg,
+          export_type: item.export_type || 'thanh_pham',
           price_per_kg: price,
           payment_status: item.payment_status || 'unpaid',
           weighing_session_id: item.weighing_session_id || null,
@@ -98,6 +101,7 @@ export const exportsService = {
           contact_id: item.contact_id || null,
           bags_count: Number(item.bags_count) || 0,
           total_kg: kg,
+          export_type: item.export_type || 'thanh_pham',
           price_per_kg: price,
           payment_status: item.payment_status,
           notes: item.notes || null,

@@ -62,7 +62,9 @@ export const TonKhoPage: React.FC = () => {
 
   const inventoryStats = useMemo(() => {
     const totalGround = grinding.reduce((sum, g) => sum + (Number(g.output_qty_kg) || 0), 0);
-    const totalExported = exports.reduce((sum, e) => sum + (Number(e.total_kg) || 0), 0);
+    const totalExported = exports
+      .filter((e) => (e.export_type || 'thanh_pham') === 'thanh_pham')
+      .reduce((sum, e) => sum + (Number(e.total_kg) || 0), 0);
     const { currentStockKg, currentBags } = computeInventory(
       totalGround,
       totalExported,
