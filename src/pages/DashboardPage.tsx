@@ -6,11 +6,13 @@ import { formatKg, formatNgay } from '../lib/utils';
 import { KpiCard } from '../components/KpiCard';
 import { PageHeader } from '../components/PageHeader';
 import { MobileDirectorDashboard } from '../components/mobile/MobileDirectorDashboard';
+import { MonthlyOverviewChart } from '../components/MonthlyOverviewChart';
 import { useAsyncData, useAsyncList } from '../hooks/useAsyncData';
 import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
 import { expensesService } from '../services/expensesService';
 import { grindingService } from '../services/grindingService';
+import { attendanceService } from '../services/employeesService';
 import { settingsService } from '../services/settingsService';
 import { paymentsService } from '../services/paymentsService';
 import { computeInventory, computeRemainingWithLegacyStatus } from '../lib/calc';
@@ -35,6 +37,10 @@ export const DashboardPage: React.FC = () => {
     canSeeFinance,
   ]);
   const { data: grinding } = useAsyncList(() => grindingService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
+  const { data: attendance } = useAsyncList(
+    canSeeFinance ? () => attendanceService.getAttendance({ limit: MAX_ROWS_CUMULATIVE }) : async () => [],
+    [canSeeFinance],
+  );
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
   const { data: openingStockData } = useAsyncData(settingsService.getOpeningStock, []);
   const { data: lowStockThresholdData } = useAsyncData(settingsService.getLowStockThreshold, []);
@@ -68,7 +74,9 @@ export const DashboardPage: React.FC = () => {
     const totalExportKg = exports.reduce((sum, e) => sum + (Number(e.total_kg) || 0), 0);
     const totalRevenue = exports.reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
 
-    const totalOperatingCost = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+    const totalOperatingCost =
+      expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) +
+      attendance.reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
 
     // Chưa có quyền đọc chi phí (staff) thì không suy đoán lợi nhuận — ẩn thay vì hiện số sai
     const estimatedProfit = canSeeFinance ? totalRevenue - totalImportCost - totalOperatingCost : null;
@@ -174,6 +182,7 @@ export const DashboardPage: React.FC = () => {
     imports,
     exports,
     expenses,
+    attendance,
     grinding,
     kgPerBag,
     openingStock,
@@ -187,7 +196,15 @@ export const DashboardPage: React.FC = () => {
     <div className="page-shell animate-fade-in">
       {/* MOBILE SPECIFIC VIEW */}
       <div className="block lg:hidden">
-        <MobileDirectorDashboard summary={summary} />
+        <MobileDirectorDashboard
+          summary={summary}
+          imports={imports}
+          exports={exports}
+          grinding={grinding}
+          expenses={expenses}
+          attendance={attendance}
+          canSeeFinance={canSeeFinance}
+        />
       </div>
 
       {/* DESKTOP DASHBOARD VIEW */}
@@ -254,6 +271,16 @@ export const DashboardPage: React.FC = () => {
             <ArrowRight size={16} />
           </button>
         </div>
+
+        {/* Biểu đồ tổng hợp các nội dung theo tháng */}
+        <MonthlyOverviewChart
+          imports={imports}
+          exports={exports}
+          grinding={grinding}
+          expenses={expenses}
+          attendance={attendance}
+          canSeeFinance={canSeeFinance}
+        />
 
         {/* Two Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

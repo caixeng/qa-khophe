@@ -10,7 +10,8 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import { formatTien, formatKg, formatNgay } from '../../lib/utils';
-import type { Import, Export } from '../../types';
+import type { Import, Export, Grinding, Expense, Attendance } from '../../types';
+import { MonthlyOverviewChart } from '../MonthlyOverviewChart';
 
 interface MobileDirectorDashboardProps {
   summary: {
@@ -28,9 +29,23 @@ interface MobileDirectorDashboardProps {
     totalOverdueReceivables: number;
     lowStockAlert: boolean;
   };
+  imports?: Import[];
+  exports?: Export[];
+  grinding?: Grinding[];
+  expenses?: Expense[];
+  attendance?: Attendance[];
+  canSeeFinance?: boolean;
 }
 
-export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = ({ summary }) => {
+export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = ({
+  summary,
+  imports = [],
+  exports = [],
+  grinding = [],
+  expenses = [],
+  attendance = [],
+  canSeeFinance = false,
+}) => {
   const hasAlerts =
     summary.pendingImports.length > 0 ||
     summary.totalUnpaidReceivables > 0 ||
@@ -104,6 +119,16 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
           <p className="text-base font-black font-mono text-rose-600">{formatTien(summary.receivables)}</p>
         </div>
       </div>
+
+      {/* Biểu đồ tổng hợp các nội dung theo tháng (Tối ưu Mobile) */}
+      <MonthlyOverviewChart
+        imports={imports}
+        exports={exports}
+        grinding={grinding}
+        expenses={expenses}
+        attendance={attendance}
+        canSeeFinance={canSeeFinance}
+      />
 
       {/* Director Alert Center — dữ liệu thật, không hardcode */}
       <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-3">
