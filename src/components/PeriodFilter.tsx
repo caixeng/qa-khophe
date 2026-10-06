@@ -79,7 +79,7 @@ export const PeriodFilter: React.FC<{
                 onChange(r.from, r.to);
               }}
               className={cn(
-                'rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-all cursor-pointer',
+                'tap-target min-h-11 rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-all duration-200 cursor-pointer',
                 isActive
                   ? 'border-[var(--primary-500)] bg-[var(--primary-500)] text-white'
                   : 'border-[var(--border-color)] bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
@@ -97,7 +97,7 @@ export const PeriodFilter: React.FC<{
             value={range.from}
             max={range.to}
             onChange={(e) => onChange(e.target.value, range.to)}
-            className="input-field w-auto px-2 py-1 text-[11px] sm:text-[11px]"
+            className="tap-target min-h-11 input-field w-auto px-2 py-1 text-[11px] sm:text-[11px] transition-colors duration-200"
           />
           <span className="text-[var(--text-muted)]">–</span>
           <input
@@ -106,7 +106,7 @@ export const PeriodFilter: React.FC<{
             value={range.to}
             min={range.from}
             onChange={(e) => onChange(range.from, e.target.value)}
-            className="input-field w-auto px-2 py-1 text-[11px] sm:text-[11px]"
+            className="tap-target min-h-11 input-field w-auto px-2 py-1 text-[11px] sm:text-[11px] transition-colors duration-200"
           />
         </div>
       </div>

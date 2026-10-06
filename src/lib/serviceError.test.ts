@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { PostgrestError } from '@supabase/supabase-js';
-import { describeError, throwIfError, ServiceError } from './serviceError';
+import { describeError, throwIfError, ServiceError, runQuery } from './serviceError';
 
 function pgError(code: string, message = 'db error'): PostgrestError {
   return { code, message, details: '', hint: '' } as PostgrestError;
@@ -52,5 +52,22 @@ describe('throwIfError', () => {
       expect((e as ServiceError).code).toBe('23505');
       expect((e as ServiceError).message).toContain('đã tồn tại');
     }
+  });
+});
+
+describe('runQuery', () => {
+  it('cho phép data=null khi allowNullData: true (RPC void)', async () => {
+    const result = await runQuery(
+      'thực hiện hàm void',
+      async () => ({ data: null, error: null }),
+      { allowNullData: true }
+    );
+    expect(result).toBeNull();
+  });
+
+  it('ném lỗi khi data=null mà allowNullData: false (mặc định)', async () => {
+    await expect(
+      runQuery('tải dữ liệu', async () => ({ data: null, error: null }))
+    ).rejects.toThrow('máy chủ không trả về dữ liệu');
   });
 });

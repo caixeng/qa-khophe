@@ -41,6 +41,7 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
   useEffect(() => {
     if (!open) {
       setQ('');
+      setData(null);
       return;
     }
     if (data) return;
@@ -48,8 +49,8 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
     (async () => {
       setLoadError(null);
       const results = await Promise.allSettled([
-        importsService.getAll(),
-        exportsService.getAll(),
+        importsService.getAll({ limit: 50 }),
+        exportsService.getAll({ limit: 50 }),
         contactsService.getAll(),
         employeesService.getAll(),
       ]);

@@ -82,7 +82,7 @@ describe('computePayroll', () => {
     expect(r.totals.unpaid).toBe(700_000);
   });
 
-  it('không phụ thuộc trạng thái của bản ghi cuối cùng khi xác định còn nợ', () => {
+  it('chỉ tính tiền nợ của riêng những ngày chưa trả, không tính cả tháng', () => {
     const r = computePayroll(
       [
         att({ employee_id: 'e1', date: '2026-08-01', payment_status: 'unpaid' }),
@@ -91,7 +91,8 @@ describe('computePayroll', () => {
       '2026-08',
     );
 
-    expect(r.rows[0].unpaid).toBe(700_000);
+    // Chỉ ngày 01 chưa trả (350k), ngày 02 đã trả rồi — tổng nợ = 350k
+    expect(r.rows[0].unpaid).toBe(350_000);
   });
 
   it('cộng riêng tiền đã ứng', () => {
@@ -161,5 +162,47 @@ describe('computePayroll', () => {
       net: 0,
       unpaid: 0,
     });
+  });
+
+  it('xử lý hỗn hợp paid/unpaid/partial nhiều ngày', () => {
+    const r = computePayroll(
+      [
+        att({ employee_id: 'e1', date: '2026-08-01', payment_status: 'paid' }),
+        att({ employee_id: 'e1', date: '2026-08-02', payment_status: 'unpaid' }),
+        att({ employee_id: 'e1', date: '2026-08-03', payment_status: 'partial' }),
+      ],
+      '2026-08'
+    );
+    // 'partial' cũng tính là chưa trả xong → 2 ngày × 350k = 700k
+    expect(r.rows[0].unpaid).toBe(700_000);
+    // net = 3 ngày × (350k - 0 advance) = 1,050k
+    expect(r.rows[0].net).toBe(1_050_000);
+  });
+
+  it('tính đúng khi có tăng ca + tạm ứng cùng lúc', () => {
+    const r = computePayroll(
+      [
+        att({ employee_id: 'e1', work_shift: 1, overtime_hours: 2, daily_pay: 400_000, advance_pay: 200_000, net_pay: 350_000 }), // net = 400k + 150k - 200k = 350k
+      ],
+      '2026-08'
+    );
+    expect(r.rows[0].regular).toBe(400_000);
+    expect(r.rows[0].overtime).toBe(150_000);
+    expect(r.rows[0].advance).toBe(200_000);
+    expect(r.rows[0].gross).toBe(550_000);
+    expect(r.rows[0].net).toBe(350_000);
+  });
+
+  it('worker có 0 công + chỉ tạm ứng', () => {
+    const r = computePayroll(
+      [
+        att({ employee_id: 'e1', work_shift: 0, advance_pay: 500_000, net_pay: -500_000 }),
+      ],
+      '2026-08'
+    );
+    expect(r.rows[0].shifts).toBe(0);
+    expect(r.rows[0].advance).toBe(500_000);
+    expect(r.rows[0].gross).toBe(0);
+    expect(r.rows[0].net).toBe(-500_000);
   });
 });

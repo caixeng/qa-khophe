@@ -19,7 +19,7 @@ const TaiChinhPage = React.lazy(() =>
 );
 const TonKhoPage = React.lazy(() => import('./pages/TonKhoPage').then((m) => ({ default: m.TonKhoPage })));
 const NhanVienPage = React.lazy(() =>
-  import('./pages/NhanVienPage').then((m) => ({ default: m.NhanVienPage })),
+  import('./pages/nhan-vien').then((m) => ({ default: m.default })),
 );
 const BaoCaoPage = React.lazy(() => import('./pages/BaoCaoPage').then((m) => ({ default: m.BaoCaoPage })));
 const CaiDatPage = React.lazy(() => import('./pages/CaiDatPage').then((m) => ({ default: m.CaiDatPage })));

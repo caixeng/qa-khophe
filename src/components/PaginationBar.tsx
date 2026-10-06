@@ -67,7 +67,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
             onClick={() => onPageChange(1)}
             disabled={currentPage === 1}
             aria-label="Trang đầu"
-            className="tap-target sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="tap-target min-h-11 min-w-11 sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
           >
             <ChevronsLeft size={16} />
           </button>
@@ -75,7 +75,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
             aria-label="Trang trước"
-            className="tap-target sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="tap-target min-h-11 min-w-11 sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
           >
             <ChevronLeft size={16} />
           </button>
@@ -86,7 +86,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
                 key={page}
                 onClick={() => onPageChange(page)}
                 className={cn(
-                  'w-11 h-11 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg transition-colors',
+                  'tap-target min-h-11 min-w-11 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg transition-colors duration-200',
                   page === currentPage
                     ? 'bg-[var(--primary-500)] text-white'
                     : 'hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]',
@@ -105,7 +105,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages || totalPages === 0}
             aria-label="Trang sau"
-            className="tap-target sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="tap-target min-h-11 min-w-11 sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
           >
             <ChevronRight size={16} />
           </button>
@@ -113,7 +113,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
             onClick={() => onPageChange(totalPages)}
             disabled={currentPage === totalPages || totalPages === 0}
             aria-label="Trang cuối"
-            className="tap-target sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="tap-target min-h-11 min-w-11 sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
           >
             <ChevronsRight size={16} />
           </button>

@@ -184,6 +184,7 @@ export interface FormFieldProps {
   options?: { value: string | number; label: string }[];
   as?: 'input' | 'select' | 'textarea';
   className?: string;
+  inputMode?: 'text' | 'none' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
 }
 
 export const FormField: React.FC<FormFieldProps> = ({
@@ -194,6 +195,7 @@ export const FormField: React.FC<FormFieldProps> = ({
   options,
   as = 'input',
   className,
+  inputMode,
 }) => {
   return (
     <div className="mb-4">
@@ -204,7 +206,7 @@ export const FormField: React.FC<FormFieldProps> = ({
       {children ? (
         children
       ) : as === 'select' ? (
-        <select className={cn('input-field w-full', error && 'border-red-500 focus:ring-red-500', className)}>
+        <select className={cn('input-field w-full text-base sm:text-sm', error && 'border-red-500 focus:ring-red-500', className)}>
           <option value="">-- Chọn --</option>
           {options?.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -215,14 +217,15 @@ export const FormField: React.FC<FormFieldProps> = ({
       ) : as === 'textarea' ? (
         <textarea
           className={cn(
-            'input-field w-full min-h-[100px]',
+            'input-field w-full min-h-[100px] text-base sm:text-sm',
             error && 'border-red-500 focus:ring-red-500',
             className,
           )}
         />
       ) : (
         <input
-          className={cn('input-field w-full', error && 'border-red-500 focus:ring-red-500', className)}
+          inputMode={inputMode}
+          className={cn('input-field w-full text-base sm:text-sm', error && 'border-red-500 focus:ring-red-500', className)}
         />
       )}
 

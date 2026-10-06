@@ -51,8 +51,11 @@ export const DataState: React.FC<DataStateProps> = ({
         <XCircle className="w-12 h-12 text-rose-500 mb-4" />
         <h3 className="text-lg font-semibold text-rose-600 mb-2">Đã xảy ra lỗi</h3>
         <p className="text-[var(--text-secondary)] mb-6 max-w-md">{error}</p>
+        <p className="text-xs text-[var(--text-muted)] sm:hidden mb-4 animate-pulse">
+          ↓ Kéo xuống để làm mới
+        </p>
         {onRetry && (
-          <button onClick={onRetry} className="btn-secondary flex items-center gap-2">
+          <button onClick={onRetry} className="tap-target min-h-11 px-6 text-base btn-secondary flex items-center gap-2 transition-colors duration-200">
             <RefreshCw className="w-4 h-4" />
             Thử lại
           </button>

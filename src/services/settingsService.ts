@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { throwIfError } from '../lib/serviceError';
 
 const DEFAULT_KG_PER_BAG = 900;
 const DEFAULT_OPENING_STOCK_KG = 0;
@@ -20,7 +21,7 @@ async function setNumericSetting(key: string, value: number): Promise<void> {
     .from('settings')
     .upsert({ key, value: String(Math.max(0, value)) }, { onConflict: 'key' });
 
-  if (error) throw new Error(error.message);
+  throwIfError(error, 'lưu cài đặt');
 }
 
 export const settingsService = {
@@ -31,6 +32,10 @@ export const settingsService = {
    */
   async getKgPerBag(): Promise<number> {
     return getNumericSetting('kg_per_bag', DEFAULT_KG_PER_BAG);
+  },
+
+  async setKgPerBag(valueKg: number): Promise<void> {
+    return setNumericSetting('kg_per_bag', valueKg);
   },
 
   /**

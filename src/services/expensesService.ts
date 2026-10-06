@@ -39,6 +39,26 @@ export const expensesService = {
     );
   },
 
+  async updateExpense(id: string, expense: Partial<Expense>): Promise<Expense> {
+    if (expense.amount !== undefined && expense.amount <= 0) {
+      throw new Error('Số tiền phải lớn hơn 0');
+    }
+    return runQuery<Expense>('cập nhật khoản chi phí', () =>
+      supabase
+        .from('expenses')
+        .update({
+          date: expense.date,
+          category: expense.category,
+          amount: expense.amount !== undefined ? Number(expense.amount) : undefined,
+          description: expense.description,
+          notes: expense.notes,
+        })
+        .eq('id', id)
+        .select()
+        .single(),
+    );
+  },
+
   async deleteExpense(id: string): Promise<void> {
     await runQuery('xoá khoản chi phí', () =>
       supabase.from('expenses').delete().eq('id', id).select('id').single(),
@@ -65,6 +85,26 @@ export const expensesService = {
           type: advance.type || 'advance',
           notes: advance.notes || null,
         })
+        .select()
+        .single(),
+    );
+  },
+
+  async updateAdvance(id: string, advance: Partial<Advance>): Promise<Advance> {
+    if (advance.amount !== undefined && advance.amount <= 0) {
+      throw new Error('Số tiền phải lớn hơn 0');
+    }
+    return runQuery<Advance>('cập nhật khoản ứng tiền', () =>
+      supabase
+        .from('advances')
+        .update({
+          date: advance.date,
+          person: advance.person,
+          amount: advance.amount !== undefined ? Number(advance.amount) : undefined,
+          type: advance.type,
+          notes: advance.notes,
+        })
+        .eq('id', id)
         .select()
         .single(),
     );

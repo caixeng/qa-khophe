@@ -104,6 +104,7 @@ export const exportsService = {
           export_type: item.export_type || 'thanh_pham',
           price_per_kg: price,
           payment_status: item.payment_status,
+          weighing_session_id: item.weighing_session_id || null,
           notes: item.notes || null,
         })
         .eq('id', id)

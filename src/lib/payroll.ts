@@ -76,7 +76,7 @@ export function calculateAttendancePay(attendance: Partial<Attendance>): Attenda
  * @param month chuỗi `yyyy-mm`
  */
 export function computePayroll(attendance: readonly Attendance[], month: string): PayrollSummary {
-  const byPerson = new Map<string, { row: PayrollRow; hasOutstanding: boolean }>();
+  const byPerson = new Map<string, { row: PayrollRow; unpaidSum: number }>();
 
   for (const a of attendance) {
     if (!(a.date || '').startsWith(month)) continue;
@@ -84,7 +84,7 @@ export function computePayroll(attendance: readonly Attendance[], month: string)
     const normalizedName = (a.employee_name || 'Không rõ').trim();
     const key = a.employee_id ? `employee:${a.employee_id}` : `name:${normalizedName.toLocaleLowerCase('vi')}`;
     const entry = byPerson.get(key) ?? {
-      hasOutstanding: false,
+      unpaidSum: 0,
       row: {
       key,
       employee_id: a.employee_id,
@@ -105,8 +105,12 @@ export function computePayroll(attendance: readonly Attendance[], month: string)
     row.gross += pay.gross;
     row.advance += pay.advance;
     row.net = row.gross - row.advance;
-    entry.hasOutstanding ||= a.payment_status !== 'paid';
-    row.unpaid = entry.hasOutstanding ? Math.max(0, row.net) : 0;
+
+    // Cộng dồn lương chưa trả theo TỪNG NGÀY thay vì cả tháng
+    if (a.payment_status !== 'paid') {
+      entry.unpaidSum += Math.max(0, pay.net);
+    }
+    row.unpaid = entry.unpaidSum;
 
     byPerson.set(key, entry);
   }

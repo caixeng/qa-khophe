@@ -117,25 +117,29 @@ export const contactsService = {
   },
 
   async update(id: string, contact: Partial<Contact>): Promise<Contact> {
-    const name = contact.name?.trim();
-    if (!name) {
-      throw new ServiceError('Tên đối tác không được để trống.');
+    // Chỉ validate name khi nó nằm trong payload cập nhật
+    if ('name' in contact) {
+      const name = contact.name?.trim();
+      if (!name) {
+        throw new ServiceError('Tên đối tác không được để trống.');
+      }
+    }
+
+    const payload: Record<string, unknown> = {};
+    if ('name' in contact) payload.name = contact.name?.trim();
+    if ('type' in contact) payload.type = contact.type;
+    if ('phone' in contact) payload.phone = contact.phone || null;
+    if ('address' in contact) payload.address = contact.address || null;
+    if ('notes' in contact) payload.notes = contact.notes || null;
+    if ('is_active' in contact) payload.is_active = contact.is_active ?? true;
+    if (hasPricingColumn !== false && 'default_price_per_kg' in contact) {
+      payload.default_price_per_kg = contact.default_price_per_kg ?? null;
     }
 
     const row = await runQuery<ContactRow>('cập nhật đối tác', () =>
       supabase
         .from('contacts')
-        .update({
-          name,
-          type: contact.type,
-          phone: contact.phone || null,
-          address: contact.address || null,
-          notes: contact.notes || null,
-          is_active: contact.is_active ?? true,
-          ...(hasPricingColumn === false
-            ? {}
-            : { default_price_per_kg: contact.default_price_per_kg ?? null }),
-        })
+        .update(payload)
         .eq('id', id)
         .select(SELECT_COLUMNS)
         .single<ContactRow>(),

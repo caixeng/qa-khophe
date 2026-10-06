@@ -96,7 +96,22 @@ describe('monthlyStats utilities', () => {
     expect(result[1].revenue).toBe(60_000_000);
     // operatingCost = 5M (expenses) + 3M (attendance) = 8M
     expect(result[1].operatingCost).toBe(8_000_000);
-    // profit = 60M - 40M - 8M = 12M
     expect(result[1].profit).toBe(12_000_000);
+  });
+
+  it('kiểm tra advance_pay có được cộng vào operating cost không', () => {
+    const result = aggregateMonthlyStats({
+      months: ['2026-10'],
+      imports: [],
+      exports: [],
+      grinding: [],
+      expenses: [],
+      attendance: [
+        { date: '2026-10-05', net_pay: 3_000_000, advance_pay: 1_000_000 }
+      ],
+    });
+
+    // operatingCost = net_pay + advance_pay = 4_000_000
+    expect(result[0].operatingCost).toBe(4_000_000);
   });
 });

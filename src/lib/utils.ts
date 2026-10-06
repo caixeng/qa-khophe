@@ -9,12 +9,18 @@ export function formatTien(amount: number): string {
   return new Intl.NumberFormat('vi-VN').format(amount);
 }
 
-export function formatNgay(dateString: string | Date): string {
-  const date = new Date(dateString);
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+export function formatNgay(dateString?: string | Date | null): string {
+  if (!dateString) return '';
+  if (dateString instanceof Date) {
+    const day = dateString.getDate().toString().padStart(2, '0');
+    const month = (dateString.getMonth() + 1).toString().padStart(2, '0');
+    const year = dateString.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+  // Tách chuỗi trực tiếp thay vì qua new Date() để tránh UTC conversion
+  const parts = dateString.split('-');
+  if (parts.length !== 3) return dateString;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }
 
 export function formatKg(kg: number): string {

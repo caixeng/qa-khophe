@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { runQuery } from '../lib/serviceError';
+import { runQuery, MAX_ROWS } from '../lib/serviceError';
 import type { WeighingSession, WeighingBag } from '../types';
 import { today } from '../lib/date';
 
@@ -39,6 +39,7 @@ export const weighingService = {
         .from('weighing_sessions')
         .select(SELECT_COLUMNS)
         .order('date', { ascending: false })
+        .limit(MAX_ROWS)
         .returns<SessionRow[]>(),
     );
     return rows.map(mapRow);
@@ -60,13 +61,17 @@ export const weighingService = {
    */
   async getUnlinkedSessionIds(): Promise<Set<string>> {
     const all = await this.getSessions();
-    const { data, error } = await supabase
-      .from('exports')
-      .select('weighing_session_id')
-      .not('weighing_session_id', 'is', null);
-    if (error) throw new Error(error.message);
+    const data = await runQuery<{ weighing_session_id: string }[]>(
+      'tải danh sách phiên cân đã liên kết',
+      () =>
+        supabase
+          .from('exports')
+          .select('weighing_session_id')
+          .not('weighing_session_id', 'is', null)
+          .is('deleted_at', null),
+    );
 
-    const used = new Set((data || []).map((r) => r.weighing_session_id).filter(Boolean));
+    const used = new Set(data.map((r) => r.weighing_session_id).filter(Boolean));
     return new Set(all.filter((s) => !used.has(s.id)).map((s) => s.id));
   },
 

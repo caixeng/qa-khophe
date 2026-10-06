@@ -93,6 +93,7 @@ export function throwIfError(error: PostgrestError | null, action: string): void
 export async function runQuery<T>(
   action: string,
   query: () => PromiseLike<{ data: T | null; error: PostgrestError | null }>,
+  options?: { allowNullData?: boolean },
 ): Promise<T> {
   let result: { data: T | null; error: PostgrestError | null };
   try {
@@ -103,9 +104,9 @@ export async function runQuery<T>(
 
   throwIfError(result.error, action);
 
-  if (result.data === null) {
+  if (result.data === null && !options?.allowNullData) {
     throw new ServiceError(`Không thể ${action}: máy chủ không trả về dữ liệu.`);
   }
 
-  return result.data;
+  return result.data as T;
 }

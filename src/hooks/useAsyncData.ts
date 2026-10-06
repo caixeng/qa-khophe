@@ -59,7 +59,18 @@ export function useAsyncData<T>(
     [fetcher, staleTime],
   );
 
+  // Khi deps thay đổi (ví dụ: đổi ngày lọc), reset cache để staleTime không
+  // chặn việc tải dữ liệu mới. Trước đây nếu đổi filter trong vòng 30s, dữ
+  // liệu cũ vẫn hiện vì fetchData() thấy hasData + chưa hết staleTime → bỏ qua.
+  const prevDepsRef = useRef<string>('');
+
   useEffect(() => {
+    const depsKey = JSON.stringify(deps);
+    if (prevDepsRef.current !== '' && prevDepsRef.current !== depsKey) {
+      hasData.current = false;
+      lastFetched.current = 0;
+    }
+    prevDepsRef.current = depsKey;
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);

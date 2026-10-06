@@ -37,7 +37,10 @@ const HEADER = `
 
 function openAndPrint(html: string) {
   const w = window.open('', '_blank', 'width=900,height=700');
-  if (!w) return;
+  if (!w) {
+    alert('Vui lòng cho phép mở popup để in phiếu (bật Allow pop-ups trong cài đặt trình duyệt).');
+    return;
+  }
   w.document.write(html);
   w.document.close();
   w.focus();
@@ -46,8 +49,8 @@ function openAndPrint(html: string) {
 
 function esc(s: string | undefined | null): string {
   return (s ?? '').replace(
-    /[&<>"]/g,
-    (c) => (({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }) as Record<string, string>)[c]!,
+    /[&<>"']/g,
+    (c) => (({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }) as Record<string, string>)[c]!,
   );
 }
 

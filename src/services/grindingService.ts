@@ -96,22 +96,27 @@ export const grindingService = {
   },
 
   async update(id: string, item: Partial<Grinding>): Promise<Grinding> {
-    const input = Number(item.input_qty_kg) || 0;
-    const output = Number(item.output_qty_kg) || 0;
-    assertValidQuantities(input, output);
+    // Chỉ validate khối lượng khi trường đó nằm trong payload cập nhật
+    const hasQtyFields = 'input_qty_kg' in item || 'output_qty_kg' in item;
+    if (hasQtyFields) {
+      const input = Number(item.input_qty_kg) || 0;
+      const output = Number(item.output_qty_kg) || 0;
+      assertValidQuantities(input, output);
+    }
+
+    const payload: Record<string, unknown> = {};
+    if ('date' in item) payload.date = item.date;
+    if ('import_id' in item) payload.import_id = item.import_id || null;
+    if ('input_qty_kg' in item) payload.input_qty_kg = Number(item.input_qty_kg) || 0;
+    if ('output_qty_kg' in item) payload.output_qty_kg = Number(item.output_qty_kg) || 0;
+    if ('bags_count' in item) payload.bags_count = Number(item.bags_count) || 0;
+    if ('worker' in item) payload.worker = item.worker;
+    if ('notes' in item) payload.notes = item.notes || null;
 
     const row = await runQuery<GrindingRow>('cập nhật phiếu xay', () =>
       supabase
         .from('grinding')
-        .update({
-          date: item.date,
-          import_id: item.import_id || null,
-          input_qty_kg: input,
-          output_qty_kg: output,
-          bags_count: Number(item.bags_count) || 0,
-          worker: item.worker,
-          notes: item.notes || null,
-        })
+        .update(payload)
         .eq('id', id)
         .select(SELECT_COLUMNS)
         .single<GrindingRow>(),

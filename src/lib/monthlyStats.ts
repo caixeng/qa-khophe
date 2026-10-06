@@ -135,6 +135,7 @@ interface RawExpense {
 interface RawAttendance {
   date: string;
   net_pay?: number | string | null;
+  advance_pay?: number | string | null;
 }
 
 /**
@@ -217,7 +218,9 @@ export function aggregateMonthlyStats(params: {
     const m = item.date.slice(0, 7);
     const stat = map.get(m);
     if (stat) {
-      stat.operatingCost += Number(item.net_pay) || 0;
+      const netPay = Number(item.net_pay) || 0;
+      const advancePay = Number(item.advance_pay) || 0;
+      stat.operatingCost += netPay + advancePay;
     }
   }
 
