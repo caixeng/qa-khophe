@@ -22,7 +22,7 @@ describe('utils', () => {
       // Ta dùng toContain hoặc replace các whitespace đặc biệt để kiểm tra
       const formatted = formatKg(1234.5);
       expect(formatted.replace(/\s/g, ' ')).toContain('kg');
-      
+
       const parts = formatted.split(' ');
       const numberPart = parts[0];
       // Kiểm tra xem số có chứa dấu . hoặc , theo locale vi-VN (tuỳ môi trường có thể là 1.234,5)

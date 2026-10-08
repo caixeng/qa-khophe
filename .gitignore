@@ -27,3 +27,6 @@ scratch/
 
 # Supabase personal access token — KHÔNG BAO GIỜ commit
 .supabase-token
+
+# Supabase CLI local cache
+supabase/.temp/

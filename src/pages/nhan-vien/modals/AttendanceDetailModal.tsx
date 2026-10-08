@@ -129,7 +129,7 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
 
         {/* Computed Pay Preview */}
         {(() => {
-          const preview = calculateAttendancePay(data as Attendance || {});
+          const preview = calculateAttendancePay((data as Attendance) || {});
           return (
             <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-2 text-xs">
               <div className="flex justify-between gap-3 text-[var(--text-muted)]">
@@ -146,8 +146,14 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
               </div>
               <div className="pt-2 border-t border-[var(--border-color)] flex justify-between items-center">
                 <span className="text-[var(--text-secondary)] font-extrabold">THỰC LĨNH</span>
-                <span className={cn('font-mono font-black text-base', preview.net < 0 ? 'text-amber-700' : 'text-emerald-600')}>
-                  {formatTien(Math.abs(preview.net))}{preview.net < 0 ? ' (NV nợ xưởng)' : ''}
+                <span
+                  className={cn(
+                    'font-mono font-black text-base',
+                    preview.net < 0 ? 'text-amber-700' : 'text-emerald-600',
+                  )}
+                >
+                  {formatTien(Math.abs(preview.net))}
+                  {preview.net < 0 ? ' (NV nợ xưởng)' : ''}
                 </span>
               </div>
             </div>

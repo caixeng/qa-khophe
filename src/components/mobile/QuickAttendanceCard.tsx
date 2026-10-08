@@ -21,11 +21,7 @@ interface QuickAttendanceCardProps {
   onChange: (newState: QuickAttendanceState) => void;
 }
 
-export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
-  employee,
-  state,
-  onChange,
-}) => {
+export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({ employee, state, onChange }) => {
   const [showCustom, setShowCustom] = useState(false);
 
   const handleShiftSelect = (shift: number) => {
@@ -68,9 +64,7 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
             <User size={20} className="text-white" />
           </div>
           <div className="min-w-0">
-            <h3 className="font-extrabold text-sm text-[var(--text-primary)] truncate">
-              {employee.name}
-            </h3>
+            <h3 className="font-extrabold text-sm text-[var(--text-primary)] truncate">{employee.name}</h3>
             <p className="text-xs font-mono font-extrabold text-[var(--primary-600)] dark:text-[var(--primary-400)]">
               {formatTien(employee.daily_salary)}/ngày
             </p>
@@ -157,7 +151,9 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
 
       <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-[var(--bg-subtle)] px-3 py-2 text-xs">
         <span className="text-[var(--text-muted)]">
-          {state.overtime_hours > 0 ? `Gồm ${state.overtime_hours} giờ tăng ca 150%` : 'Lương dự kiến trong ngày'}
+          {state.overtime_hours > 0
+            ? `Gồm ${state.overtime_hours} giờ tăng ca 150%`
+            : 'Lương dự kiến trong ngày'}
         </span>
         <strong className={cn('font-mono', pay.net < 0 ? 'text-amber-700' : 'text-emerald-600')}>
           {formatTien(Math.abs(pay.net))}
@@ -166,10 +162,16 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
 
       {/* Custom Options Panel (Số công lẻ, Tăng ca, Ghi chú) */}
       {showCustom && (
-        <div id={`attendance-extra-${employee.id}`} className="mt-3 pt-3 border-t border-[var(--border-color)] space-y-3 animate-fade-in text-xs">
+        <div
+          id={`attendance-extra-${employee.id}`}
+          className="mt-3 pt-3 border-t border-[var(--border-color)] space-y-3 animate-fade-in text-xs"
+        >
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor={`shift-input-${employee.id}`} className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
+              <label
+                htmlFor={`shift-input-${employee.id}`}
+                className="block text-[11px] font-bold text-[var(--text-muted)] mb-1"
+              >
                 Số công (nếu lẻ):
               </label>
               <input
@@ -185,7 +187,10 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
             </div>
 
             <div>
-              <label htmlFor={`overtime-input-${employee.id}`} className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
+              <label
+                htmlFor={`overtime-input-${employee.id}`}
+                className="block text-[11px] font-bold text-[var(--text-muted)] mb-1"
+              >
                 Giờ tăng ca (giờ):
               </label>
               <input
@@ -203,7 +208,10 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor={`daily-salary-input-${employee.id}`} className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
+              <label
+                htmlFor={`daily-salary-input-${employee.id}`}
+                className="block text-[11px] font-bold text-[var(--text-muted)] mb-1"
+              >
                 Lương ngày (đ):
               </label>
               <input
@@ -217,7 +225,10 @@ export const QuickAttendanceCard: React.FC<QuickAttendanceCardProps> = ({
             </div>
 
             <div>
-              <label htmlFor={`notes-input-${employee.id}`} className="block text-[11px] font-bold text-[var(--text-muted)] mb-1">
+              <label
+                htmlFor={`notes-input-${employee.id}`}
+                className="block text-[11px] font-bold text-[var(--text-muted)] mb-1"
+              >
                 Ghi chú công:
               </label>
               <input

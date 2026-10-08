@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { runQuery, ServiceError, MAX_ROWS, type DateRangeFilter } from '../lib/serviceError';
 import type { Export } from '../types';
 import { today } from '../lib/date';
+import { readAllPages } from '../lib/pagination';
 
 type ExportRow = {
   id: string;
@@ -44,15 +45,21 @@ function mapRow(item: ExportRow): Export {
 
 export const exportsService = {
   async getAll(filter: DateRangeFilter = {}): Promise<Export[]> {
-    const rows = await runQuery<ExportRow[]>('tải danh sách phiếu xuất', () => {
-      let q = supabase.from('exports').select(SELECT_COLUMNS).is('deleted_at', null);
-      if (filter.from) q = q.gte('date', filter.from);
-      if (filter.to) q = q.lte('date', filter.to);
-      return q
-        .order('date', { ascending: false })
-        .limit(filter.limit ?? MAX_ROWS)
-        .returns<ExportRow[]>();
-    });
+    const rows = await readAllPages<ExportRow>(
+      'tải danh sách phiếu xuất',
+      (from, to) => {
+        let q = supabase.from('exports').select(SELECT_COLUMNS).is('deleted_at', null);
+        if (filter.contactId) q = q.eq('contact_id', filter.contactId);
+        if (filter.from) q = q.gte('date', filter.from);
+        if (filter.to) q = q.lte('date', filter.to);
+        return q
+          .order('date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to)
+          .returns<ExportRow[]>();
+      },
+      { maxRows: filter.all ? 100_000 : (filter.limit ?? MAX_ROWS) },
+    );
     return rows.map(mapRow);
   },
 

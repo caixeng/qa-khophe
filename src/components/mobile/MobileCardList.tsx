@@ -79,7 +79,9 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
               {item.fields.map((f, i) => (
                 <div key={i} className="min-w-0">
                   <span className="text-[11px] text-[var(--text-muted)] block truncate">{f.label}</span>
-                  <span className="font-semibold text-[var(--text-primary)] break-words block">{f.value}</span>
+                  <span className="font-semibold text-[var(--text-primary)] break-words block">
+                    {f.value}
+                  </span>
                 </div>
               ))}
             </div>

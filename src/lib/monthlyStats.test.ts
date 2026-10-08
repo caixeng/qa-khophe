@@ -106,9 +106,7 @@ describe('monthlyStats utilities', () => {
       exports: [],
       grinding: [],
       expenses: [],
-      attendance: [
-        { date: '2026-10-05', net_pay: 3_000_000, advance_pay: 1_000_000 }
-      ],
+      attendance: [{ date: '2026-10-05', net_pay: 3_000_000, advance_pay: 1_000_000 }],
     });
 
     // operatingCost = net_pay + advance_pay = 4_000_000

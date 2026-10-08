@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { runQuery, ServiceError, MAX_ROWS, type DateRangeFilter } from '../lib/serviceError';
 import type { Import } from '../types';
 import { today } from '../lib/date';
+import { readAllPages } from '../lib/pagination';
 
 /**
  * Dữ liệu nhập phế đọc/ghi thẳng vào Supabase.
@@ -53,15 +54,21 @@ function mapRow(item: ImportRow): Import {
 
 export const importsService = {
   async getAll(filter: DateRangeFilter = {}): Promise<Import[]> {
-    const rows = await runQuery<ImportRow[]>('tải danh sách phiếu nhập', () => {
-      let q = supabase.from('imports').select(SELECT_COLUMNS).is('deleted_at', null);
-      if (filter.from) q = q.gte('date', filter.from);
-      if (filter.to) q = q.lte('date', filter.to);
-      return q
-        .order('date', { ascending: false })
-        .limit(filter.limit ?? MAX_ROWS)
-        .returns<ImportRow[]>();
-    });
+    const rows = await readAllPages<ImportRow>(
+      'tải danh sách phiếu nhập',
+      (from, to) => {
+        let q = supabase.from('imports').select(SELECT_COLUMNS).is('deleted_at', null);
+        if (filter.contactId) q = q.eq('contact_id', filter.contactId);
+        if (filter.from) q = q.gte('date', filter.from);
+        if (filter.to) q = q.lte('date', filter.to);
+        return q
+          .order('date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to)
+          .returns<ImportRow[]>();
+      },
+      { maxRows: filter.all ? 100_000 : (filter.limit ?? MAX_ROWS) },
+    );
     return rows.map(mapRow);
   },
 

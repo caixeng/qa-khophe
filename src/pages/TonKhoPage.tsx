@@ -14,8 +14,8 @@ import { grindingService } from '../services/grindingService';
 import { exportsService } from '../services/exportsService';
 import { settingsService } from '../services/settingsService';
 import { stockCountService } from '../services/stockCountService';
-import { computeInventory } from '../lib/calc';
-import { MAX_ROWS_CUMULATIVE } from '../lib/serviceError';
+import { inventoryService } from '../services/inventoryService';
+import { importsService } from '../services/importsService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const TonKhoPage: React.FC = () => {
@@ -29,20 +29,34 @@ export const TonKhoPage: React.FC = () => {
     data: grinding,
     loading: gLoading,
     error: gError,
-  } = useAsyncList(() => grindingService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
+    refetch: refetchGrinding,
+  } = useAsyncList(() => grindingService.getAll({ all: true }), []);
   const {
     data: exports,
     loading: eLoading,
     error: eError,
-  } = useAsyncList(() => exportsService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
-  const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
-  const { data: openingStockData, refetch: refetchOpeningStock } = useAsyncData(
-    settingsService.getOpeningStock,
-    [],
-  );
+    refetch: refetchExports,
+  } = useAsyncList(() => exportsService.getAll({ all: true }), []);
+  const {
+    data: inventoryStatsData,
+    loading: inventoryLoading,
+    error: inventoryError,
+    refetch: refetchInventory,
+  } = useAsyncData(inventoryService.getSummary, []);
+  const {
+    data: imports,
+    loading: iLoading,
+    error: iError,
+    refetch: refetchImports,
+  } = useAsyncList(() => importsService.getAll({ all: true }), []);
+  const {
+    data: openingStockData,
+    loading: openingLoading,
+    error: openingError,
+    refetch: refetchOpeningStock,
+  } = useAsyncData(settingsService.getOpeningStock, []);
   const { data: stockCounts, refetch: refetchStockCounts } = useAsyncList(stockCountService.getAll, []);
 
-  const kgPerBag = kgPerBagData ?? 900;
   const openingStock = openingStockData ?? 0;
 
   const [isOpeningStockModalOpen, setIsOpeningStockModalOpen] = useState(false);
@@ -60,25 +74,14 @@ export const TonKhoPage: React.FC = () => {
   const [savingCount, setSavingCount] = useState(false);
   const [deleteCountId, setDeleteCountId] = useState<string | null>(null);
 
-  const inventoryStats = useMemo(() => {
-    const totalGround = grinding.reduce((sum, g) => sum + (Number(g.output_qty_kg) || 0), 0);
-    const totalExported = exports
-      .filter((e) => (e.export_type || 'thanh_pham') === 'thanh_pham')
-      .reduce((sum, e) => sum + (Number(e.total_kg) || 0), 0);
-    const { currentStockKg, currentBags } = computeInventory(
-      totalGround,
-      totalExported,
-      kgPerBag,
-      openingStock,
-    );
-
-    return {
-      totalGround,
-      totalExported,
-      currentStockKg,
-      currentBags,
-    };
-  }, [grinding, exports, kgPerBag, openingStock]);
+  const inventoryStats = inventoryStatsData ?? {
+    totalGround: 0,
+    totalImported: 0,
+    totalExported: 0,
+    currentStockKg: 0,
+    currentBags: 0,
+    rawStockKg: 0,
+  };
 
   const historyEvents = useMemo(() => {
     const events: { id: string; date: string; type: 'in' | 'out'; amount: number; note: string }[] = [];
@@ -96,26 +99,44 @@ export const TonKhoPage: React.FC = () => {
       }
     });
 
-    exports.forEach((e) => {
-      const exportKg = e.total_kg || 0;
-      events.push({
-        id: `e-${e.id}`,
-        date: e.date,
-        type: 'out',
-        amount: -exportKg,
-        note: `Xuất bán ${e.contact_name || 'Khách'} (${e.bags_count || 0} bao)`,
+    imports
+      .filter((i) => i.import_type === 'thanh_pham')
+      .forEach((i) => {
+        events.push({
+          id: `i-${i.id}`,
+          date: i.date,
+          type: 'in',
+          amount: i.quantity_kg,
+          note: `Nhập thành phẩm từ ${i.contact_name || 'Khách'}`,
+        });
       });
-    });
+    exports
+      .filter((e) => (e.export_type || 'thanh_pham') === 'thanh_pham')
+      .forEach((e) => {
+        const exportKg = e.total_kg || 0;
+        events.push({
+          id: `e-${e.id}`,
+          date: e.date,
+          type: 'out',
+          amount: -exportKg,
+          note: `Xuất bán ${e.contact_name || 'Khách'} (${e.bags_count || 0} bao)`,
+        });
+      });
 
     events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return events;
-  }, [grinding, exports]);
+  }, [grinding, exports, imports]);
 
   const chartData = useMemo(() => {
     type Movement = { date: string; delta: number };
     const movements: Movement[] = [
       ...grinding.map((g) => ({ date: g.date, delta: Number(g.output_qty_kg) || 0 })),
-      ...exports.map((e) => ({ date: e.date, delta: -(Number(e.total_kg) || 0) })),
+      ...imports
+        .filter((i) => i.import_type === 'thanh_pham')
+        .map((i) => ({ date: i.date, delta: i.quantity_kg })),
+      ...exports
+        .filter((e) => (e.export_type || 'thanh_pham') === 'thanh_pham')
+        .map((e) => ({ date: e.date, delta: -(Number(e.total_kg) || 0) })),
     ].sort((a, b) => a.date.localeCompare(b.date));
 
     let running = openingStock;
@@ -127,12 +148,12 @@ export const TonKhoPage: React.FC = () => {
 
     return Array.from(byDate.entries()).map(([date, stockKg]) => ({
       date: formatNgay(date),
-      'Tồn kho (kg)': Math.max(0, stockKg),
+      'Tồn kho (kg)': stockKg,
     }));
-  }, [grinding, exports, openingStock]);
+  }, [grinding, exports, imports, openingStock]);
 
-  const loading = gLoading || eLoading;
-  const error = gError || eError;
+  const loading = gLoading || eLoading || iLoading || inventoryLoading || openingLoading;
+  const error = gError || eError || iError || inventoryError || openingError;
 
   const openCountModal = () => {
     setCountedBagsStr(String(inventoryStats.currentBags));
@@ -188,6 +209,7 @@ export const TonKhoPage: React.FC = () => {
       toast.success('Đã cập nhật tồn kho đầu kỳ');
       setIsOpeningStockModalOpen(false);
       refetchOpeningStock();
+      refetchInventory();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu tồn kho đầu kỳ');
       console.error(err);
@@ -195,6 +217,20 @@ export const TonKhoPage: React.FC = () => {
       setSavingOpeningStock(false);
     }
   };
+
+  if (loading || error)
+    return (
+      <DataState
+        loading={loading}
+        error={error}
+        onRetry={() => {
+          [refetchInventory, refetchImports, refetchGrinding, refetchExports, refetchOpeningStock].forEach(
+            (reload) => void reload(),
+          );
+        }}
+        skeletonType="kpi"
+      />
+    );
 
   return (
     <div className="page-shell animate-fade-in">
@@ -206,9 +242,9 @@ export const TonKhoPage: React.FC = () => {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
-          title="Tồn kho hiện tại"
+          title="Tồn thành phẩm"
           value={`${inventoryStats.currentBags} bao`}
           subtitle={`~${formatKg(inventoryStats.currentStockKg)}`}
           icon={Package}
@@ -226,7 +262,18 @@ export const TonKhoPage: React.FC = () => {
           icon={TrendingDown}
           color="warning"
         />
+        <KpiCard
+          title="Tồn nguyên liệu"
+          value={formatKg(inventoryStats.rawStockKg)}
+          icon={Package}
+          color={inventoryStats.rawStockKg < 0 ? 'danger' : 'info'}
+        />
       </div>
+      {(inventoryStats.currentStockKg < 0 || inventoryStats.rawStockKg < 0) && (
+        <div role="alert" className="card p-4 text-rose-700">
+          Tồn kho âm. Cần đối soát tồn đầu kỳ và các phiếu nhập, xay, xuất trước khi tiếp tục.
+        </div>
+      )}
 
       {/* Tồn kho đầu kỳ — bù cho phần tồn kho có sẵn trước khi dùng app */}
       <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs flex items-center justify-between gap-3 flex-wrap">

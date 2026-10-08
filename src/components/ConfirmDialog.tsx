@@ -123,9 +123,13 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             )}
           </div>
 
-          <h2 id="confirm-dialog-title" className="text-lg font-bold text-[var(--text-primary)] mb-2">{title}</h2>
+          <h2 id="confirm-dialog-title" className="text-lg font-bold text-[var(--text-primary)] mb-2">
+            {title}
+          </h2>
 
-          <div id="confirm-dialog-message" className="text-sm text-[var(--text-secondary)] mb-6">{message}</div>
+          <div id="confirm-dialog-message" className="text-sm text-[var(--text-secondary)] mb-6">
+            {message}
+          </div>
         </div>
 
         <div className="flex gap-3 justify-end">

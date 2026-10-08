@@ -96,6 +96,7 @@ export interface Export {
 
 export interface WeighingSession {
   id: string;
+  tare_kg?: number;
   date: string;
   material_type: string;
   total_bags: number;

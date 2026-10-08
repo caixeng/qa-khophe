@@ -16,6 +16,23 @@ function att(p: Partial<Attendance>): Attendance {
 }
 
 describe('computePayroll', () => {
+  it('subtracts a separate advance-only day from the monthly unpaid balance', () => {
+    const result = computePayroll(
+      [
+        att({ employee_id: 'e1', date: '2026-08-01', work_shift: 1, daily_pay: 400_000 }),
+        att({ employee_id: 'e1', date: '2026-08-02', work_shift: 0, advance_pay: 200_000 }),
+      ],
+      '2026-08',
+    );
+    expect(result.rows[0].unpaid).toBe(200_000);
+    expect(result.rows[0].gross).toBe(400_000);
+  });
+  it('preserves over-advanced balances and rounds earned pay to VND', () => {
+    expect(
+      calculateAttendancePay({ work_shift: 1, daily_pay: 350_001, overtime_hours: 1, advance_pay: 500_000 })
+        .net,
+    ).toBe(-84_374);
+  });
   it('cộng dồn nhiều ngày công của cùng một người', () => {
     const r = computePayroll(
       [
@@ -117,10 +134,7 @@ describe('computePayroll', () => {
   });
 
   it('tính tăng ca theo lương giờ 8 tiếng với hệ số 150%', () => {
-    const r = computePayroll(
-      [att({ employee_id: 'e1', overtime_hours: 2, daily_pay: 400_000 })],
-      '2026-08',
-    );
+    const r = computePayroll([att({ employee_id: 'e1', overtime_hours: 2, daily_pay: 400_000 })], '2026-08');
 
     expect(r.rows[0].regular).toBe(400_000);
     expect(r.rows[0].overtime).toBe(150_000);
@@ -171,7 +185,7 @@ describe('computePayroll', () => {
         att({ employee_id: 'e1', date: '2026-08-02', payment_status: 'unpaid' }),
         att({ employee_id: 'e1', date: '2026-08-03', payment_status: 'partial' }),
       ],
-      '2026-08'
+      '2026-08',
     );
     // 'partial' cũng tính là chưa trả xong → 2 ngày × 350k = 700k
     expect(r.rows[0].unpaid).toBe(700_000);
@@ -182,9 +196,16 @@ describe('computePayroll', () => {
   it('tính đúng khi có tăng ca + tạm ứng cùng lúc', () => {
     const r = computePayroll(
       [
-        att({ employee_id: 'e1', work_shift: 1, overtime_hours: 2, daily_pay: 400_000, advance_pay: 200_000, net_pay: 350_000 }), // net = 400k + 150k - 200k = 350k
+        att({
+          employee_id: 'e1',
+          work_shift: 1,
+          overtime_hours: 2,
+          daily_pay: 400_000,
+          advance_pay: 200_000,
+          net_pay: 350_000,
+        }), // net = 400k + 150k - 200k = 350k
       ],
-      '2026-08'
+      '2026-08',
     );
     expect(r.rows[0].regular).toBe(400_000);
     expect(r.rows[0].overtime).toBe(150_000);
@@ -195,10 +216,8 @@ describe('computePayroll', () => {
 
   it('worker có 0 công + chỉ tạm ứng', () => {
     const r = computePayroll(
-      [
-        att({ employee_id: 'e1', work_shift: 0, advance_pay: 500_000, net_pay: -500_000 }),
-      ],
-      '2026-08'
+      [att({ employee_id: 'e1', work_shift: 0, advance_pay: 500_000, net_pay: -500_000 })],
+      '2026-08',
     );
     expect(r.rows[0].shifts).toBe(0);
     expect(r.rows[0].advance).toBe(500_000);

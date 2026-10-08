@@ -55,7 +55,7 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header Banner - Giám Đốc */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-[var(--primary-600)] to-[var(--primary-500)] text-white shadow-md">
+      <div className="workshop-hero block">
         <div className="flex justify-between items-center mb-2">
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/20 backdrop-blur-md">
             Giao diện Giám Đốc
@@ -85,7 +85,7 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
             <div className="flex items-center space-x-2 text-[var(--primary-500)] mb-1">
               <DollarSign size={16} />
               <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                Lợi nhuận gộp
+                Chênh lệch bán − mua − chi
               </span>
             </div>
             <p className="text-base font-black font-mono text-[var(--primary-500)]">

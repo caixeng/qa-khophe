@@ -9,11 +9,9 @@ describe('computeInventory', () => {
     });
   });
 
-  it('không bao giờ trả tồn kho âm dù xuất nhiều hơn xay', () => {
-    // Tình huống thật: phiếu xay bị xoá nhầm hoặc nhập thiếu.
-    // Hiện số âm ở màn hình kho chỉ gây hoang mang, kẹp về 0 rõ nghĩa hơn.
+  it('giữ số kg âm để phát hiện thiếu dữ liệu hoặc xuất vượt tồn', () => {
     const r = computeInventory(1_000, 5_000, 900);
-    expect(r.currentStockKg).toBe(0);
+    expect(r.currentStockKg).toBe(-4_000);
     expect(r.currentBags).toBe(0);
   });
 

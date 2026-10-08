@@ -1,7 +1,9 @@
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import './styles/fonts.css';
 import './index.css';
+import './styles/erp.css';
 import { installGlobalErrorHandlers } from './lib/errorLog';
 
 installGlobalErrorHandlers();

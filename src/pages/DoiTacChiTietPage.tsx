@@ -37,23 +37,39 @@ export const DoiTacChiTietPage: React.FC = () => {
     error: cError,
   } = useAsyncData(() => contactsService.getById(id), [id]);
 
-  const { data: imports, loading: iLoading } = useAsyncList(
-    () => importsService.getAll({ from: range.from, to: range.to }),
-    [range.from, range.to],
-  );
-  const { data: exports, loading: eLoading } = useAsyncList(
-    () => exportsService.getAll({ from: range.from, to: range.to }),
-    [range.from, range.to],
-  );
+  const {
+    data: imports,
+    loading: iLoading,
+    error: iError,
+  } = useAsyncList(() => importsService.getAll({ contactId: id, all: true }), [id]);
+  const {
+    data: exports,
+    loading: eLoading,
+    error: eError,
+  } = useAsyncList(() => exportsService.getAll({ contactId: id, all: true }), [id]);
 
-  const { data: paidImports } = useAsyncData(() => paymentsService.getPaidByRefType('import'), []);
-  const { data: paidExports } = useAsyncData(() => paymentsService.getPaidByRefType('export'), []);
+  const {
+    data: paidImports,
+    loading: piLoading,
+    error: piError,
+  } = useAsyncData(() => paymentsService.getPaidByRefType('import'), []);
+  const {
+    data: paidExports,
+    loading: peLoading,
+    error: peError,
+  } = useAsyncData(() => paymentsService.getPaidByRefType('export'), []);
 
   const paidByImport = useMemo(() => paidImports ?? {}, [paidImports]);
   const paidByExport = useMemo(() => paidExports ?? {}, [paidExports]);
 
-  const myImports = useMemo(() => imports.filter((i) => i.contact_id === id), [imports, id]);
-  const myExports = useMemo(() => exports.filter((e) => e.contact_id === id), [exports, id]);
+  const myImports = useMemo(
+    () => imports.filter((i) => i.contact_id === id && i.date >= range.from && i.date <= range.to),
+    [imports, id, range.from, range.to],
+  );
+  const myExports = useMemo(
+    () => exports.filter((e) => e.contact_id === id && e.date >= range.from && e.date <= range.to),
+    [exports, id, range.from, range.to],
+  );
 
   const summary = useMemo(() => {
     const importKg = myImports.reduce((s, i) => s + (Number(i.quantity_kg) || 0), 0);
@@ -62,22 +78,27 @@ export const DoiTacChiTietPage: React.FC = () => {
     const exportAmount = myExports.reduce((s, e) => s + (Number(e.total_amount) || 0), 0);
 
     // Phải trả: tiền hàng mình mua của họ mà chưa trả hết.
-    const payable = myImports.reduce(
-      (s, i) =>
-        s + computeRemainingWithLegacyStatus(i.total_amount, paidByImport[i.id] || 0, i.payment_status),
-      0,
-    );
+    const payable = imports
+      .filter((i) => i.contact_id === id)
+      .reduce(
+        (s, i) =>
+          s + computeRemainingWithLegacyStatus(i.total_amount, paidByImport[i.id] || 0, i.payment_status),
+        0,
+      );
     // Phải thu: tiền hàng họ mua của mình mà chưa trả hết.
-    const receivable = myExports.reduce(
-      (s, e) =>
-        s + computeRemainingWithLegacyStatus(e.total_amount, paidByExport[e.id] || 0, e.payment_status),
-      0,
-    );
+    const receivable = exports
+      .filter((e) => e.contact_id === id)
+      .reduce(
+        (s, e) =>
+          s + computeRemainingWithLegacyStatus(e.total_amount, paidByExport[e.id] || 0, e.payment_status),
+        0,
+      );
 
     return { importKg, importAmount, exportKg, exportAmount, payable, receivable };
-  }, [myImports, myExports, paidByImport, paidByExport]);
+  }, [myImports, myExports, imports, exports, id, paidByImport, paidByExport]);
 
-  const loading = cLoading || iLoading || eLoading;
+  const loading = cLoading || iLoading || eLoading || piLoading || peLoading;
+  const error = cError || iError || eError || piError || peError;
 
   return (
     <div className="page-shell animate-fade-in">
@@ -103,7 +124,10 @@ export const DoiTacChiTietPage: React.FC = () => {
         </div>
       </div>
 
-      <DataState loading={loading} error={cError} isEmpty={!contact}>
+      <p className="text-xs text-[var(--text-muted)]">
+        Sản lượng và lịch sử theo kỳ đã chọn; công nợ còn lại tính trên toàn bộ lịch sử.
+      </p>
+      <DataState loading={loading} error={error} isEmpty={!contact}>
         {contact && (
           <>
             {/* Thông tin liên hệ */}
@@ -288,9 +312,21 @@ export const DoiTacChiTietPage: React.FC = () => {
                         fields: [
                           { label: 'Khối lượng', value: formatKg(item.quantity_kg) },
                           { label: 'Đơn giá', value: `${formatTien(item.price_per_kg)}/kg` },
-                          { label: 'Thành tiền', value: <span className="font-mono">{formatTien(item.total_amount)}</span> },
+                          {
+                            label: 'Thành tiền',
+                            value: <span className="font-mono">{formatTien(item.total_amount)}</span>,
+                          },
                           ...(canSeeFinance
-                            ? [{ label: 'Còn nợ', value: <span className="font-mono text-amber-600">{remaining > 0 ? formatTien(remaining) : '—'}</span> }]
+                            ? [
+                                {
+                                  label: 'Còn nợ',
+                                  value: (
+                                    <span className="font-mono text-amber-600">
+                                      {remaining > 0 ? formatTien(remaining) : '—'}
+                                    </span>
+                                  ),
+                                },
+                              ]
                             : []),
                         ],
                         actions: (
@@ -395,9 +431,21 @@ export const DoiTacChiTietPage: React.FC = () => {
                         fields: [
                           { label: 'Số bao', value: `${item.bags_count || 0} bao` },
                           { label: 'Khối lượng', value: formatKg(item.total_kg || 0) },
-                          { label: 'Thành tiền', value: <span className="font-mono">{formatTien(item.total_amount)}</span> },
+                          {
+                            label: 'Thành tiền',
+                            value: <span className="font-mono">{formatTien(item.total_amount)}</span>,
+                          },
                           ...(canSeeFinance
-                            ? [{ label: 'Còn nợ', value: <span className="font-mono text-rose-600">{remaining > 0 ? formatTien(remaining) : '—'}</span> }]
+                            ? [
+                                {
+                                  label: 'Còn nợ',
+                                  value: (
+                                    <span className="font-mono text-rose-600">
+                                      {remaining > 0 ? formatTien(remaining) : '—'}
+                                    </span>
+                                  ),
+                                },
+                              ]
                             : []),
                         ],
                         actions: (

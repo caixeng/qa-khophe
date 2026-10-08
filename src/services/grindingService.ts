@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { runQuery, ServiceError, MAX_ROWS, type DateRangeFilter } from '../lib/serviceError';
 import type { Grinding } from '../types';
 import { today } from '../lib/date';
+import { readAllPages } from '../lib/pagination';
 
 type GrindingRow = {
   id: string;
@@ -59,15 +60,20 @@ function assertValidQuantities(input: number, output: number) {
 
 export const grindingService = {
   async getAll(filter: DateRangeFilter = {}): Promise<Grinding[]> {
-    const rows = await runQuery<GrindingRow[]>('tải danh sách phiếu xay', () => {
-      let q = supabase.from('grinding').select(SELECT_COLUMNS).is('deleted_at', null);
-      if (filter.from) q = q.gte('date', filter.from);
-      if (filter.to) q = q.lte('date', filter.to);
-      return q
-        .order('date', { ascending: false })
-        .limit(filter.limit ?? MAX_ROWS)
-        .returns<GrindingRow[]>();
-    });
+    const rows = await readAllPages<GrindingRow>(
+      'tải danh sách phiếu xay',
+      (from, to) => {
+        let q = supabase.from('grinding').select(SELECT_COLUMNS).is('deleted_at', null);
+        if (filter.from) q = q.gte('date', filter.from);
+        if (filter.to) q = q.lte('date', filter.to);
+        return q
+          .order('date', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to)
+          .returns<GrindingRow[]>();
+      },
+      { maxRows: filter.all ? 100_000 : (filter.limit ?? MAX_ROWS) },
+    );
     return rows.map(mapRow);
   },
 
@@ -114,12 +120,7 @@ export const grindingService = {
     if ('notes' in item) payload.notes = item.notes || null;
 
     const row = await runQuery<GrindingRow>('cập nhật phiếu xay', () =>
-      supabase
-        .from('grinding')
-        .update(payload)
-        .eq('id', id)
-        .select(SELECT_COLUMNS)
-        .single<GrindingRow>(),
+      supabase.from('grinding').update(payload).eq('id', id).select(SELECT_COLUMNS).single<GrindingRow>(),
     );
 
     return mapRow(row);

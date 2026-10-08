@@ -207,7 +207,9 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Đầu ra thành phẩm
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-emerald-600 [overflow-wrap:anywhere]">{formatKg(stats.totalOutput)}</p>
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-emerald-600 [overflow-wrap:anywhere]">
+              {formatKg(stats.totalOutput)}
+            </p>
           </div>
         </div>
 
@@ -219,7 +221,9 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng hao hụt
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-rose-600 [overflow-wrap:anywhere]">{formatKg(stats.totalLossKg)}</p>
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-rose-600 [overflow-wrap:anywhere]">
+              {formatKg(stats.totalLossKg)}
+            </p>
           </div>
         </div>
 

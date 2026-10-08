@@ -35,7 +35,11 @@ export const TaiChinhPage: React.FC = () => {
   return (
     <div className="page-shell animate-fade-in">
       {/* CIC-IBST Pill Tabs Segmented Control */}
-      <div role="tablist" aria-label="Nghiệp vụ tài chính" className="grid w-full grid-cols-2 gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] sm:flex sm:w-fit">
+      <div
+        role="tablist"
+        aria-label="Nghiệp vụ tài chính"
+        className="grid w-full grid-cols-2 gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] sm:flex sm:w-fit"
+      >
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;

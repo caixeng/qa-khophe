@@ -43,7 +43,9 @@ export function PwaStatus() {
           {online ? 'Đã có phiên bản mới' : 'Đang ngoại tuyến'}
         </p>
         <p className="text-xs text-[var(--text-muted)]">
-          {online ? 'Tải lại để sử dụng bản mới nhất.' : 'Dữ liệu mới sẽ không thể tải hoặc lưu cho tới khi có mạng.'}
+          {online
+            ? 'Tải lại để sử dụng bản mới nhất.'
+            : 'Dữ liệu mới sẽ không thể tải hoặc lưu cho tới khi có mạng.'}
         </p>
       </div>
       {online && (

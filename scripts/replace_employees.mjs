@@ -74,10 +74,7 @@ async function run() {
     { name: 'Bùi Xuân Lệ', role: 'staff', status: 'active', daily_salary: 350000 },
   ];
 
-  const { data: inserted, error: insErr } = await supabase
-    .from('employees')
-    .insert(newEmployees)
-    .select();
+  const { data: inserted, error: insErr } = await supabase.from('employees').insert(newEmployees).select();
 
   if (insErr) {
     console.error('Error inserting new employees:', insErr);

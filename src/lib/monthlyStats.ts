@@ -2,6 +2,8 @@
  * Helper tính toán và tổng hợp dữ liệu hoạt động theo tháng cho Dashboard (KhoPhe ERP)
  */
 
+import { calculateAttendancePay } from './payroll';
+
 export interface MonthlyStatItem {
   month: string; // '2026-10'
   label: string; // 'Thg 10/26'
@@ -134,6 +136,9 @@ interface RawExpense {
 
 interface RawAttendance {
   date: string;
+  work_shift?: number;
+  daily_pay?: number;
+  overtime_hours?: number;
   net_pay?: number | string | null;
   advance_pay?: number | string | null;
 }
@@ -220,7 +225,14 @@ export function aggregateMonthlyStats(params: {
     if (stat) {
       const netPay = Number(item.net_pay) || 0;
       const advancePay = Number(item.advance_pay) || 0;
-      stat.operatingCost += netPay + advancePay;
+      stat.operatingCost +=
+        item.work_shift !== undefined && item.daily_pay !== undefined
+          ? calculateAttendancePay({
+              work_shift: item.work_shift,
+              daily_pay: item.daily_pay,
+              overtime_hours: item.overtime_hours,
+            }).gross
+          : netPay + advancePay;
     }
   }
 

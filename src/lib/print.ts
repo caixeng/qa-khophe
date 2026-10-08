@@ -50,7 +50,10 @@ function openAndPrint(html: string) {
 function esc(s: string | undefined | null): string {
   return (s ?? '').replace(
     /[&<>"']/g,
-    (c) => (({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }) as Record<string, string>)[c]!,
+    (c) =>
+      (({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }) as Record<string, string>)[
+        c
+      ]!,
   );
 }
 

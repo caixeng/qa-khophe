@@ -7,114 +7,82 @@ interface UseAsyncDataOptions {
 
 export function useAsyncData<T>(
   fetcher: () => Promise<T>,
-  deps: any[] = [],
+  deps: readonly unknown[] = [],
   options: UseAsyncDataOptions = {},
 ) {
-  const { staleTime = 30000, refetchOnFocus = false } = options;
-
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Ref to prevent state updates on unmounted component
-  const isMounted = useRef(true);
-  const lastFetched = useRef<number>(0);
-  const hasData = useRef(false);
-
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
+  const { staleTime = 30_000, refetchOnFocus = false } = options;
+  const key = JSON.stringify(deps);
+  const fetcherRef = useRef(fetcher);
+  fetcherRef.current = fetcher;
+  const sequence = useRef(0);
+  const mounted = useRef(false);
+  const fetched = useRef(0);
+  const [state, setState] = useState<{ key: string; data: T | null; loading: boolean; error: string | null }>(
+    { key, data: null, loading: true, error: null },
+  );
 
   const fetchData = useCallback(
     async (force = false) => {
-      if (!isMounted.current) return;
-
-      // Check staleTime — bỏ qua khi force (vd: gọi refetch() sau khi thêm/sửa/xoá)
-      if (!force && hasData.current && Date.now() - lastFetched.current < staleTime) {
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
+      if (!mounted.current || (!force && fetched.current && Date.now() - fetched.current < staleTime)) return;
+      const request = ++sequence.current;
+      setState((previous) => ({
+        key,
+        data: previous.key === key ? previous.data : null,
+        loading: true,
+        error: null,
+      }));
       try {
-        const result = await fetcher();
-        if (isMounted.current) {
-          setData(result);
-          hasData.current = true;
-          lastFetched.current = Date.now();
-        }
-      } catch (err: any) {
-        if (isMounted.current) {
-          setError(err.message || 'Đã xảy ra lỗi khi tải dữ liệu');
-        }
-      } finally {
-        if (isMounted.current) {
-          setLoading(false);
-        }
+        const data = await fetcherRef.current();
+        if (!mounted.current || request !== sequence.current) return;
+        fetched.current = Date.now();
+        setState({ key, data, loading: false, error: null });
+      } catch (error) {
+        if (!mounted.current || request !== sequence.current) return;
+        setState({
+          key,
+          data: null,
+          loading: false,
+          error: error instanceof Error ? error.message : 'Đã xảy ra lỗi khi tải dữ liệu',
+        });
       }
     },
-    [fetcher, staleTime],
+    [key, staleTime],
   );
 
-  // Khi deps thay đổi (ví dụ: đổi ngày lọc), reset cache để staleTime không
-  // chặn việc tải dữ liệu mới. Trước đây nếu đổi filter trong vòng 30s, dữ
-  // liệu cũ vẫn hiện vì fetchData() thấy hasData + chưa hết staleTime → bỏ qua.
-  const prevDepsRef = useRef<string>('');
-
   useEffect(() => {
-    const depsKey = JSON.stringify(deps);
-    if (prevDepsRef.current !== '' && prevDepsRef.current !== depsKey) {
-      hasData.current = false;
-      lastFetched.current = 0;
-    }
-    prevDepsRef.current = depsKey;
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+    mounted.current = true;
+    fetched.current = 0;
+    void fetchData(true);
+    return () => {
+      mounted.current = false;
+      sequence.current += 1;
+    };
+  }, [fetchData]);
 
   useEffect(() => {
     if (!refetchOnFocus) return;
-
     const onFocus = () => {
-      fetchData(true);
+      void fetchData();
     };
-
     window.addEventListener('focus', onFocus);
-    return () => {
-      window.removeEventListener('focus', onFocus);
-    };
+    return () => window.removeEventListener('focus', onFocus);
   }, [refetchOnFocus, fetchData]);
 
-  return { data, loading, error, refetch: () => fetchData(true) };
-}
-
-/**
- * Một mảng rỗng duy nhất, dùng chung cho mọi danh sách chưa tải xong.
- *
- * Viết `data || []` trong thân component sẽ tạo một mảng MỚI ở mỗi lần render,
- * nên mọi `useMemo` phụ thuộc vào nó đều tính lại liên tục và cảnh báo
- * exhaustive-deps nổi lên khắp nơi. Dùng chung một tham chiếu bất biến thì
- * `useMemo` mới thực sự có tác dụng.
- */
-const EMPTY_LIST: readonly never[] = Object.freeze([]);
-
-/**
- * Bản `useAsyncData` dành cho dữ liệu dạng danh sách: không bao giờ trả `null`,
- * và tham chiếu mảng rỗng luôn giữ nguyên giữa các lần render.
- */
-export function useAsyncList<T>(
-  fetcher: () => Promise<T[]>,
-  deps: unknown[] = [],
-  options: UseAsyncDataOptions = {},
-) {
-  const { data, loading, error, refetch } = useAsyncData<T[]>(fetcher, deps, options);
+  const refetch = useCallback(() => fetchData(true), [fetchData]);
   return {
-    data: data ?? (EMPTY_LIST as unknown as T[]),
-    loading,
-    error,
+    data: state.key === key ? state.data : null,
+    loading: state.key !== key || state.loading,
+    error: state.key === key ? state.error : null,
     refetch,
   };
+}
+
+const EMPTY_LIST: readonly never[] = Object.freeze([]);
+export function useAsyncList<T>(
+  fetcher: () => Promise<T[]>,
+  deps: readonly unknown[] = [],
+  options: UseAsyncDataOptions = {},
+) {
+  const { data, ...state } = useAsyncData<T[]>(fetcher, deps, options);
+  return { data: data ?? (EMPTY_LIST as unknown as T[]), ...state };
 }

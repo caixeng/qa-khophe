@@ -52,7 +52,7 @@ export function calculateAttendancePay(attendance: Partial<Attendance>): Attenda
   const advance = Math.max(0, Number(attendance.advance_pay) || 0);
   const regular = shifts * dailyPay;
   const overtime = (overtimeHours * dailyPay * OVERTIME_MULTIPLIER) / STANDARD_WORKDAY_HOURS;
-  const gross = regular + overtime;
+  const gross = Math.round(regular + overtime);
 
   return {
     regular,
@@ -82,14 +82,16 @@ export function computePayroll(attendance: readonly Attendance[], month: string)
     if (!(a.date || '').startsWith(month)) continue;
 
     const normalizedName = (a.employee_name || 'Không rõ').trim();
-    const key = a.employee_id ? `employee:${a.employee_id}` : `name:${normalizedName.toLocaleLowerCase('vi')}`;
+    const key = a.employee_id
+      ? `employee:${a.employee_id}`
+      : `name:${normalizedName.toLocaleLowerCase('vi')}`;
     const entry = byPerson.get(key) ?? {
       unpaidSum: 0,
       row: {
-      key,
-      employee_id: a.employee_id,
-      name: normalizedName,
-      ...EMPTY_TOTALS,
+        key,
+        employee_id: a.employee_id,
+        name: normalizedName,
+        ...EMPTY_TOTALS,
       },
     };
     const row = entry.row;
@@ -108,9 +110,9 @@ export function computePayroll(attendance: readonly Attendance[], month: string)
 
     // Cộng dồn lương chưa trả theo TỪNG NGÀY thay vì cả tháng
     if (a.payment_status !== 'paid') {
-      entry.unpaidSum += Math.max(0, pay.net);
+      entry.unpaidSum += pay.net;
     }
-    row.unpaid = entry.unpaidSum;
+    row.unpaid = Math.max(0, entry.unpaidSum);
 
     byPerson.set(key, entry);
   }

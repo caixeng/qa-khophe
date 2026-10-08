@@ -55,7 +55,10 @@ export const DataState: React.FC<DataStateProps> = ({
           ↓ Kéo xuống để làm mới
         </p>
         {onRetry && (
-          <button onClick={onRetry} className="tap-target min-h-11 px-6 text-base btn-secondary flex items-center gap-2 transition-colors duration-200">
+          <button
+            onClick={onRetry}
+            className="tap-target min-h-11 px-6 text-base btn-secondary flex items-center gap-2 transition-colors duration-200"
+          >
             <RefreshCw className="w-4 h-4" />
             Thử lại
           </button>

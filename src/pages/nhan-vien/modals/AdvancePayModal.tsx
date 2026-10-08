@@ -29,11 +29,7 @@ export const AdvancePayModal: React.FC<AdvancePayModalProps> = ({
   onSubmit,
 }) => {
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Phiếu ứng lương nhân viên"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title="Phiếu ứng lương nhân viên">
       <form onSubmit={onSubmit} className="space-y-4">
         <FormField label="Chọn nhân viên ứng lương" required>
           <select
@@ -50,11 +46,13 @@ export const AdvancePayModal: React.FC<AdvancePayModalProps> = ({
             }}
           >
             <option value="">-- Chọn nhân viên --</option>
-            {employees.filter((emp) => emp.status === 'active').map((emp) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.name} ({formatTien(emp.daily_salary)}/ngày)
-              </option>
-            ))}
+            {employees
+              .filter((emp) => emp.status === 'active')
+              .map((emp) => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.name} ({formatTien(emp.daily_salary)}/ngày)
+                </option>
+              ))}
           </select>
         </FormField>
 
@@ -93,11 +91,7 @@ export const AdvancePayModal: React.FC<AdvancePayModalProps> = ({
         </FormField>
 
         <div className="flex justify-end space-x-3 pt-4 border-t border-[var(--border-color)]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-secondary"
-          >
+          <button type="button" onClick={onClose} className="btn-secondary">
             Hủy
           </button>
           <button

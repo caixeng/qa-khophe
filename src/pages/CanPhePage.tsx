@@ -22,6 +22,7 @@ interface CanPhePageProps {
 const DRAFT_KEY = 'khophe_can_phe_draft_v1';
 
 interface Draft {
+  requestId?: string;
   bags: number[];
   pallet: PalletType;
   palletQty: number;
@@ -66,6 +67,8 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
 
   const initialDraft = useMemo(() => loadDraft(), []);
   const restoredOnMount = useRef(!!initialDraft);
+  const requestId = useRef(initialDraft?.requestId || crypto.randomUUID());
+  const savingRef = useRef(false);
 
   const [activeBags, setActiveBags] = useState<number[]>(initialDraft?.bags ?? []);
   const [isNumPadOpen, setIsNumPadOpen] = useState(false);
@@ -92,7 +95,13 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
   // giữa chừng cũng không mất số đã cân tay ngoài xưởng.
   useEffect(() => {
     if (activeBags.length > 0) {
-      saveDraft({ bags: activeBags, pallet: selectedPallet, palletQty, contactId: contactId || undefined });
+      saveDraft({
+        requestId: requestId.current,
+        bags: activeBags,
+        pallet: selectedPallet,
+        palletQty,
+        contactId: contactId || undefined,
+      });
     } else {
       clearDraft();
     }
@@ -133,10 +142,14 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
   };
 
   const saveCurrentSession = async (): Promise<boolean> => {
+    if (savingRef.current) return false;
+    savingRef.current = true;
     setSaving(true);
     try {
       await weighingService.createSessionWithBags(
         {
+          id: requestId.current,
+          tare_kg: tareWeight,
           material_type: `Cân phế ${PALLET_TYPES[selectedPallet].name}`,
           total_bags: activeBags.length,
           total_kg: netWeight,
@@ -144,6 +157,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
         },
         activeBags.map((w, idx) => ({ bag_number: activeBags.length - idx, weight_kg: w })),
       );
+      requestId.current = crypto.randomUUID();
       toast.success('Đã lưu phiên cân');
       clearDraft();
       refetch();
@@ -153,6 +167,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
       console.error('Lỗi khi lưu phiên cân:', err);
       return false;
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };

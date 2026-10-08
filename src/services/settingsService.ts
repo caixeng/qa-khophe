@@ -1,25 +1,31 @@
 import { supabase } from '../lib/supabase';
-import { throwIfError } from '../lib/serviceError';
+import { throwIfError, runQuery, ServiceError } from '../lib/serviceError';
 
 const DEFAULT_KG_PER_BAG = 900;
 const DEFAULT_OPENING_STOCK_KG = 0;
 const DEFAULT_LOW_STOCK_THRESHOLD_KG = 0; // 0 = tắt cảnh báo tồn kho thấp
 
 async function getNumericSetting(key: string, fallback: number): Promise<number> {
-  try {
-    const { data, error } = await supabase.from('settings').select('value').eq('key', key).maybeSingle();
-
-    if (error || !data) return fallback;
-    return Number(data.value) || fallback;
-  } catch {
-    return fallback;
+  const data = await runQuery<{ value: string } | null>(
+    'tải cấu hình kho',
+    () => supabase.from('settings').select('value').eq('key', key).maybeSingle(),
+    { allowNullData: true },
+  );
+  if (!data) return fallback;
+  const value = Number(data.value);
+  if (!Number.isFinite(value) || value < 0 || (key === 'kg_per_bag' && value <= 0)) {
+    throw new ServiceError('Cấu hình kho không hợp lệ. Kiểm tra lại trong Cài đặt.');
   }
+  return value;
 }
 
 async function setNumericSetting(key: string, value: number): Promise<void> {
+  if (!Number.isFinite(value) || value < 0 || (key === 'kg_per_bag' && value <= 0)) {
+    throw new ServiceError('Giá trị cấu hình phải là số hợp lệ, không âm; kg/bao phải lớn hơn 0.');
+  }
   const { error } = await supabase
     .from('settings')
-    .upsert({ key, value: String(Math.max(0, value)) }, { onConflict: 'key' });
+    .upsert({ key, value: String(value) }, { onConflict: 'key' });
 
   throwIfError(error, 'lưu cài đặt');
 }

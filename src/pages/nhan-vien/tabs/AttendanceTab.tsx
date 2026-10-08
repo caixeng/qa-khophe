@@ -5,7 +5,10 @@ import { calculateAttendancePay } from '../../../lib/payroll';
 import { DataState } from '../../../components/DataState';
 import { StatusBadge } from '../../../components/StatusBadge';
 import { PaginationBar } from '../../../components/PaginationBar';
-import { QuickAttendanceCard, type QuickAttendanceState } from '../../../components/mobile/QuickAttendanceCard';
+import {
+  QuickAttendanceCard,
+  type QuickAttendanceState,
+} from '../../../components/mobile/QuickAttendanceCard';
 import { MobileCardList } from '../../../components/mobile/MobileCardList';
 import type { Attendance, Employee } from '../../../types';
 
@@ -112,7 +115,10 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
           ) : (
             <div className="flex items-center gap-2">
               <Calendar size={16} className="text-[var(--primary-500)]" />
-              <label htmlFor="attendance-history-month" className="text-xs font-bold text-[var(--text-secondary)]">
+              <label
+                htmlFor="attendance-history-month"
+                className="text-xs font-bold text-[var(--text-secondary)]"
+              >
                 Tháng lịch sử
               </label>
               <input
@@ -175,7 +181,11 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
 
       {/* MODE A: BẢNG CHẤM CÔNG NHANH 1-CHẠM */}
       {attViewMode === 'quick' && (
-        <DataState loading={empLoading} error={empError} isEmpty={employees.filter((e) => e.status === 'active').length === 0}>
+        <DataState
+          loading={empLoading}
+          error={empError}
+          isEmpty={employees.filter((e) => e.status === 'active').length === 0}
+        >
           <div className="space-y-3 pb-36 lg:pb-24">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {employees
@@ -234,14 +244,22 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                 <caption className="sr-only">Bảng chấm công nhân viên</caption>
                 <thead>
                   <tr>
-                    <th scope="col" className="th-cell">Ngày chấm công</th>
-                    <th scope="col" className="th-cell">Tên công nhân</th>
+                    <th scope="col" className="th-cell">
+                      Ngày chấm công
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Tên công nhân
+                    </th>
                     <th className="th-cell text-right">Số công</th>
                     <th className="th-cell text-right">Đơn giá/ngày</th>
                     <th className="th-cell text-right">Tạm ứng</th>
                     <th className="th-cell text-right">Thực lĩnh</th>
-                    <th scope="col" className="th-cell">Trạng thái thanh toán</th>
-                    <th scope="col" className="th-cell">Ghi chú công</th>
+                    <th scope="col" className="th-cell">
+                      Trạng thái thanh toán
+                    </th>
+                    <th scope="col" className="th-cell">
+                      Ghi chú công
+                    </th>
                     <th className="th-cell text-right">Thao tác</th>
                   </tr>
                 </thead>
@@ -328,7 +346,14 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                 fields: [
                   { label: 'Số công', value: `${att.work_shift} công` },
                   { label: 'Tăng ca', value: att.overtime_hours ? `${att.overtime_hours} giờ` : '—' },
-                  { label: 'Thực lĩnh', value: <span className="font-mono text-emerald-600">{formatTien(Math.max(0, calculateAttendancePay(att).net))}</span> },
+                  {
+                    label: 'Thực lĩnh',
+                    value: (
+                      <span className="font-mono text-emerald-600">
+                        {formatTien(Math.max(0, calculateAttendancePay(att).net))}
+                      </span>
+                    ),
+                  },
                   { label: 'Tạm ứng', value: att.advance_pay ? formatTien(att.advance_pay) : '0 đ' },
                   { label: 'Ngày chốt', value: att.paid_at ? formatNgay(att.paid_at) : 'Chưa chốt' },
                   { label: 'Ghi chú', value: att.notes || '—' },

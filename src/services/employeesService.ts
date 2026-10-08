@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { readAllPages } from '../lib/pagination';
 import { runQuery, MAX_ROWS, type DateRangeFilter } from '../lib/serviceError';
 import type { Employee, Attendance } from '../types';
 import { monthRange, today } from '../lib/date';
@@ -39,7 +40,11 @@ export function normalizeAttendanceRecord(item: any, fallbackName?: string): Att
 export const employeesService = {
   async getAll(): Promise<Employee[]> {
     return runQuery<Employee[]>('tải danh sách nhân viên', () =>
-      supabase.from('employees').select('*').order('status', { ascending: true }).order('name', { ascending: true }),
+      supabase
+        .from('employees')
+        .select('*')
+        .order('status', { ascending: true })
+        .order('name', { ascending: true }),
     );
   },
 
@@ -91,12 +96,16 @@ export const employeesService = {
 
 export const attendanceService = {
   async getAttendance(filter: DateRangeFilter = {}): Promise<Attendance[]> {
-    const data = await runQuery<any[]>('tải bảng chấm công', () => {
-      let q = supabase.from('attendance').select('*, employees(name)');
-      if (filter.from) q = q.gte('date', filter.from);
-      if (filter.to) q = q.lte('date', filter.to);
-      return q.order('date', { ascending: false }).limit(filter.limit ?? MAX_ROWS);
-    });
+    const data = await readAllPages<any>(
+      'tải bảng chấm công',
+      (from, to) => {
+        let q = supabase.from('attendance').select('*, employees(name)');
+        if (filter.from) q = q.gte('date', filter.from);
+        if (filter.to) q = q.lte('date', filter.to);
+        return q.order('date', { ascending: false }).order('id').range(from, to);
+      },
+      { maxRows: filter.all ? 100_000 : (filter.limit ?? MAX_ROWS) },
+    );
 
     return data.map((item) => normalizeAttendanceRecord(item));
   },

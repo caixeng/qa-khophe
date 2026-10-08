@@ -16,11 +16,7 @@ export interface StockCount {
 export const stockCountService = {
   async getAll(): Promise<StockCount[]> {
     return runQuery<StockCount[]>('tải danh sách kiểm kê', () =>
-      supabase
-        .from('stock_counts')
-        .select('*')
-        .order('date', { ascending: false })
-        .limit(MAX_ROWS),
+      supabase.from('stock_counts').select('*').order('date', { ascending: false }).limit(MAX_ROWS),
     );
   },
 

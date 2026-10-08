@@ -259,7 +259,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng số bao xuất
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">{stats.totalBags} bao</p>
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">
+              {stats.totalBags} bao
+            </p>
           </div>
         </div>
 
@@ -271,7 +273,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Doanh thu xuất phế
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-emerald-600 [overflow-wrap:anywhere]">{formatTien(stats.totalRevenue)}</p>
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-emerald-600 [overflow-wrap:anywhere]">
+              {formatTien(stats.totalRevenue)}
+            </p>
           </div>
         </div>
 
@@ -283,7 +287,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Chưa thu (Công nợ)
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-rose-600 [overflow-wrap:anywhere]">{formatTien(stats.unpaidAmount)}</p>
+            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-rose-600 [overflow-wrap:anywhere]">
+              {formatTien(stats.unpaidAmount)}
+            </p>
           </div>
         </div>
       </div>
@@ -468,10 +474,18 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             title: item.contact_name || 'Khách lẻ',
             subtitle: `${formatNgay(item.date)} • ${item.export_type === 'nvl' ? '📦 Phế NVL (Thô)' : '🏭 Thành phẩm'}`,
             badge: <StatusBadge status={item.payment_status} />,
-            accentColor: item.export_type === 'nvl' ? '#f59e0b' : item.payment_status === 'unpaid' ? '#f43f5e' : '#10b981',
+            accentColor:
+              item.export_type === 'nvl'
+                ? '#f59e0b'
+                : item.payment_status === 'unpaid'
+                  ? '#f43f5e'
+                  : '#10b981',
             onClick: () => setSelectedDetail(item),
             fields: [
-              { label: 'Loại phế', value: item.export_type === 'nvl' ? 'Phế NVL (Thô/Trả NCC)' : 'Thành phẩm' },
+              {
+                label: 'Loại phế',
+                value: item.export_type === 'nvl' ? 'Phế NVL (Thô/Trả NCC)' : 'Thành phẩm',
+              },
               { label: 'Số bao', value: `${item.bags_count} bao` },
               { label: 'Khối lượng', value: formatKg(item.total_kg || 0) },
               { label: 'Đơn giá', value: `${formatTien(item.price_per_kg)}/kg` },
@@ -508,7 +522,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
               <div>
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">LOẠI PHẾ XUẤT</span>
                 <span className="font-bold text-sm text-[var(--text-primary)]">
-                  {selectedDetail.export_type === 'nvl' ? '📦 Phế NVL (Phế thô/Trả NCC)' : '🏭 Thành phẩm (Đã xay)'}
+                  {selectedDetail.export_type === 'nvl'
+                    ? '📦 Phế NVL (Phế thô/Trả NCC)'
+                    : '🏭 Thành phẩm (Đã xay)'}
                 </span>
               </div>
               <div>

@@ -1,16 +1,21 @@
 import { supabase } from '../lib/supabase';
+import { readAllPages } from '../lib/pagination';
 import { runQuery, MAX_ROWS, type DateRangeFilter } from '../lib/serviceError';
 import type { Expense, Advance } from '../types';
 import { today } from '../lib/date';
 
 export const expensesService = {
   async getExpenses(filter: DateRangeFilter = {}): Promise<Expense[]> {
-    const data = await runQuery<any[]>('tải danh sách chi phí', () => {
-      let q = supabase.from('expenses').select('*');
-      if (filter.from) q = q.gte('date', filter.from);
-      if (filter.to) q = q.lte('date', filter.to);
-      return q.order('date', { ascending: false }).limit(filter.limit ?? MAX_ROWS);
-    });
+    const data = await readAllPages<any>(
+      'tải danh sách chi phí',
+      (from, to) => {
+        let q = supabase.from('expenses').select('*');
+        if (filter.from) q = q.gte('date', filter.from);
+        if (filter.to) q = q.lte('date', filter.to);
+        return q.order('date', { ascending: false }).order('id').range(from, to);
+      },
+      { maxRows: filter.all ? 100_000 : (filter.limit ?? MAX_ROWS) },
+    );
 
     return data.map((item) => ({
       id: item.id,
@@ -66,12 +71,16 @@ export const expensesService = {
   },
 
   async getAdvances(filter: DateRangeFilter = {}): Promise<Advance[]> {
-    return runQuery<Advance[]>('tải sổ ứng tiền', () => {
-      let q = supabase.from('advances').select('*');
-      if (filter.from) q = q.gte('date', filter.from);
-      if (filter.to) q = q.lte('date', filter.to);
-      return q.order('date', { ascending: false }).limit(filter.limit ?? MAX_ROWS);
-    });
+    return readAllPages<Advance>(
+      'tải sổ ứng tiền',
+      (from, to) => {
+        let q = supabase.from('advances').select('*');
+        if (filter.from) q = q.gte('date', filter.from);
+        if (filter.to) q = q.lte('date', filter.to);
+        return q.order('date', { ascending: false }).order('id').range(from, to);
+      },
+      { maxRows: filter.all ? 100_000 : (filter.limit ?? MAX_ROWS) },
+    );
   },
 
   async createAdvance(advance: Partial<Advance>): Promise<Advance> {

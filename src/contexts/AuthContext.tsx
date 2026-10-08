@@ -14,11 +14,13 @@ async function resolveProfile(session: Session): Promise<UserProfile | null> {
   const authId = session.user.id;
   const email = session.user.email;
 
-  const { data: byAuthId } = await supabase
+  const { data: byAuthId, error: profileError } = await supabase
     .from('users')
     .select('id, full_name, email, role')
     .eq('auth_id', authId)
+    .eq('is_active', true)
     .maybeSingle();
+  if (profileError) throw profileError;
 
   if (byAuthId) {
     return { id: byAuthId.id, name: byAuthId.full_name, email: byAuthId.email, role: byAuthId.role };
@@ -28,23 +30,26 @@ async function resolveProfile(session: Session): Promise<UserProfile | null> {
 
   // Admin có thể tạo sẵn dòng users theo email trước khi người đó đăng nhập lần
   // đầu; lần đăng nhập đầu tiên sẽ tự gắn auth_id vào đúng dòng đó.
-  const { data: byEmail } = await supabase
+  const { data: byEmail, error: emailError } = await supabase
     .from('users')
     .select('id, full_name, email, role')
     .eq('email', email)
     .is('auth_id', null)
+    .eq('is_active', true)
     .maybeSingle();
+  if (emailError) throw emailError;
 
   if (!byEmail) return null;
 
-  const { data: linked } = await supabase
+  const { data: linked, error: linkError } = await supabase
     .from('users')
     .update({ auth_id: authId })
     .eq('id', byEmail.id)
     .select('id, full_name, email, role')
     .single();
 
-  const profile = linked || byEmail;
+  if (linkError || !linked) throw linkError || new Error(NO_PROFILE_MESSAGE);
+  const profile = linked;
   return { id: profile.id, name: profile.full_name, email: profile.email, role: profile.role };
 }
 
@@ -100,7 +105,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (event === 'SIGNED_OUT') {
         setUser(null);
       } else if (event === 'TOKEN_REFRESHED' && session) {
-        void applySession(session);
+        // Run outside the auth callback to avoid waiting on the auth lock.
+        window.setTimeout(() => {
+          void applySession(session).catch(() => setUser(null));
+        }, 0);
       }
     });
 

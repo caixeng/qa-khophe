@@ -246,13 +246,37 @@ async function seed() {
   // 5. Employees
   const employeesData = [
     { name: 'Phạm Xuân Tú', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
-    { name: 'Võ Thị Hoa', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng (Võ Thị Hoa)' },
-    { name: 'Trần Quốc Mạnh', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
-    { name: 'Phan Văn Hoàng', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
+    {
+      name: 'Võ Thị Hoa',
+      role: 'staff',
+      daily_salary: 350000,
+      status: 'active',
+      notes: 'Nhân viên xưởng (Võ Thị Hoa)',
+    },
+    {
+      name: 'Trần Quốc Mạnh',
+      role: 'staff',
+      daily_salary: 350000,
+      status: 'active',
+      notes: 'Nhân viên xưởng',
+    },
+    {
+      name: 'Phan Văn Hoàng',
+      role: 'staff',
+      daily_salary: 350000,
+      status: 'active',
+      notes: 'Nhân viên xưởng',
+    },
     { name: 'Bùi Xuân Lệ', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
     { name: 'Anh Tiếp', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
     { name: 'Anh Tam', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng' },
-    { name: 'Chị Hoa', role: 'staff', daily_salary: 350000, status: 'active', notes: 'Nhân viên xưởng (Chị Hoa)' },
+    {
+      name: 'Chị Hoa',
+      role: 'staff',
+      daily_salary: 350000,
+      status: 'active',
+      notes: 'Nhân viên xưởng (Chị Hoa)',
+    },
   ];
   await supabase.from('employees').upsert(employeesData, { onConflict: 'name' });
 

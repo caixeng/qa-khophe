@@ -15,7 +15,6 @@ import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
 import { paymentsService, type PaymentRefType } from '../services/paymentsService';
 import { computeRemainingWithLegacyStatus } from '../lib/calc';
-import { MAX_ROWS_CUMULATIVE } from '../lib/serviceError';
 import type { Import, Export } from '../types';
 
 export const CongNoPage: React.FC = () => {
@@ -31,21 +30,25 @@ export const CongNoPage: React.FC = () => {
     loading: impLoading,
     error: impError,
     refetch: refetchImports,
-  } = useAsyncList(() => importsService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
+  } = useAsyncList(() => importsService.getAll({ all: true }), []);
   const {
     data: exports,
     loading: expLoading,
     error: expError,
     refetch: refetchExports,
-  } = useAsyncList(() => exportsService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
-  const { data: paidImports, refetch: refetchPaidImports } = useAsyncData(
-    () => paymentsService.getPaidByRefType('import'),
-    [],
-  );
-  const { data: paidExports, refetch: refetchPaidExports } = useAsyncData(
-    () => paymentsService.getPaidByRefType('export'),
-    [],
-  );
+  } = useAsyncList(() => exportsService.getAll({ all: true }), []);
+  const {
+    data: paidImports,
+    loading: paidImportsLoading,
+    error: paidImportsError,
+    refetch: refetchPaidImports,
+  } = useAsyncData(() => paymentsService.getPaidByRefType('import'), []);
+  const {
+    data: paidExports,
+    loading: paidExportsLoading,
+    error: paidExportsError,
+    refetch: refetchPaidExports,
+  } = useAsyncData(() => paymentsService.getPaidByRefType('export'), []);
 
   // Tham chiếu ổn định để useMemo bên dưới không tính lại ở mỗi lần render.
   const paidByImport = useMemo(() => paidImports ?? {}, [paidImports]);
@@ -133,6 +136,28 @@ export const CongNoPage: React.FC = () => {
   );
   const totalPayableAmount = useMemo(() => payables.reduce((sum, x) => sum + x.remaining, 0), [payables]);
 
+  const totalsLoading = impLoading || expLoading || paidImportsLoading || paidExportsLoading;
+  const totalsError = impError || expError || paidImportsError || paidExportsError;
+  if (totalsLoading || totalsError) {
+    return (
+      <div className="page-shell">
+        <PageHeader title="Công Nợ Đối Tác" subtitle="Đối chiếu đầy đủ phiếu và sổ thanh toán" />
+        <DataState
+          loading={totalsLoading}
+          error={totalsError}
+          isEmpty={false}
+          onRetry={() => {
+            [refetchImports, refetchExports, refetchPaidImports, refetchPaidExports].forEach(
+              (reload) => void reload(),
+            );
+          }}
+        >
+          <div />
+        </DataState>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
@@ -191,8 +216,8 @@ export const CongNoPage: React.FC = () => {
       {/* Receivables Tab */}
       {activeTab === 'receivables' && (
         <DataState
-          loading={expLoading}
-          error={expError}
+          loading={expLoading || paidExportsLoading}
+          error={expError || paidExportsError}
           isEmpty={receivables.length === 0}
           emptyTitle="Không có công nợ phải thu"
         >
@@ -309,8 +334,8 @@ export const CongNoPage: React.FC = () => {
       {/* Payables Tab */}
       {activeTab === 'payables' && (
         <DataState
-          loading={impLoading}
-          error={impError}
+          loading={impLoading || paidImportsLoading}
+          error={impError || paidImportsError}
           isEmpty={payables.length === 0}
           emptyTitle="Không có công nợ phải trả"
         >

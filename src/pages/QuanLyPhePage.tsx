@@ -61,7 +61,11 @@ export const QuanLyPhePage: React.FC = () => {
       {/* CIC-IBST UNIFIED TOP TOOLBAR ROW */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* CIC-IBST Pill Tabs Segmented Control */}
-        <div role="tablist" aria-label="Nghiệp vụ quản lý phế" className="grid w-full grid-cols-2 gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] sm:flex sm:w-fit">
+        <div
+          role="tablist"
+          aria-label="Nghiệp vụ quản lý phế"
+          className="grid w-full grid-cols-2 gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] sm:flex sm:w-fit"
+        >
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -88,7 +92,10 @@ export const QuanLyPhePage: React.FC = () => {
         </div>
 
         {/* Right aligned action button in exact same row */}
-        <button onClick={handleActionClick} className="btn-primary min-h-11 w-full justify-center sm:w-auto flex items-center gap-2">
+        <button
+          onClick={handleActionClick}
+          className="btn-primary min-h-11 w-full justify-center sm:w-auto flex items-center gap-2"
+        >
           <Plus size={16} /> {getActionLabel(activeTab)}
         </button>
       </div>

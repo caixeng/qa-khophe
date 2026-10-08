@@ -27,7 +27,7 @@ export const UserProfilePopover = () => {
       }
       if (e.key === 'Tab' && popoverRef.current) {
         const focusable = popoverRef.current.querySelectorAll(
-          'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          'a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
         );
         const first = focusable[0] as HTMLElement;
         const last = focusable[focusable.length - 1] as HTMLElement;
@@ -72,9 +72,7 @@ export const UserProfilePopover = () => {
           <span className="text-[13px] font-bold text-[var(--text-primary)] leading-tight">
             {user?.name || 'Người dùng'}
           </span>
-          <span className="text-[11px] text-[var(--text-muted)] leading-tight">
-            {user?.email || '—'}
-          </span>
+          <span className="text-[11px] text-[var(--text-muted)] leading-tight">{user?.email || '—'}</span>
         </div>
         <ChevronDown size={14} className="text-[var(--text-muted)] hidden sm:block" />
       </button>
@@ -85,12 +83,14 @@ export const UserProfilePopover = () => {
           <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
 
           {/* CIC-IBST Style User Popover Menu */}
-          <div ref={popoverRef} role="menu" className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] p-4 shadow-xl z-50 animate-fade-in text-left">
+          <div
+            ref={popoverRef}
+            role="menu"
+            className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] p-4 shadow-xl z-50 animate-fade-in text-left"
+          >
             {/* User info header */}
             <div className="pb-3 border-b border-[var(--border-color)]">
-              <p className="text-[13px] font-bold text-[var(--text-primary)]">
-                {user?.name || 'Người dùng'}
-              </p>
+              <p className="text-[13px] font-bold text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
               <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{user?.email || '—'}</p>
             </div>
 
@@ -102,9 +102,7 @@ export const UserProfilePopover = () => {
 
               {/* 1. Giao diện nền */}
               <div className="space-y-1.5">
-                <div className="text-[11px] font-semibold text-[var(--text-secondary)]">
-                  Giao diện nền
-                </div>
+                <div className="text-[11px] font-semibold text-[var(--text-secondary)]">Giao diện nền</div>
                 <div className="flex items-center gap-1 rounded-xl bg-[var(--bg-subtle)] p-1 border border-[var(--border-color)]">
                   {THEME_OPTIONS.map(({ id, label, icon: Icon }) => (
                     <button
@@ -127,9 +125,7 @@ export const UserProfilePopover = () => {
 
               {/* 2. Màu sắc chủ đạo */}
               <div className="space-y-1.5">
-                <div className="text-[11px] font-semibold text-[var(--text-secondary)]">
-                  Màu sắc chủ đạo
-                </div>
+                <div className="text-[11px] font-semibold text-[var(--text-secondary)]">Màu sắc chủ đạo</div>
                 <div className="grid grid-cols-9 gap-1.5 justify-items-center rounded-xl bg-[var(--bg-subtle)] p-2 border border-[var(--border-color)]">
                   {PRIMARY_COLORS.map(({ id, name, hex }) => {
                     const active = primaryColor === id;
@@ -145,9 +141,7 @@ export const UserProfilePopover = () => {
                         )}
                         style={{
                           backgroundColor: hex,
-                          boxShadow: active
-                            ? `0 0 0 2px var(--bg-surface), 0 0 0 3.5px ${hex}`
-                            : undefined,
+                          boxShadow: active ? `0 0 0 2px var(--bg-surface), 0 0 0 3.5px ${hex}` : undefined,
                         }}
                       >
                         {active && <Check size={10} className="text-white" strokeWidth={3} />}
@@ -165,9 +159,7 @@ export const UserProfilePopover = () => {
 
               {/* 3. Mật độ hiển thị */}
               <div className="space-y-1.5 pt-1">
-                <div className="text-[11px] font-semibold text-[var(--text-secondary)]">
-                  Mật độ hiển thị
-                </div>
+                <div className="text-[11px] font-semibold text-[var(--text-secondary)]">Mật độ hiển thị</div>
                 <div className="grid grid-cols-3 gap-1 rounded-xl bg-[var(--bg-subtle)] p-1 border border-[var(--border-color)]">
                   {(['comfortable', 'compact', 'dense'] as Density[]).map((d) => (
                     <button

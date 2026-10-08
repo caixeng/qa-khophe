@@ -199,7 +199,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                     (currentItem?.profit || 0) >= 0 ? 'bg-emerald-600' : 'bg-rose-600',
                   )}
                 />
-                Lãi ước tính:
+                Chênh lệch bán − mua − chi:
               </span>
               <span
                 className={cn(
@@ -238,7 +238,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
             <p className="text-[11px] sm:text-xs text-[var(--text-muted)]">
               {metricMode === 'volume'
                 ? 'So sánh khối lượng nhập, xay & xuất phế qua các tháng'
-                : 'Diễn biến doanh thu xuất, chi phí và lợi nhuận ước tính'}
+                : 'Diễn biến doanh thu xuất, chi phí và chênh lệch bán − mua − chi phí'}
             </p>
           </div>
         </div>
@@ -439,7 +439,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                 </p>
               </div>
 
-              {/* Lãi ước tính */}
+              {/* Chênh lệch bán − mua − chi */}
               <div
                 className={cn(
                   'p-2.5 sm:p-3 rounded-xl border',
@@ -456,7 +456,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                     )}
                   >
                     {latestMonth.profit >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                    Lãi ước tính
+                    Chênh lệch bán − mua − chi
                   </span>
                   {profitGrowth.pct !== null && (
                     <span
@@ -622,7 +622,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                   <Line
                     type="monotone"
                     dataKey="profit"
-                    name="Lãi ước tính"
+                    name="Chênh lệch bán − mua − chi"
                     stroke="#10b981"
                     strokeWidth={2.5}
                     dot={{ r: 3, fill: '#10b981' }}

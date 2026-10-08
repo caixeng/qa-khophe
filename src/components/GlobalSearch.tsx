@@ -135,13 +135,21 @@ export function GlobalSearch({ open, onClose }: { open: boolean; onClose: () => 
             placeholder="Tìm phiếu nhập, phiếu xuất, đối tác, nhân viên..."
             className="min-h-11 flex-1 bg-transparent text-base outline-none placeholder:text-ink-muted"
           />
-          <button onClick={onClose} aria-label="Đóng tìm kiếm" className="tap-target flex items-center justify-center rounded-xl text-ink-muted hover:bg-subtle cursor-pointer">
+          <button
+            onClick={onClose}
+            aria-label="Đóng tìm kiếm"
+            className="tap-target flex items-center justify-center rounded-xl text-ink-muted hover:bg-subtle cursor-pointer"
+          >
             <X size={15} />
           </button>
         </div>
         <div className="mobile-scroll-area flex-1 overflow-y-auto p-2 sm:max-h-96">
           {!data && <p className="px-3 py-6 text-center text-xs text-ink-muted">Đang tải dữ liệu...</p>}
-          {loadError && <p className="mx-2 my-2 rounded-xl bg-amber-50 px-3 py-3 text-xs font-semibold text-amber-800">{loadError}</p>}
+          {loadError && (
+            <p className="mx-2 my-2 rounded-xl bg-amber-50 px-3 py-3 text-xs font-semibold text-amber-800">
+              {loadError}
+            </p>
+          )}
           {data && q && results.length === 0 && (
             <p className="px-3 py-6 text-center text-xs text-ink-muted">Không có kết quả cho "{q}".</p>
           )}

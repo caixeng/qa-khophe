@@ -137,12 +137,7 @@ export const contactsService = {
     }
 
     const row = await runQuery<ContactRow>('cập nhật đối tác', () =>
-      supabase
-        .from('contacts')
-        .update(payload)
-        .eq('id', id)
-        .select(SELECT_COLUMNS)
-        .single<ContactRow>(),
+      supabase.from('contacts').update(payload).eq('id', id).select(SELECT_COLUMNS).single<ContactRow>(),
     );
 
     return mapRow(row);

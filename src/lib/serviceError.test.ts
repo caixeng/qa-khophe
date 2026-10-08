@@ -57,17 +57,15 @@ describe('throwIfError', () => {
 
 describe('runQuery', () => {
   it('cho phép data=null khi allowNullData: true (RPC void)', async () => {
-    const result = await runQuery(
-      'thực hiện hàm void',
-      async () => ({ data: null, error: null }),
-      { allowNullData: true }
-    );
+    const result = await runQuery('thực hiện hàm void', async () => ({ data: null, error: null }), {
+      allowNullData: true,
+    });
     expect(result).toBeNull();
   });
 
   it('ném lỗi khi data=null mà allowNullData: false (mặc định)', async () => {
-    await expect(
-      runQuery('tải dữ liệu', async () => ({ data: null, error: null }))
-    ).rejects.toThrow('máy chủ không trả về dữ liệu');
+    await expect(runQuery('tải dữ liệu', async () => ({ data: null, error: null }))).rejects.toThrow(
+      'máy chủ không trả về dữ liệu',
+    );
   });
 });

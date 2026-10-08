@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Recycle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/auth';
 
@@ -30,13 +30,13 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   return (
     <aside
       className={cn(
-        'hidden lg:flex flex-col bg-[var(--bg-surface)] border-r border-[var(--border-color)] transition-all duration-300 z-20 shadow-sm relative',
-        collapsed ? 'w-[72px]' : 'w-60',
+        'app-sidebar hidden lg:flex flex-col shrink-0 transition-all duration-300 z-20 relative',
+        collapsed ? 'w-[76px]' : 'w-[256px]',
       )}
     >
-      <div className="flex items-center justify-between h-16 px-4 border-b border-[var(--border-color)]">
+      <div className="sidebar-brand flex items-center justify-between h-[76px] px-5">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-9 h-9 rounded-xl bg-[var(--primary-500)] p-0.5 shadow-md shrink-0 overflow-hidden ring-1 ring-[var(--primary-400)]/30">
+          <div className="w-10 h-10 rounded-xl p-0.5 shrink-0 overflow-hidden border border-white/20">
             <img
               src="/vua_phe_logo2.jpg"
               alt="VUA PHẾ Logo"
@@ -45,11 +45,11 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
           </div>
           {!collapsed && (
             <div className="flex flex-col min-w-0">
-              <span className="font-black text-lg tracking-tight text-[var(--primary-500)] whitespace-nowrap leading-none">
+              <span className="font-bold text-lg tracking-tight text-white whitespace-nowrap leading-none">
                 VUA PHẾ
               </span>
-              <span className="text-[11px] font-extrabold tracking-wider text-[var(--text-muted)] uppercase mt-0.5">
-                Tái chế & Quản lý Xưởng
+              <span className="text-[10px] font-medium tracking-[0.12em] text-[var(--brand-accent)] uppercase mt-1.5">
+                Quản lý xưởng tái chế
               </span>
             </div>
           )}
@@ -57,56 +57,70 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
         <button
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}
-          className="p-1.5 hover:bg-[var(--bg-subtle)] rounded-lg border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] shadow-sm transition-all absolute -right-3 top-5"
+          className="sidebar-toggle p-1.5 rounded-lg border shadow-sm transition-all absolute -right-3 top-6"
         >
           {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </div>
 
-      <nav
-        role="navigation"
-        aria-label="Menu chính"
-        className="flex-1 overflow-y-auto py-4 px-2 space-y-1.5"
-      >
+      <nav role="navigation" aria-label="Menu chính" className="flex-1 overflow-y-auto py-5 px-3 space-y-1">
         {visibleMenuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            title={collapsed ? item.label : undefined}
-            className={() => {
-              const isCurrent =
-                item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
-              return cn(
-                'flex items-center px-3.5 py-3 rounded-xl transition-all font-bold text-[13px] group relative',
-                isCurrent
-                  ? 'bg-[var(--primary-50)] text-[var(--primary-600)] shadow-xs font-bold'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
-              );
-            }}
-          >
-            <item.icon
-              className={cn(
-                'shrink-0 transition-transform group-hover:scale-110',
-                collapsed ? 'mx-auto' : 'mr-3',
-              )}
-              size={18}
-            />
-            {!collapsed && <span>{item.label}</span>}
-          </NavLink>
+          <React.Fragment key={item.path}>
+            {!collapsed && (item.id === 'dashboard' || item.id === 'finance' || item.id === 'contacts') && (
+              <p className="sidebar-section-label">
+                {item.id === 'dashboard' ? 'Vận hành' : item.id === 'finance' ? 'Quản trị' : 'Hệ thống'}
+              </p>
+            )}
+            <NavLink
+              key={item.path}
+              to={item.path}
+              title={collapsed ? item.label : undefined}
+              className={() => {
+                const isCurrent =
+                  item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path);
+                return cn(
+                  'sidebar-link flex items-center px-3.5 py-3 rounded-xl transition-all font-medium text-[13px] group relative',
+                  isCurrent ? 'sidebar-link-active' : '',
+                );
+              }}
+            >
+              <item.icon
+                className={cn(
+                  'shrink-0 transition-transform group-hover:scale-110',
+                  collapsed ? 'mx-auto' : 'mr-3',
+                )}
+                size={18}
+              />
+              {!collapsed && <span>{item.label}</span>}
+            </NavLink>
+          </React.Fragment>
         ))}
       </nav>
 
-      <div className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-subtle)]/50">
+      {!collapsed && (
+        <div className="sidebar-workshop mx-4 mb-4 rounded-xl p-3">
+          <Recycle size={16} />
+          <div>
+            <p className="text-xs font-semibold">Xưởng đang vận hành</p>
+            <p className="text-[10px] mt-1">Nhập · Xay · Cân · Xuất</p>
+          </div>
+        </div>
+      )}
+      <div className="sidebar-footer p-4">
         <div className={cn('flex items-center gap-3', collapsed ? 'justify-center' : '')}>
-          <div className="w-8 h-8 rounded-full bg-[var(--primary-500)] flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
+          <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-white font-semibold text-xs shrink-0">
             {user?.name?.charAt(0) || 'A'}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-bold truncate text-[var(--text-primary)]">
-                {user?.name || 'Người dùng'}
+              <p className="text-[13px] font-semibold truncate text-white">{user?.name || 'Người dùng'}</p>
+              <p className="text-[11px] text-slate-300 truncate mt-0.5">
+                {user?.role === 'admin'
+                  ? 'Quản trị viên'
+                  : user?.role === 'manager'
+                    ? 'Quản lý xưởng'
+                    : 'Nhân viên'}
               </p>
-              <p className="text-[11px] text-[var(--text-muted)] truncate">{user?.email || '—'}</p>
             </div>
           )}
         </div>

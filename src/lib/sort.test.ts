@@ -18,15 +18,15 @@ describe('sort', () => {
     const data = [{ val: 1 }, { val: null }, { val: 2 }, { val: '' }, { val: undefined }, { val: 0 }];
     const resultAsc = sortRows(data, { key: 'val', direction: 'asc' });
     // Giá trị hợp lệ (số) ở trên, giá trị rỗng ở dưới
-    expect(resultAsc.map(x => x.val).slice(0, 3)).toEqual([0, 1, 2]);
-    const emptyAsc = resultAsc.map(x => x.val).slice(3);
+    expect(resultAsc.map((x) => x.val).slice(0, 3)).toEqual([0, 1, 2]);
+    const emptyAsc = resultAsc.map((x) => x.val).slice(3);
     expect(emptyAsc).toContain(null);
     expect(emptyAsc).toContain('');
     expect(emptyAsc).toContain(undefined);
 
     const resultDesc = sortRows(data, { key: 'val', direction: 'desc' });
-    expect(resultDesc.map(x => x.val).slice(0, 3)).toEqual([2, 1, 0]);
-    const emptyDesc = resultDesc.map(x => x.val).slice(3);
+    expect(resultDesc.map((x) => x.val).slice(0, 3)).toEqual([2, 1, 0]);
+    const emptyDesc = resultDesc.map((x) => x.val).slice(3);
     expect(emptyDesc).toContain(null);
     expect(emptyDesc).toContain('');
     expect(emptyDesc).toContain(undefined);

@@ -31,11 +31,7 @@ export const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({
   if (!detailRow) return null;
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={`Chi tiết lương tháng ${payrollMonth}`}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} title={`Chi tiết lương tháng ${payrollMonth}`}>
       <div className="space-y-4">
         <div className="p-3 rounded-2xl bg-[var(--bg-subtle)] border border-[var(--border-color)] grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
           <div>
@@ -85,8 +81,7 @@ export const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({
               }}
               className="tap-target px-2.5 text-xs font-black text-amber-900 bg-amber-300 dark:text-amber-100 dark:bg-amber-800 rounded-lg hover:bg-amber-400 cursor-pointer flex items-center gap-1"
             >
-              <DollarSign size={13} />
-              + Ứng lương
+              <DollarSign size={13} />+ Ứng lương
             </button>
           </div>
         </div>
@@ -103,11 +98,11 @@ export const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({
                 className="p-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] flex items-center justify-between gap-2 text-xs"
               >
                 <div>
-                  <div className="font-bold font-mono text-[var(--text-primary)]">
-                    {formatNgay(att.date)}
-                  </div>
+                  <div className="font-bold font-mono text-[var(--text-primary)]">{formatNgay(att.date)}</div>
                   <div className="text-[11px] text-[var(--text-muted)]">
-                    {att.work_shift > 0 ? `${att.work_shift} công (${formatTien(att.daily_pay)}/ngày)` : 'Chỉ tạm ứng tiền'}
+                    {att.work_shift > 0
+                      ? `${att.work_shift} công (${formatTien(att.daily_pay)}/ngày)`
+                      : 'Chỉ tạm ứng tiền'}
                     {att.notes ? ` • ${att.notes}` : ''}
                   </div>
                 </div>

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useId } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -14,6 +14,7 @@ export interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer, className }) => {
+  const titleId = useId();
   const modalRef = useRef<HTMLDivElement>(null);
   const prevIsOpen = useRef(false);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -116,7 +117,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
         ref={modalRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="modal-title"
+        aria-labelledby={titleId}
         onKeyDown={handleTabKey}
         onInputCapture={() => {
           dirtyRef.current = true;
@@ -140,7 +141,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
       >
         {/* Header */}
         <div className="modal-safe-top flex min-h-16 items-center justify-between px-4 pb-4 border-b border-[var(--border-color)] sm:p-4">
-          <h2 id="modal-title" className="text-lg font-bold text-[var(--text-primary)]">
+          <h2 id={titleId} className="text-lg font-bold text-[var(--text-primary)]">
             {title}
           </h2>
           <button
@@ -206,7 +207,13 @@ export const FormField: React.FC<FormFieldProps> = ({
       {children ? (
         children
       ) : as === 'select' ? (
-        <select className={cn('input-field w-full text-base sm:text-sm', error && 'border-red-500 focus:ring-red-500', className)}>
+        <select
+          className={cn(
+            'input-field w-full text-base sm:text-sm',
+            error && 'border-red-500 focus:ring-red-500',
+            className,
+          )}
+        >
           <option value="">-- Chọn --</option>
           {options?.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -225,7 +232,11 @@ export const FormField: React.FC<FormFieldProps> = ({
       ) : (
         <input
           inputMode={inputMode}
-          className={cn('input-field w-full text-base sm:text-sm', error && 'border-red-500 focus:ring-red-500', className)}
+          className={cn(
+            'input-field w-full text-base sm:text-sm',
+            error && 'border-red-500 focus:ring-red-500',
+            className,
+          )}
         />
       )}
 

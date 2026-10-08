@@ -51,12 +51,9 @@ export const NhanVienPage: React.FC = () => {
     error: empError,
     refetch: refetchEmp,
   } = useAsyncList(employeesService.getAll, []);
-  
-  const {
-    data: attendanceList,
-    refetch: refetchAtt,
-  } = useAsyncList(attendanceService.getAttendance, []);
-  
+
+  const { data: attendanceList, refetch: refetchAtt } = useAsyncList(attendanceService.getAttendance, []);
+
   const {
     data: historyAttendance,
     loading: historyLoading,
@@ -66,7 +63,7 @@ export const NhanVienPage: React.FC = () => {
     () => attendanceService.getAttendance({ ...monthRange(historyMonth), limit: 5000 }),
     [historyMonth],
   );
-  
+
   const {
     data: payrollAttendance,
     loading: payrollLoading,
@@ -174,7 +171,14 @@ export const NhanVienPage: React.FC = () => {
         notes: advPayModal.notes || `Ứng lương tháng ${payrollMonth}`,
       });
       toast.success(`Đã ghi nhận ứng lương ${formatTien(amount)} cho ${empName}`);
-      setAdvPayModal({ isOpen: false, employeeId: '', employeeName: '', amount: 0, date: today(), notes: '' });
+      setAdvPayModal({
+        isOpen: false,
+        employeeId: '',
+        employeeName: '',
+        amount: 0,
+        date: today(),
+        notes: '',
+      });
       refetchAtt();
       if ((advPayModal.date || today()).startsWith(historyMonth)) refetchHistory();
       if ((advPayModal.date || today()).startsWith(payrollMonth)) refetchPayroll();
@@ -480,7 +484,8 @@ export const NhanVienPage: React.FC = () => {
     return payrollAttendance.filter((att: Attendance) =>
       payrollDetailRow.employee_id
         ? att.employee_id === payrollDetailRow.employee_id
-        : att.employee_name.trim().toLocaleLowerCase('vi') === payrollDetailRow.name.trim().toLocaleLowerCase('vi'),
+        : att.employee_name.trim().toLocaleLowerCase('vi') ===
+          payrollDetailRow.name.trim().toLocaleLowerCase('vi'),
     );
   }, [payrollAttendance, payrollDetailRow]);
 
@@ -533,7 +538,11 @@ export const NhanVienPage: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div role="tablist" aria-label="Quản lý nhân sự" className="flex items-center justify-between sm:justify-start gap-1 p-1 rounded-xl shadow-xs border border-[var(--border-color)] bg-[var(--bg-surface)] w-full sm:w-fit">
+      <div
+        role="tablist"
+        aria-label="Quản lý nhân sự"
+        className="flex items-center justify-between sm:justify-start gap-1 p-1 rounded-xl shadow-xs border border-[var(--border-color)] bg-[var(--bg-surface)] w-full sm:w-fit"
+      >
         <button
           role="tab"
           aria-selected={activeTab === 'employees'}
@@ -546,7 +555,10 @@ export const NhanVienPage: React.FC = () => {
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
-          <Users size={16} className={activeTab === 'employees' ? 'text-white' : 'text-[var(--text-muted)]'} />
+          <Users
+            size={16}
+            className={activeTab === 'employees' ? 'text-white' : 'text-[var(--text-muted)]'}
+          />
           <span className="hidden sm:inline">Danh sách nhân viên</span>
           <span className="text-[11px] px-1.5 py-0.2 bg-black/10 dark:bg-white/20 rounded-full font-mono">
             {employees.length}
@@ -565,7 +577,10 @@ export const NhanVienPage: React.FC = () => {
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
-          <Calendar size={16} className={activeTab === 'attendance' ? 'text-white' : 'text-[var(--text-muted)]'} />
+          <Calendar
+            size={16}
+            className={activeTab === 'attendance' ? 'text-white' : 'text-[var(--text-muted)]'}
+          />
           <span className="hidden sm:inline">Chấm công</span>
           <span className="text-[11px] px-1.5 py-0.2 bg-black/10 dark:bg-white/20 rounded-full font-mono">
             {attendanceList.length}
@@ -584,7 +599,10 @@ export const NhanVienPage: React.FC = () => {
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
-          <DollarSign size={16} className={activeTab === 'payroll' ? 'text-white' : 'text-[var(--text-muted)]'} />
+          <DollarSign
+            size={16}
+            className={activeTab === 'payroll' ? 'text-white' : 'text-[var(--text-muted)]'}
+          />
           <span className="hidden sm:inline">Bảng lương tháng</span>
         </button>
       </div>
@@ -730,7 +748,13 @@ export const NhanVienPage: React.FC = () => {
               : 'Bạn có chắc chắn muốn xóa lượt chấm công này? Hành động này không thể hoàn tác.'
         }
         variant={confirmState.type === 'attendance' ? 'danger' : 'warning'}
-        confirmText={confirmState.type === 'employee' ? 'Cho nghỉ việc' : confirmState.type === 'payroll' ? 'Chốt đã trả' : 'Xóa'}
+        confirmText={
+          confirmState.type === 'employee'
+            ? 'Cho nghỉ việc'
+            : confirmState.type === 'payroll'
+              ? 'Chốt đã trả'
+              : 'Xóa'
+        }
         cancelText="Hủy"
       />
     </div>

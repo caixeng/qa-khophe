@@ -62,10 +62,13 @@ export function describeError(error: PostgrestError | Error | null, action: stri
  * năm hoạt động thì mỗi lần mở trang là vài nghìn dòng qua mạng 3G ở xưởng.
  */
 export interface DateRangeFilter {
+  contactId?: string;
   from?: string;
   to?: string;
   /** Trần an toàn cho số dòng trả về, kể cả khi khoảng ngày rất rộng. */
   limit?: number;
+  /** Fetch every page in a reporting period. */
+  all?: boolean;
 }
 
 /** Số dòng tối đa cho một lần tải danh sách có lọc theo kỳ (trang danh sách). */

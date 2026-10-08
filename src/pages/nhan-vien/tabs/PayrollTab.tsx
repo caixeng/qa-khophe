@@ -50,8 +50,7 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
               onClick={() => onOpenAdvPayModal()}
               className="tap-target min-h-11 px-3 py-1.5 rounded-xl text-xs font-black text-amber-900 bg-amber-400 hover:bg-amber-500 dark:text-amber-100 dark:bg-amber-700/80 hover:dark:bg-amber-600 transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
-              <DollarSign size={14} />
-              + Ứng Lương
+              <DollarSign size={14} />+ Ứng Lương
             </button>
           </div>
           <div className="flex flex-wrap gap-4 text-xs">
@@ -59,7 +58,8 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
               Tổng công: <b className="font-mono text-[var(--text-primary)]">{payroll.totals.shifts}</b>
             </span>
             <span className="text-[var(--text-muted)]">
-              Tổng gộp: <b className="font-mono text-[var(--text-primary)]">{formatTien(payroll.totals.gross)}</b>
+              Tổng gộp:{' '}
+              <b className="font-mono text-[var(--text-primary)]">{formatTien(payroll.totals.gross)}</b>
             </span>
             <span className="text-[var(--text-muted)]">
               Đã ứng: <b className="font-mono text-amber-600">-{formatTien(payroll.totals.advance)}</b>
@@ -87,7 +87,9 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                   <caption className="sr-only">Bảng lương tháng {payrollMonth}</caption>
                   <thead>
                     <tr>
-                      <th scope="col" className="th-cell">Nhân viên</th>
+                      <th scope="col" className="th-cell">
+                        Nhân viên
+                      </th>
                       <th className="th-cell text-right">Số công</th>
                       <th className="th-cell text-right">Tăng ca</th>
                       <th className="th-cell text-right">Lương gộp</th>
@@ -100,7 +102,12 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                   </thead>
                   <tbody>
                     {payroll.rows.map((r: any) => (
-                      <tr key={r.key} onClick={() => setPayrollDetailKey(r.key)} className="tr-hover cursor-pointer" title="Bấm để xem chi tiết chấm công & lương">
+                      <tr
+                        key={r.key}
+                        onClick={() => setPayrollDetailKey(r.key)}
+                        className="tr-hover cursor-pointer"
+                        title="Bấm để xem chi tiết chấm công & lương"
+                      >
                         <td className="td-cell text-xs font-bold text-[var(--text-primary)]">{r.name}</td>
                         <td className="td-cell text-right font-mono text-xs">{r.shifts}</td>
                         <td className="td-cell text-right font-mono text-xs">
@@ -129,7 +136,10 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                         </td>
                         <td className="td-cell text-right font-mono text-xs font-black">
                           {r.net < 0 ? (
-                            <span className="text-amber-700 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-lg border border-amber-300 dark:border-amber-800/40 font-bold" title="Nhân viên đã ứng trước nhiều hơn tiền công tháng này">
+                            <span
+                              className="text-amber-700 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-lg border border-amber-300 dark:border-amber-800/40 font-bold"
+                              title="Nhân viên đã ứng trước nhiều hơn tiền công tháng này"
+                            >
                               ⚠️ NV Nợ Xưởng {formatTien(Math.abs(r.net))}
                             </span>
                           ) : r.unpaid > 0 ? (
@@ -163,7 +173,9 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                     <tr className="bg-[var(--bg-subtle)] font-bold">
                       <td className="td-cell text-xs uppercase">Tổng cộng</td>
                       <td className="td-cell text-right font-mono text-xs">{payroll.totals.shifts}</td>
-                      <td className="td-cell text-right font-mono text-xs">{payroll.totals.overtime_hours} giờ</td>
+                      <td className="td-cell text-right font-mono text-xs">
+                        {payroll.totals.overtime_hours} giờ
+                      </td>
                       <td className="td-cell text-right font-mono text-xs">
                         {formatTien(payroll.totals.gross)}
                       </td>
@@ -223,21 +235,27 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                   {
                     label: row.net < 0 ? 'NV nợ xưởng' : 'Thực lĩnh còn nợ',
                     value: (
-                      <span className={cn('font-mono font-bold', row.net < 0 ? 'text-amber-700' : 'text-rose-600')}>
+                      <span
+                        className={cn(
+                          'font-mono font-bold',
+                          row.net < 0 ? 'text-amber-700' : 'text-rose-600',
+                        )}
+                      >
                         {formatTien(row.net < 0 ? Math.abs(row.net) : row.unpaid)}
                       </span>
                     ),
                   },
                 ],
-                actions: row.unpaid > 0 && row.employee_id ? (
-                  <button
-                    type="button"
-                    onClick={() => requestPayrollSettlement(row.employee_id, row.name)}
-                    className="tap-target min-h-11 px-3 rounded-xl bg-emerald-600 text-white text-xs font-extrabold transition-colors duration-200"
-                  >
-                    Chốt đã trả
-                  </button>
-                ) : undefined,
+                actions:
+                  row.unpaid > 0 && row.employee_id ? (
+                    <button
+                      type="button"
+                      onClick={() => requestPayrollSettlement(row.employee_id, row.name)}
+                      className="tap-target min-h-11 px-3 rounded-xl bg-emerald-600 text-white text-xs font-extrabold transition-colors duration-200"
+                    >
+                      Chốt đã trả
+                    </button>
+                  ) : undefined,
               }))}
               emptyMessage="Chưa có dữ liệu lương trong tháng"
             />

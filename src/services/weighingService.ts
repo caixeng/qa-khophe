@@ -76,49 +76,28 @@ export const weighingService = {
   },
 
   /**
-   * Tạo phiên cân + lưu toàn bộ bao trong ĐÚNG MỘT lượt gọi mạng (insert
-   * mảng), thay vì lặp addBag() cho từng bao. Ở mạng xưởng yếu, lưu tuần tự
-   * 25 lượt dễ đứt giữa chừng — phiên bị lưu dở, số bao sai mà không rõ lý
-   * do. `total_bags`/`total_kg` tính sẵn ở client trước khi gọi, vì lúc này
-   * chưa có gì trong bảng weighing_bags để tính lại từ DB.
+   * RPC ghi phiên cân và các bao nguyên tử, tính tổng và trừ bì tại DB.
+   * ID được giữ trong bản nháp để retry sau lỗi mạng không tạo phiếu trùng.
    */
   async createSessionWithBags(
     session: Partial<WeighingSession>,
     bags: { bag_number: number; weight_kg: number; notes?: string }[],
   ): Promise<WeighingSession> {
-    const row = await runQuery<SessionRow>('tạo phiên cân', () =>
-      supabase
-        .from('weighing_sessions')
-        .insert({
-          date: session.date || today(),
-          material_type: session.material_type || 'Tấm nhựa nano',
-          total_bags: Number(session.total_bags) || 0,
-          total_kg: Number(session.total_kg) || 0,
-          contact_id: session.contact_id || null,
-          notes: session.notes || null,
-        })
-        .select(SELECT_COLUMNS)
-        .single<SessionRow>(),
+    const id = await runQuery<string>('lưu phiên cân', () =>
+      supabase.rpc('create_weighing_session', {
+        p_id: session.id || crypto.randomUUID(),
+        p_date: session.date || today(),
+        p_material_type: session.material_type || 'Tấm nhựa nano',
+        p_contact_id: session.contact_id || null,
+        p_notes: session.notes || null,
+        p_tare_kg: session.tare_kg || 0,
+        p_bags: bags,
+      }),
     );
-    const newSession = mapRow(row);
-
-    if (bags.length > 0) {
-      await runQuery('lưu danh sách bao đã cân', () =>
-        supabase
-          .from('weighing_bags')
-          .insert(
-            bags.map((b) => ({
-              session_id: newSession.id,
-              bag_number: b.bag_number,
-              weight_kg: b.weight_kg,
-              notes: b.notes || null,
-            })),
-          )
-          .select('id'),
-      );
-    }
-
-    return newSession;
+    const row = await runQuery<SessionRow>('tải phiên cân đã lưu', () =>
+      supabase.from('weighing_sessions').select(SELECT_COLUMNS).eq('id', id).single<SessionRow>(),
+    );
+    return mapRow(row);
   },
 
   async deleteSession(id: string): Promise<void> {

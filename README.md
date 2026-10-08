@@ -5,7 +5,8 @@
 ## Chạy dự án
 
 ```bash
-npm install
+nvm use 24            # Node.js 24
+npm ci
 cp .env.example .env   # điền VITE_SUPABASE_URL và VITE_SUPABASE_ANON_KEY
 npm run dev
 ```
@@ -59,7 +60,7 @@ node scripts/run_migration.mjs supabase/migrations/009_contact_pricing.sql
 
 ### Trạng thái đã áp dụng trên DB thật
 
-Tính tới **08/08/2026**: migration `001`–`012` đã chạy xong trên project `ageezcxrthqmmacnrqpf`. Kiểm tra xác nhận không còn policy `USING(true)` nào, không có phiếu nhập trùng, và `weighing_sessions.contact_id`/bảng `attachments`/bucket Storage `attachments`/trigger tự cập nhật `processing_status` đều đã tồn tại.
+Lần ghi nhận cũ **08/08/2026**: migration `001`–`012` đã chạy xong trên project `ageezcxrthqmmacnrqpf`. Kiểm tra xác nhận không còn policy `USING(true)` nào, không có phiếu nhập trùng, và `weighing_sessions.contact_id`/bảng `attachments`/bucket Storage `attachments`/trigger tự cập nhật `processing_status` đều đã tồn tại.
 
 **Còn tồn:** 2 phiếu xay có sản lượng ra lớn hơn lượng vào (29/06 lệch +17 kg — khớp ghi chú sổ tay, nhiều khả năng sai số cân; 01/07 lệch **+1.397 kg** — cần đối chiếu sổ tay để sửa). Dữ liệu mới đã bị chặn bởi validation ở `grindingService` và CHECK trong migration `006`.
 
@@ -112,3 +113,31 @@ supabase/
 - `xlsx` (SheetJS) — lỗ hổng ReDoS/prototype pollution, **chưa có bản vá trên npm registry** (chỉ có trên CDN riêng của SheetJS). Rủi ro thấp trong app này vì chỉ dùng để **ghi** file Excel, không đọc file người dùng tải lên.
 
 Chạy `npm audit` để xem chi tiết trước khi quyết định nâng cấp.
+
+
+### Nâng cấp full stack 08/10/2026
+
+- Migration `20261008063116_fullstack_hardening.sql` đã áp dụng trên project `ageezcxrthqmmacnrqpf`: bảo vệ vai trò/tài khoản ngừng hoạt động, RLS file đính kèm, RPC cân nguyên tử có retry, khôi phục schema chốt lương, khóa kỳ lương đã chốt và RPC tổng tồn kho.
+- Kiểm thử DB: chạy `supabase/tests/fullstack.sql` bằng SQL Editor hoặc `node scripts/run_migration.mjs supabase/tests/fullstack.sql`. Bộ test tạo dữ liệu tạm rồi `ROLLBACK`, kiểm tra quyền, cân nguyên tử/idempotency, ứng vượt lương, chốt lương, thanh toán và tồn kho. Không dùng dữ liệu mẫu làm dữ liệu vận hành.
+- Các migration 001–016 trước đây được chạy thủ công, không đầy đủ trong lịch sử CLI. Trước khi `db push` phải đối chiếu schema và lịch sử; không đẩy lại toàn bộ SQL cũ lên DB hiện hữu.
+- Node 24; Router 7, Tailwind 4, Vitest 4.1.11, SheetJS 0.20.3 chính thức; Inter phục vụ nội bộ. UI lấy cảm hứng từ `qlda-ddcn-ht-selfhost`: lam đậm, nền kem, nhấn vàng, bảng xen kẽ và mật độ tùy chọn.
+
+#### Công thức chỉ số
+
+| Chỉ số | Công thức / phạm vi |
+| --- | --- |
+| Giá trị nhập/xuất | Khối lượng × đơn giá, thành tiền lấy từ DB; phiếu đã xóa không tham gia tổng. |
+| Lương phát sinh | Làm tròn VNĐ từng lượt: công × đơn giá ngày + giờ tăng ca × đơn giá ngày × 1,5 / 8. Đây là quy ước tăng ca ngày thường hiện tại của ứng dụng. |
+| Lương còn sau ứng | Lương phát sinh − ứng; giữ số âm nếu ứng vượt lương. Khoản còn phải trả lấy phần không âm của tổng chưa trả theo từng người. |
+| Chi phí vận hành | Chi phí xưởng + lương phát sinh trước ứng. Không cộng lại tiền ứng như một chi phí mới. |
+| Chênh lệch giá trị | Giá trị bán − giá trị mua trong kỳ − chi phí vận hành. Chưa phân bổ giá vốn tồn kho; không phải lợi nhuận kế toán hoặc dòng tiền thực thu/chi. |
+| Tồn thành phẩm | Tồn đầu + nhập thành phẩm trực tiếp + sản lượng xay ra − xuất thành phẩm. |
+| Tồn nguyên liệu | Tồn nguyên liệu đầu (`opening_raw_stock_kg`) + nhập nguyên liệu − lượng đưa vào xay − xuất nguyên liệu. Cấu hình nguyên liệu đầu hiện qua bảng `settings`. |
+| Bao ước tính | Làm tròn tồn thành phẩm / kg mỗi bao, tối thiểu 0; khối lượng âm vẫn được hiển thị để phát hiện lệch kho. Không phải số bao thực đếm. |
+| Công nợ | Theo từng phiếu: max(0, thành tiền − tổng thanh toán); toàn bộ lịch sử. Phiếu cũ `paid` chưa có sổ thanh toán được coi đã trả theo trạng thái lịch sử. |
+| Hao hụt xay | Tổng đầu vào − tổng đầu ra; tỷ lệ chia tổng đầu vào, không lấy trung bình các tỷ lệ từng lô. |
+| % thay đổi | (Kỳ này − kỳ trước) / abs(kỳ trước) × 100; kỳ trước bằng 0 thì không hiển thị %. Kỳ liền trước cùng số ngày. |
+
+Đối chiếu DB thật kỳ 09/09–08/10/2026: nhập 265.248 kg / 1.275.652.500đ, xuất 195.496,5 kg / 1.151.090.000đ; chi xưởng 1.707.000đ + lương 5.080.000đ = 6.787.000đ; chênh lệch giá trị −131.349.500đ. Không tự sửa lịch sử tài chính.
+
+Kiểm tra sau nâng cấp: build, lint, format, 74 unit tests; DB rollback integration tests; browser desktop/mobile bằng dữ liệu giả lập, Excel tải xuống có kiểm tra số, lỗi nguồn dữ liệu không hiện KPI thiếu và quyền staff không thấy chi phí. Chưa kiểm thử đăng nhập bằng tài khoản vận hành thật hoặc triển khai bản frontend mới.

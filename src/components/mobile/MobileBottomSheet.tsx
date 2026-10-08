@@ -52,7 +52,9 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
       window.addEventListener('keydown', handleKeyDown);
       window.setTimeout(() => {
         sheetRef.current
-          ?.querySelector<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled])')
+          ?.querySelector<HTMLElement>(
+            'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled])',
+          )
           ?.focus();
       }, 50);
     }
@@ -93,7 +95,9 @@ export const MobileBottomSheet: React.FC<MobileBottomSheetProps> = ({
         {/* Sheet Header */}
         {title && (
           <div className="flex items-center justify-between px-5 pb-3 border-b border-[var(--border-color)]">
-            <h3 id={titleId} className="font-bold text-base text-[var(--text-primary)]">{title}</h3>
+            <h3 id={titleId} className="font-bold text-base text-[var(--text-primary)]">
+              {title}
+            </h3>
             <button
               onClick={onClose}
               aria-label="Đóng"

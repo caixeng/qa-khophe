@@ -185,7 +185,8 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           date: data.date || today(),
           contact_id: data.contact_id || undefined,
           contact_name: contactName,
-          material_type: data.material_type || (importType === 'thanh_pham' ? 'Phế thành phẩm' : 'Phế nhựa NVL'),
+          material_type:
+            data.material_type || (importType === 'thanh_pham' ? 'Phế thành phẩm' : 'Phế nhựa NVL'),
           import_type: importType,
           quantity_kg: qty,
           price_per_kg: price,
@@ -460,7 +461,12 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             title: item.contact_name || 'Khách lẻ',
             subtitle: `${formatNgay(item.date)} • ${item.import_type === 'thanh_pham' ? '🏭 Phế Thành phẩm' : '📦 Phế NVL'}`,
             badge: <StatusBadge status={item.payment_status} />,
-            accentColor: item.import_type === 'thanh_pham' ? '#6366f1' : item.processing_status === 'pending' ? '#f59e0b' : '#10b981',
+            accentColor:
+              item.import_type === 'thanh_pham'
+                ? '#6366f1'
+                : item.processing_status === 'pending'
+                  ? '#f59e0b'
+                  : '#10b981',
             onClick: () => setSelectedDetail(item),
             fields: [
               { label: 'Loại phế', value: item.import_type === 'thanh_pham' ? 'Phế Thành phẩm' : 'Phế NVL' },
@@ -500,7 +506,9 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
               <div>
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">Loại phế</span>
                 <span className="font-bold text-sm text-[var(--text-primary)]">
-                  {selectedDetail.import_type === 'thanh_pham' ? '🏭 Phế Thành phẩm' : '📦 Phế Nguyên Vật Liệu'}
+                  {selectedDetail.import_type === 'thanh_pham'
+                    ? '🏭 Phế Thành phẩm'
+                    : '📦 Phế Nguyên Vật Liệu'}
                 </span>
               </div>
               <div>
@@ -627,7 +635,11 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                 type="button"
                 onClick={() => {
                   handleChange('import_type', 'thanh_pham');
-                  if (!formState.data?.id && (formState.data?.material_type === 'Phế nhựa NVL' || formState.data?.material_type === 'Tấm nhựa nano')) {
+                  if (
+                    !formState.data?.id &&
+                    (formState.data?.material_type === 'Phế nhựa NVL' ||
+                      formState.data?.material_type === 'Tấm nhựa nano')
+                  ) {
                     handleChange('material_type', 'Phế thành phẩm');
                   }
                 }}

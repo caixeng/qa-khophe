@@ -23,8 +23,8 @@ export function computeInventory(
   kgPerBag: number,
   openingStockKg = 0,
 ): InventorySnapshot {
-  const currentStockKg = Math.max(0, openingStockKg + totalGroundKg - totalExportedKg);
-  const currentBags = kgPerBag > 0 ? Math.round(currentStockKg / kgPerBag) : 0;
+  const currentStockKg = openingStockKg + totalGroundKg - totalExportedKg;
+  const currentBags = kgPerBag > 0 ? Math.max(0, Math.round(currentStockKg / kgPerBag)) : 0;
   return { currentStockKg, currentBags };
 }
 

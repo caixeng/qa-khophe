@@ -41,13 +41,25 @@ export const EmployeeListTab: React.FC<EmployeeListTabProps> = ({
             <caption className="sr-only">Danh sách hồ sơ nhân viên</caption>
             <thead>
               <tr>
-                <th scope="col" className="th-cell">Tên nhân viên</th>
-                <th scope="col" className="th-cell">Chức vụ</th>
+                <th scope="col" className="th-cell">
+                  Tên nhân viên
+                </th>
+                <th scope="col" className="th-cell">
+                  Chức vụ
+                </th>
                 <th className="th-cell text-right">Lương công (đ/ngày)</th>
-                <th scope="col" className="th-cell">Số điện thoại</th>
-                <th scope="col" className="th-cell">Ngày vào làm</th>
-                <th scope="col" className="th-cell">Trạng thái</th>
-                <th scope="col" className="th-cell">Ghi chú</th>
+                <th scope="col" className="th-cell">
+                  Số điện thoại
+                </th>
+                <th scope="col" className="th-cell">
+                  Ngày vào làm
+                </th>
+                <th scope="col" className="th-cell">
+                  Trạng thái
+                </th>
+                <th scope="col" className="th-cell">
+                  Ghi chú
+                </th>
                 <th className="th-cell text-right">Thao tác</th>
               </tr>
             </thead>
@@ -58,11 +70,7 @@ export const EmployeeListTab: React.FC<EmployeeListTabProps> = ({
                   const roleInfo = roleLabels[emp.role] || roleLabels.staff;
                   const RoleIcon = roleInfo.icon;
                   return (
-                    <tr
-                      key={emp.id}
-                      onClick={() => onOpenEmpModal(emp)}
-                      className="tr-hover cursor-pointer"
-                    >
+                    <tr key={emp.id} onClick={() => onOpenEmpModal(emp)} className="tr-hover cursor-pointer">
                       <td className="td-cell font-bold text-xs text-[var(--text-primary)]">{emp.name}</td>
                       <td className="td-cell">
                         <span
@@ -152,7 +160,10 @@ export const EmployeeListTab: React.FC<EmployeeListTabProps> = ({
               onClick: () => onOpenEmpModal(emp),
               fields: [
                 { label: 'Chức vụ', value: roleInfo.label },
-                { label: 'Lương công', value: <span className="font-mono">{formatTien(emp.daily_salary)}/ngày</span> },
+                {
+                  label: 'Lương công',
+                  value: <span className="font-mono">{formatTien(emp.daily_salary)}/ngày</span>,
+                },
                 { label: 'Ngày vào làm', value: emp.join_date ? formatNgay(emp.join_date) : '—' },
                 { label: 'Địa chỉ', value: emp.address || '—' },
                 { label: 'Ghi chú', value: emp.notes || '—' },

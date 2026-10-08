@@ -11,6 +11,8 @@ import { useAsyncList } from '../hooks/useAsyncData';
 import { useDateRange } from '../hooks/useDateRange';
 import { PeriodFilter } from '../components/PeriodFilter';
 import { useAuth } from '../contexts/auth';
+import { calculateAttendancePay } from '../lib/payroll';
+import { summarizeOperations } from '../lib/operatingMetrics';
 import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
 import { grindingService } from '../services/grindingService';
@@ -48,9 +50,7 @@ export const BaoCaoPage: React.FC = () => {
   useEffect(() => {
     const tab = searchParams.get('tab');
     const next: ReportTab =
-      tab === 'nhapxuat' || tab === 'hieusuat' || (tab === 'taichinh' && canSeeFinance)
-        ? tab
-        : 'tongquan';
+      tab === 'nhapxuat' || tab === 'hieusuat' || (tab === 'taichinh' && canSeeFinance) ? tab : 'tongquan';
     if (next !== activeTab) setActiveTab(next);
   }, [searchParams, activeTab, canSeeFinance]);
 
@@ -66,27 +66,54 @@ export const BaoCaoPage: React.FC = () => {
   // Toàn bộ báo cáo tính theo kỳ đang chọn — trước đây mọi con số đều cộng dồn
   // toàn bộ lịch sử, nên "lãi ước tính" không gắn với khoảng thời gian nào cả
   // và không dùng được để so sánh tháng này với tháng trước.
-  const { data: imports, loading: impLoading } = useAsyncList(
-    () => importsService.getAll({ from: range.from, to: range.to }),
+  const {
+    data: imports,
+    loading: impLoading,
+    error: impError,
+    refetch: refetchImp,
+  } = useAsyncList(
+    () => importsService.getAll({ from: range.from, to: range.to, all: true }),
     [range.from, range.to],
   );
-  const { data: exports, loading: expLoading } = useAsyncList(
-    () => exportsService.getAll({ from: range.from, to: range.to }),
+  const {
+    data: exports,
+    loading: expLoading,
+    error: expError,
+    refetch: refetchExp,
+  } = useAsyncList(
+    () => exportsService.getAll({ from: range.from, to: range.to, all: true }),
     [range.from, range.to],
   );
-  const { data: grinding } = useAsyncList(
-    () => grindingService.getAll({ from: range.from, to: range.to }),
+  const {
+    data: grinding,
+    loading: grindLoading,
+    error: grindError,
+    refetch: refetchGrind,
+  } = useAsyncList(
+    () => grindingService.getAll({ from: range.from, to: range.to, all: true }),
     [range.from, range.to],
   );
-  const { data: expenses, loading: expesLoading } = useAsyncList(
-    canSeeFinance ? () => expensesService.getExpenses({ from: range.from, to: range.to }) : async () => [],
+  const {
+    data: expenses,
+    loading: expesLoading,
+    error: expesError,
+    refetch: refetchExpes,
+  } = useAsyncList(
+    canSeeFinance
+      ? () => expensesService.getExpenses({ from: range.from, to: range.to, all: true })
+      : async () => [],
     [canSeeFinance, range.from, range.to],
   );
   // Lương công nhân là chi phí vận hành thật — thiếu khoản này thì "lợi nhuận"
   // trên báo cáo luôn cao hơn thực tế đúng bằng tổng quỹ lương trong kỳ.
-  const { data: attendance } = useAsyncList(
+  const {
+    data: attendance,
+    loading: attLoading,
+    error: attError,
+    refetch: refetchAtt,
+  } = useAsyncList(
     canSeeFinance
-      ? () => attendanceService.getAttendance({ from: range.from, to: range.to })
+      ? () => attendanceService.getAttendance({ from: range.from, to: range.to, all: true })
       : async () => [],
     [canSeeFinance, range.from, range.to],
   );
@@ -108,39 +135,57 @@ export const BaoCaoPage: React.FC = () => {
     return { from: toISODate(prevFrom), to: toISODate(prevTo) };
   }, [range.from, range.to]);
 
-  const { data: prevImports } = useAsyncList(
-    () => importsService.getAll({ from: previousRange.from, to: previousRange.to }),
+  const {
+    data: prevImports,
+    loading: prevImpLoading,
+    error: prevImpError,
+    refetch: refetchPrevimp,
+  } = useAsyncList(
+    () => importsService.getAll({ from: previousRange.from, to: previousRange.to, all: true }),
     [previousRange.from, previousRange.to],
   );
-  const { data: prevExports } = useAsyncList(
-    () => exportsService.getAll({ from: previousRange.from, to: previousRange.to }),
+  const {
+    data: prevExports,
+    loading: prevExpLoading,
+    error: prevExpError,
+    refetch: refetchPrevexp,
+  } = useAsyncList(
+    () => exportsService.getAll({ from: previousRange.from, to: previousRange.to, all: true }),
     [previousRange.from, previousRange.to],
   );
-  const { data: prevExpenses } = useAsyncList(
+  const {
+    data: prevExpenses,
+    loading: prevExpenseLoading,
+    error: prevExpenseError,
+    refetch: refetchPrevexpense,
+  } = useAsyncList(
     canSeeFinance
-      ? () => expensesService.getExpenses({ from: previousRange.from, to: previousRange.to })
+      ? () => expensesService.getExpenses({ from: previousRange.from, to: previousRange.to, all: true })
       : async () => [],
     [canSeeFinance, previousRange.from, previousRange.to],
   );
-  const { data: prevAttendance } = useAsyncList(
+  const {
+    data: prevAttendance,
+    loading: prevAttLoading,
+    error: prevAttError,
+    refetch: refetchPrevatt,
+  } = useAsyncList(
     canSeeFinance
-      ? () => attendanceService.getAttendance({ from: previousRange.from, to: previousRange.to })
+      ? () => attendanceService.getAttendance({ from: previousRange.from, to: previousRange.to, all: true })
       : async () => [],
     [canSeeFinance, previousRange.from, previousRange.to],
   );
 
-  const previousSummary = useMemo(() => {
-    const totalImportKg = prevImports.reduce((sum, i) => sum + (Number(i.quantity_kg) || 0), 0);
-    const totalExportKg = prevExports.reduce((sum, e) => sum + (Number(e.total_kg) || 0), 0);
-    const totalRevenue = prevExports.reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
-    const totalImportCost = prevImports.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
-    const totalOperatingCost =
-      prevExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) +
-      prevAttendance.reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
-    const estimatedProfit = totalRevenue - totalImportCost - totalOperatingCost;
-
-    return { totalImportKg, totalExportKg, totalOperatingCost, estimatedProfit };
-  }, [prevImports, prevExports, prevExpenses, prevAttendance]);
+  const previousSummary = useMemo(
+    () =>
+      summarizeOperations({
+        imports: prevImports,
+        exports: prevExports,
+        expenses: prevExpenses,
+        attendance: prevAttendance,
+      }),
+    [prevImports, prevExports, prevExpenses, prevAttendance],
+  );
 
   /** % thay đổi so với kỳ trước. null = không tính được (kỳ trước = 0). */
   function pctChange(curr: number, prev: number): number | null {
@@ -178,30 +223,10 @@ export const BaoCaoPage: React.FC = () => {
       .sort((a, b) => b.lossPct - a.lossPct);
   }, [grinding]);
 
-  const summary = useMemo(() => {
-    const totalImportKg = imports.reduce((sum, i) => sum + (Number(i.quantity_kg) || 0), 0);
-    const totalImportCost = imports.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
-
-    const totalExportKg = exports.reduce((sum, e) => sum + (Number(e.total_kg) || 0), 0);
-    const totalRevenue = exports.reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
-
-    const totalExpenseCost = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
-    const totalPayrollCost = attendance.reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
-    const totalOperatingCost = totalExpenseCost + totalPayrollCost;
-
-    const estimatedProfit = totalRevenue - totalImportCost - totalOperatingCost;
-
-    return {
-      totalImportKg,
-      totalImportCost,
-      totalExportKg,
-      totalRevenue,
-      totalExpenseCost,
-      totalPayrollCost,
-      totalOperatingCost,
-      estimatedProfit,
-    };
-  }, [imports, exports, expenses, attendance]);
+  const summary = useMemo(
+    () => summarizeOperations({ imports, exports, expenses, attendance }),
+    [imports, exports, expenses, attendance],
+  );
 
   // Supplier distribution for Pie Chart
   const supplierDistribution = useMemo(() => {
@@ -251,6 +276,7 @@ export const BaoCaoPage: React.FC = () => {
   const [exporting, setExporting] = useState(false);
 
   const handleExportExcel = async () => {
+    if (loading || error || exporting) return;
     setExporting(true);
     try {
       // xlsx nặng ~500KB — chỉ tải khi thực sự bấm xuất báo cáo
@@ -260,6 +286,11 @@ export const BaoCaoPage: React.FC = () => {
       const summaryData: (string | number)[][] = [
         ['BÁO CÁO TỔNG QUAN XƯỞNG PHẾ - VUA PHẾ'],
         ['Ngày xuất báo cáo', new Date().toLocaleDateString('vi-VN')],
+        ['Kỳ báo cáo', `${range.from} – ${range.to}`],
+        [
+          'Cách tính',
+          'Giá trị bán − giá trị mua trong kỳ − chi phí xưởng − lương phát sinh; chưa tính giá vốn tồn kho, không phải lợi nhuận kế toán hoặc dòng tiền thực thu/chi.',
+        ],
         [],
         ['Chỉ số', 'Giá trị'],
         ['Tổng sản lượng nhập (kg)', summary.totalImportKg],
@@ -272,7 +303,7 @@ export const BaoCaoPage: React.FC = () => {
           ['Chi phí xưởng (VNĐ)', summary.totalExpenseCost],
           ['Lương công nhân (VNĐ)', summary.totalPayrollCost],
           ['Tổng chi phí vận hành (VNĐ)', summary.totalOperatingCost],
-          ['Lợi nhuận gộp ước tính (VNĐ)', summary.estimatedProfit],
+          ['Chênh lệch bán − mua − chi phí (VNĐ)', summary.estimatedProfit],
         );
       }
       const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
@@ -314,14 +345,26 @@ export const BaoCaoPage: React.FC = () => {
         XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expenseRows), 'Chi phí');
 
         const payrollRows = [
-          ['Ngày', 'Nhân viên', 'Số công', 'Đơn giá/ngày', 'Tạm ứng', 'Thực lĩnh', 'Trạng thái'],
+          [
+            'Ngày',
+            'Nhân viên',
+            'Số công',
+            'Đơn giá/ngày',
+            'Giờ tăng ca',
+            'Lương phát sinh',
+            'Tạm ứng',
+            'Còn sau ứng',
+            'Trạng thái',
+          ],
           ...attendance.map((a) => [
             a.date,
             a.employee_name,
             a.work_shift,
             a.daily_pay,
+            a.overtime_hours || 0,
+            calculateAttendancePay(a).gross,
             a.advance_pay || 0,
-            a.net_pay,
+            calculateAttendancePay(a).net,
             a.payment_status,
           ]),
         ];
@@ -334,7 +377,39 @@ export const BaoCaoPage: React.FC = () => {
     }
   };
 
-  const loading = impLoading || expLoading || expesLoading;
+  const loading =
+    impLoading ||
+    expLoading ||
+    expesLoading ||
+    grindLoading ||
+    attLoading ||
+    prevImpLoading ||
+    prevExpLoading ||
+    prevExpenseLoading ||
+    prevAttLoading;
+  const error =
+    impError ||
+    expError ||
+    expesError ||
+    grindError ||
+    attError ||
+    prevImpError ||
+    prevExpError ||
+    prevExpenseError ||
+    prevAttError;
+  const retry = () => {
+    [
+      refetchImp,
+      refetchExp,
+      refetchExpes,
+      refetchGrind,
+      refetchAtt,
+      refetchPrevimp,
+      refetchPrevexp,
+      refetchPrevexpense,
+      refetchPrevatt,
+    ].forEach((reload) => void reload());
+  };
 
   return (
     <div className="page-shell animate-fade-in">
@@ -345,12 +420,17 @@ export const BaoCaoPage: React.FC = () => {
           label: exporting ? 'Đang xuất...' : 'Xuất Excel (.xlsx)',
           icon: Download,
           onClick: handleExportExcel,
+          disabled: loading || !!error || exporting,
         }}
       />
 
       <PeriodFilter range={range} onChange={setRange} />
 
-      <div role="tablist" aria-label="Loại báo cáo" className="grid grid-cols-2 border-b border-[var(--border-color)] sm:flex sm:flex-wrap">
+      <div
+        role="tablist"
+        aria-label="Loại báo cáo"
+        className="grid grid-cols-2 border-b border-[var(--border-color)] sm:flex sm:flex-wrap"
+      >
         <button
           role="tab"
           aria-selected={activeTab === 'tongquan'}
@@ -407,7 +487,7 @@ export const BaoCaoPage: React.FC = () => {
         )}
       </div>
 
-      <DataState loading={loading} error={null} isEmpty={false}>
+      <DataState loading={loading} error={error} onRetry={retry} isEmpty={false}>
         {activeTab === 'tongquan' && (
           <div className="space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
@@ -431,7 +511,7 @@ export const BaoCaoPage: React.FC = () => {
                 <KpiCard
                   title="Chi phí vận hành"
                   value={formatTien(summary.totalOperatingCost)}
-                  subtitle={`Gồm lương: ${formatTien(summary.totalPayrollCost)}`}
+                  subtitle={`Chi xưởng: ${formatTien(summary.totalExpenseCost)} · Lương: ${formatTien(summary.totalPayrollCost)}`}
                   icon={DollarSign}
                   color="danger"
                   trend={(() => {
@@ -443,7 +523,7 @@ export const BaoCaoPage: React.FC = () => {
               )}
               {canSeeFinance && (
                 <KpiCard
-                  title="Lợi nhuận ước tính"
+                  title="Chênh lệch giá trị trong kỳ"
                   value={formatTien(summary.estimatedProfit)}
                   icon={DollarSign}
                   color="primary"
@@ -451,6 +531,15 @@ export const BaoCaoPage: React.FC = () => {
                 />
               )}
             </div>
+
+            {canSeeFinance && (
+              <p className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-3 text-xs leading-relaxed text-[var(--text-secondary)]">
+                Chi phí vận hành = chi phí xưởng + lương phát sinh (công × đơn giá + tăng ca), trước khi trừ
+                tạm ứng. Chênh lệch giá trị = giá trị bán − giá trị mua trong kỳ − chi phí vận hành; chưa tính
+                giá vốn tồn kho, không phải lợi nhuận kế toán hoặc tiền thực thu/chi. % thay đổi so với kỳ
+                liền trước có cùng số ngày.
+              </p>
+            )}
 
             <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl">
               <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">
@@ -517,84 +606,86 @@ export const BaoCaoPage: React.FC = () => {
               </p>
             ) : (
               <>
-              <div className="hidden overflow-x-auto lg:block">
-                <table className="w-full text-left border-collapse">
-                  <caption className="sr-only">Hiệu suất xay theo thợ</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col" className="th-cell">
-                        Thợ xay
-                      </th>
-                      <th scope="col" className="th-cell text-right">
-                        Số lô
-                      </th>
-                      <th scope="col" className="th-cell text-right">
-                        Đầu vào
-                      </th>
-                      <th scope="col" className="th-cell text-right">
-                        Ra thành phẩm
-                      </th>
-                      <th scope="col" className="th-cell text-right">
-                        Hao hụt
-                      </th>
-                      <th scope="col" className="th-cell text-right">
-                        Tỷ lệ hao
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {grindingEfficiency.map((row) => (
-                      <tr key={row.worker} className="tr-hover">
-                        <td className="td-cell text-xs font-bold text-[var(--text-primary)]">{row.worker}</td>
-                        <td className="td-cell text-right font-mono text-xs">{row.lots}</td>
-                        <td className="td-cell text-right font-mono text-xs">{formatKg(row.inputKg)}</td>
-                        <td className="td-cell text-right font-mono text-xs">{formatKg(row.outputKg)}</td>
-                        <td className="td-cell text-right font-mono text-xs">{formatKg(row.lossKg)}</td>
-                        <td
-                          className={cn(
-                            'td-cell text-right font-mono text-xs font-bold',
-                            row.lossPct > 10
-                              ? 'text-rose-600'
-                              : row.lossPct > 5
-                                ? 'text-amber-600'
-                                : 'text-emerald-600',
-                          )}
-                        >
-                          {row.lossPct.toFixed(1)}%
-                        </td>
+                <div className="hidden overflow-x-auto lg:block">
+                  <table className="w-full text-left border-collapse">
+                    <caption className="sr-only">Hiệu suất xay theo thợ</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col" className="th-cell">
+                          Thợ xay
+                        </th>
+                        <th scope="col" className="th-cell text-right">
+                          Số lô
+                        </th>
+                        <th scope="col" className="th-cell text-right">
+                          Đầu vào
+                        </th>
+                        <th scope="col" className="th-cell text-right">
+                          Ra thành phẩm
+                        </th>
+                        <th scope="col" className="th-cell text-right">
+                          Hao hụt
+                        </th>
+                        <th scope="col" className="th-cell text-right">
+                          Tỷ lệ hao
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <MobileCardList
-                items={grindingEfficiency.map((row, index) => ({
-                  id: row.worker,
-                  title: `${index + 1}. ${row.worker}`,
-                  subtitle: `${row.lots} lô đã xay`,
-                  badge: (
-                    <span
-                      className={cn(
-                        'rounded-full px-2 py-1 text-xs font-bold',
-                        row.lossPct > 10
-                          ? 'bg-rose-100 text-rose-700'
-                          : row.lossPct > 5
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-emerald-100 text-emerald-700',
-                      )}
-                    >
-                      Hao {row.lossPct.toFixed(1)}%
-                    </span>
-                  ),
-                  accentColor: row.lossPct > 10 ? '#f43f5e' : row.lossPct > 5 ? '#f59e0b' : '#10b981',
-                  fields: [
-                    { label: 'Đầu vào', value: formatKg(row.inputKg) },
-                    { label: 'Thành phẩm', value: formatKg(row.outputKg) },
-                    { label: 'Hao hụt', value: <span className="font-mono">{formatKg(row.lossKg)}</span> },
-                  ],
-                }))}
-                emptyMessage="Chưa có dữ liệu hiệu suất xay"
-              />
+                    </thead>
+                    <tbody>
+                      {grindingEfficiency.map((row) => (
+                        <tr key={row.worker} className="tr-hover">
+                          <td className="td-cell text-xs font-bold text-[var(--text-primary)]">
+                            {row.worker}
+                          </td>
+                          <td className="td-cell text-right font-mono text-xs">{row.lots}</td>
+                          <td className="td-cell text-right font-mono text-xs">{formatKg(row.inputKg)}</td>
+                          <td className="td-cell text-right font-mono text-xs">{formatKg(row.outputKg)}</td>
+                          <td className="td-cell text-right font-mono text-xs">{formatKg(row.lossKg)}</td>
+                          <td
+                            className={cn(
+                              'td-cell text-right font-mono text-xs font-bold',
+                              row.lossPct > 10
+                                ? 'text-rose-600'
+                                : row.lossPct > 5
+                                  ? 'text-amber-600'
+                                  : 'text-emerald-600',
+                            )}
+                          >
+                            {row.lossPct.toFixed(1)}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <MobileCardList
+                  items={grindingEfficiency.map((row, index) => ({
+                    id: row.worker,
+                    title: `${index + 1}. ${row.worker}`,
+                    subtitle: `${row.lots} lô đã xay`,
+                    badge: (
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-1 text-xs font-bold',
+                          row.lossPct > 10
+                            ? 'bg-rose-100 text-rose-700'
+                            : row.lossPct > 5
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-emerald-100 text-emerald-700',
+                        )}
+                      >
+                        Hao {row.lossPct.toFixed(1)}%
+                      </span>
+                    ),
+                    accentColor: row.lossPct > 10 ? '#f43f5e' : row.lossPct > 5 ? '#f59e0b' : '#10b981',
+                    fields: [
+                      { label: 'Đầu vào', value: formatKg(row.inputKg) },
+                      { label: 'Thành phẩm', value: formatKg(row.outputKg) },
+                      { label: 'Hao hụt', value: <span className="font-mono">{formatKg(row.lossKg)}</span> },
+                    ],
+                  }))}
+                  emptyMessage="Chưa có dữ liệu hiệu suất xay"
+                />
               </>
             )}
           </div>

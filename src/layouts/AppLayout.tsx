@@ -1,16 +1,6 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
-import {
-  Home,
-  Users,
-  Package,
-  BarChart3,
-  Settings,
-  UserCheck,
-  Search,
-  Recycle,
-  Wallet,
-} from 'lucide-react';
+import { Home, Users, Package, BarChart3, Settings, UserCheck, Search, Recycle, Wallet } from 'lucide-react';
 import { useAuth } from '../contexts/auth';
 import { Breadcrumb } from '../components/Breadcrumb';
 import { GlobalSearch } from '../components/GlobalSearch';
@@ -42,7 +32,7 @@ export const AppLayout = () => {
     return localStorage.getItem('sidebar_collapsed') === 'true';
   });
   const { user } = useAuth();
-  
+
   const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
@@ -63,10 +53,10 @@ export const AppLayout = () => {
 
   const isAdmin = user?.role === 'admin';
   const isManagerOrAdmin = user?.role === 'manager' || isAdmin;
-  
+
   const visibleMenuItems = useMemo(() => {
     return MENU_ITEMS.filter(
-      (item) => (!item.managerOnly || isManagerOrAdmin) && (!item.adminOnly || isAdmin)
+      (item) => (!item.managerOnly || isManagerOrAdmin) && (!item.adminOnly || isAdmin),
     );
   }, [isAdmin, isManagerOrAdmin]);
 
@@ -79,16 +69,12 @@ export const AppLayout = () => {
         Chuyển tới nội dung chính
       </a>
 
-      <DesktopSidebar 
-        collapsed={collapsed} 
-        setCollapsed={setCollapsed} 
-        visibleMenuItems={visibleMenuItems} 
-      />
+      <DesktopSidebar collapsed={collapsed} setCollapsed={setCollapsed} visibleMenuItems={visibleMenuItems} />
 
       {/* MAIN CONTENT AREA */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* HEADER */}
-        <header className="h-16 flex items-center justify-between px-4 lg:px-6 backdrop-blur-md bg-[var(--bg-surface)]/80 border-b border-[var(--border-color)] z-30 shadow-xs">
+        <header className="app-topbar h-16 lg:h-[76px] shrink-0 flex items-center justify-between px-4 lg:px-8 border-b border-[var(--border-color)] z-30">
           <div className="flex items-center">
             <div className="hidden sm:block">
               <Breadcrumb />
@@ -129,8 +115,11 @@ export const AppLayout = () => {
         </header>
 
         {/* SCROLLABLE OUTLET */}
-        <main id="main-content" className="mobile-scroll-area flex-1 overflow-y-auto pt-4 px-4 lg:px-6 pb-8">
-          <div className="w-full">
+        <main
+          id="main-content"
+          className="mobile-scroll-area flex-1 overflow-y-auto py-5 px-4 lg:px-8 lg:py-7 pb-8"
+        >
+          <div className="w-full max-w-[1680px] mx-auto">
             <Suspense fallback={<PageLoadingSkeleton />}>
               <Outlet />
             </Suspense>

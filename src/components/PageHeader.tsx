@@ -9,6 +9,7 @@ export interface PageHeaderProps {
     label: string;
     icon?: any;
     onClick: () => void;
+    disabled?: boolean;
   };
   className?: string;
 }
@@ -24,17 +25,23 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   const IconComp = action?.icon;
 
   return (
-    <div className={cn('flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6', className)}>
+    <div
+      className={cn(
+        'page-heading flex flex-col sm:flex-row sm:items-center justify-between gap-4',
+        className,
+      )}
+    >
       <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">{title}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">{title}</h1>
         {subText && <p className="text-sm text-[var(--text-secondary)] mt-1">{subText}</p>}
       </div>
 
       {action && (
         <button
           onClick={action.onClick}
+          disabled={action.disabled}
           aria-label={action.label}
-          className="btn-primary flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto"
+          className="btn-primary flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {React.isValidElement(IconComp) ? IconComp : IconComp ? <IconComp className="w-4 h-4" /> : null}
           {action.label}

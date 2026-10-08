@@ -50,7 +50,7 @@ export const TableToolbar: React.FC<TableToolbarProps> = ({
   return (
     <div
       className={cn(
-        'flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 p-3 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs',
+        'table-toolbar flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 p-3 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs',
         className,
       )}
     >

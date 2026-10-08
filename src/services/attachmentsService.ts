@@ -33,9 +33,7 @@ async function getSignedUrl(path: string): Promise<string> {
 async function getSignedUrls(paths: string[]): Promise<Record<string, string>> {
   if (paths.length === 0) return {};
 
-  const { data, error } = await supabase.storage
-    .from(BUCKET)
-    .createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrls(paths, SIGNED_URL_TTL_SECONDS);
 
   if (error || !data) {
     // Fallback: gọi từng file (tương thích ngược)

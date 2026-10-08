@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Package, Cog, Truck, Warehouse, Activity, Bell, ArrowRight, DollarSign } from 'lucide-react';
 import { formatKg, formatNgay } from '../lib/utils';
 import { KpiCard } from '../components/KpiCard';
-import { PageHeader } from '../components/PageHeader';
 import { MobileDirectorDashboard } from '../components/mobile/MobileDirectorDashboard';
 import { MonthlyOverviewChart } from '../components/MonthlyOverviewChart';
 import { useAsyncData, useAsyncList } from '../hooks/useAsyncData';
@@ -15,10 +14,12 @@ import { grindingService } from '../services/grindingService';
 import { attendanceService } from '../services/employeesService';
 import { settingsService } from '../services/settingsService';
 import { paymentsService } from '../services/paymentsService';
-import { computeInventory, computeRemainingWithLegacyStatus } from '../lib/calc';
+import { computeRemainingWithLegacyStatus } from '../lib/calc';
 import { useAuth } from '../contexts/auth';
+import { summarizeOperations } from '../lib/operatingMetrics';
+import { inventoryService } from '../services/inventoryService';
+import { DataState } from '../components/DataState';
 import { today, daysAgo } from '../lib/date';
-import { MAX_ROWS_CUMULATIVE } from '../lib/serviceError';
 
 /** Quá 30 ngày chưa thu là mức cảnh báo hợp lý cho xưởng phế — đủ dài để không
  *  làm phiền với công nợ mới phát sinh, đủ ngắn để còn kịp nhắc khách trước
@@ -30,28 +31,103 @@ export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const canSeeFinance = user?.role === 'manager' || user?.role === 'admin';
 
-  const { data: imports } = useAsyncList(() => importsService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
-  const { data: exports } = useAsyncList(() => exportsService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
+  const {
+    data: imports,
+    loading: importsLoading,
+    error: importsError,
+    refetch: refetchimports,
+  } = useAsyncList(() => importsService.getAll({ all: true }), []);
+  const {
+    data: exports,
+    loading: exportsLoading,
+    error: exportsError,
+    refetch: refetchexports,
+  } = useAsyncList(() => exportsService.getAll({ all: true }), []);
   // Staff không có quyền đọc expenses (RLS) — tránh gọi API sẽ chỉ nhận lỗi 403
-  const { data: expenses } = useAsyncList(canSeeFinance ? expensesService.getExpenses : async () => [], [
+  const {
+    data: expenses,
+    loading: expensesLoading,
+    error: expensesError,
+    refetch: refetchexpenses,
+  } = useAsyncList(canSeeFinance ? () => expensesService.getExpenses({ all: true }) : async () => [], [
     canSeeFinance,
   ]);
-  const { data: grinding } = useAsyncList(() => grindingService.getAll({ limit: MAX_ROWS_CUMULATIVE }), []);
-  const { data: attendance } = useAsyncList(
-    canSeeFinance ? () => attendanceService.getAttendance({ limit: MAX_ROWS_CUMULATIVE }) : async () => [],
-    [canSeeFinance],
-  );
-  const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
-  const { data: openingStockData } = useAsyncData(settingsService.getOpeningStock, []);
-  const { data: lowStockThresholdData } = useAsyncData(settingsService.getLowStockThreshold, []);
+  const {
+    data: grinding,
+    loading: grindingLoading,
+    error: grindingError,
+    refetch: refetchgrinding,
+  } = useAsyncList(() => grindingService.getAll({ all: true }), []);
+  const {
+    data: attendance,
+    loading: attendanceLoading,
+    error: attendanceError,
+    refetch: refetchattendance,
+  } = useAsyncList(canSeeFinance ? () => attendanceService.getAttendance({ all: true }) : async () => [], [
+    canSeeFinance,
+  ]);
+  const {
+    data: lowStockThresholdData,
+    loading: lowStockThresholdDataLoading,
+    error: lowStockThresholdDataError,
+    refetch: refetchlowStockThresholdData,
+  } = useAsyncData(settingsService.getLowStockThreshold, []);
   // Cùng nguồn số liệu với trang Công nợ — trước đây Dashboard chỉ đếm
   // payment_status === 'unpaid' và bỏ qua 'partial' cùng số đã trả thật, nên
   // hai màn hình hiện hai con số nợ khác nhau cho cùng một dữ liệu.
-  const { data: paidImports } = useAsyncData(() => paymentsService.getPaidByRefType('import'), []);
-  const { data: paidExports } = useAsyncData(() => paymentsService.getPaidByRefType('export'), []);
+  const {
+    data: paidImports,
+    loading: paidImportsLoading,
+    error: paidImportsError,
+    refetch: refetchpaidImports,
+  } = useAsyncData(() => paymentsService.getPaidByRefType('import'), []);
+  const {
+    data: paidExports,
+    loading: paidExportsLoading,
+    error: paidExportsError,
+    refetch: refetchpaidExports,
+  } = useAsyncData(() => paymentsService.getPaidByRefType('export'), []);
 
-  const kgPerBag = kgPerBagData ?? 900;
-  const openingStock = openingStockData ?? 0;
+  const {
+    data: inventory,
+    loading: inventoryLoading,
+    error: inventoryError,
+    refetch: refetchInventory,
+  } = useAsyncData(inventoryService.getSummary, []);
+  const loading =
+    importsLoading ||
+    exportsLoading ||
+    expensesLoading ||
+    grindingLoading ||
+    attendanceLoading ||
+    lowStockThresholdDataLoading ||
+    paidImportsLoading ||
+    paidExportsLoading ||
+    inventoryLoading;
+  const error =
+    importsError ||
+    exportsError ||
+    expensesError ||
+    grindingError ||
+    attendanceError ||
+    lowStockThresholdDataError ||
+    paidImportsError ||
+    paidExportsError ||
+    inventoryError;
+  const retry = () => {
+    [
+      refetchimports,
+      refetchexports,
+      refetchexpenses,
+      refetchgrinding,
+      refetchattendance,
+      refetchlowStockThresholdData,
+      refetchpaidImports,
+      refetchpaidExports,
+      refetchInventory,
+    ].forEach((reload) => void reload());
+  };
+
   const lowStockThreshold = lowStockThresholdData ?? 0;
   const paidByImport = useMemo(() => paidImports ?? {}, [paidImports]);
   const paidByExport = useMemo(() => paidExports ?? {}, [paidExports]);
@@ -68,15 +144,8 @@ export const DashboardPage: React.FC = () => {
       .filter((e) => e.date === todayStr)
       .reduce((sum, e) => sum + (Number(e.bags_count) || 0), 0);
 
-    const totalImportKg = imports.reduce((sum, i) => sum + (Number(i.quantity_kg) || 0), 0);
-    const totalImportCost = imports.reduce((sum, i) => sum + (Number(i.total_amount) || 0), 0);
-
-    const totalExportKg = exports.reduce((sum, e) => sum + (Number(e.total_kg) || 0), 0);
-    const totalRevenue = exports.reduce((sum, e) => sum + (Number(e.total_amount) || 0), 0);
-
-    const totalOperatingCost =
-      expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) +
-      attendance.reduce((sum, a) => sum + (Number(a.net_pay) || 0), 0);
+    const { totalImportKg, totalImportCost, totalExportKg, totalRevenue, totalOperatingCost } =
+      summarizeOperations({ imports, exports, expenses, attendance });
 
     // Chưa có quyền đọc chi phí (staff) thì không suy đoán lợi nhuận — ẩn thay vì hiện số sai
     const estimatedProfit = canSeeFinance ? totalRevenue - totalImportCost - totalOperatingCost : null;
@@ -106,13 +175,8 @@ export const DashboardPage: React.FC = () => {
     const receivables = exportsWithDebt.reduce((sum, x) => sum + x.remaining, 0);
     const payables = importsWithDebt.reduce((sum, x) => sum + x.remaining, 0);
 
-    const totalGround = grinding.reduce((sum, g) => sum + (Number(g.output_qty_kg) || 0), 0);
-    const { currentStockKg: inventoryKg, currentBags: inventoryBags } = computeInventory(
-      totalGround,
-      totalExportKg,
-      kgPerBag,
-      openingStock,
-    );
+    const inventoryKg = inventory?.currentStockKg ?? 0;
+    const inventoryBags = inventory?.currentBags ?? 0;
 
     // Dynamic recent activities
     const activities = [
@@ -184,13 +248,15 @@ export const DashboardPage: React.FC = () => {
     expenses,
     attendance,
     grinding,
-    kgPerBag,
-    openingStock,
+    inventory,
     lowStockThreshold,
     paidByImport,
     paidByExport,
     canSeeFinance,
   ]);
+
+  if (loading || error)
+    return <DataState loading={loading} error={error} onRetry={retry} skeletonType="kpi" />;
 
   return (
     <div className="page-shell animate-fade-in">
@@ -209,10 +275,14 @@ export const DashboardPage: React.FC = () => {
 
       {/* DESKTOP DASHBOARD VIEW */}
       <div className="hidden lg:block space-y-6">
-        <PageHeader
-          title="Tổng quan"
-          subtitle={`Hoạt động xưởng ngày hôm nay ${formatNgay(new Date().toISOString())}`}
-        />
+        <div className="workshop-hero">
+          <div>
+            <div className="eyebrow">Vua Phế · Tổng quan vận hành</div>
+            <h1>Chào {user?.name || 'bạn'}, một ngày làm việc hiệu quả.</h1>
+            <p>Theo dõi dòng hàng, sản lượng và hoạt động xưởng trong một nơi.</p>
+          </div>
+          <span className="hero-date">{formatNgay(today())}</span>
+        </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <KpiCard

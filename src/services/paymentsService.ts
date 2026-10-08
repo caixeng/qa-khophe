@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { runQuery, ServiceError } from '../lib/serviceError';
 import { today } from '../lib/date';
+import { readAllPages } from '../lib/pagination';
 
 export type PaymentRefType = 'import' | 'export';
 
@@ -31,11 +32,13 @@ export const paymentsService = {
   async getPaidByRefType(refType: PaymentRefType): Promise<Record<string, number>> {
     const view = refType === 'import' ? 'v_import_debts' : 'v_export_debts';
     type PaidRow = { ref_id: string; paid_amount: number | string | null };
-    const rows = await runQuery<PaidRow[]>('tải tổng thanh toán', () =>
+    const rows = await readAllPages<PaidRow>('tải tổng thanh toán', (from, to) =>
       supabase
         .from(view)
         .select('ref_id, paid_amount')
         .gt('paid_amount', 0)
+        .order('ref_id')
+        .range(from, to)
         .returns<PaidRow[]>(),
     );
 

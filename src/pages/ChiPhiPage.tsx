@@ -262,7 +262,11 @@ export const ChiPhiPage: React.FC = () => {
       />
 
       {/* Tabs */}
-      <div role="tablist" aria-label="Loại sổ tài chính" className="grid grid-cols-2 gap-1 border-b border-[var(--border-color)]">
+      <div
+        role="tablist"
+        aria-label="Loại sổ tài chính"
+        className="grid grid-cols-2 gap-1 border-b border-[var(--border-color)]"
+      >
         <button
           role="tab"
           aria-selected={activeTab === 'chiphi'}
@@ -398,13 +402,21 @@ export const ChiPhiPage: React.FC = () => {
                   title: exp.description || cfg.label,
                   subtitle: formatNgay(exp.date),
                   badge: (
-                    <span className={cn('rounded-full bg-[var(--bg-subtle)] px-2 py-1 text-xs font-bold', cfg.color)}>
+                    <span
+                      className={cn(
+                        'rounded-full bg-[var(--bg-subtle)] px-2 py-1 text-xs font-bold',
+                        cfg.color,
+                      )}
+                    >
                       {cfg.label}
                     </span>
                   ),
                   accentColor: '#f43f5e',
                   fields: [
-                    { label: 'Số tiền', value: <span className="font-mono text-rose-600">{formatTien(exp.amount)}</span> },
+                    {
+                      label: 'Số tiền',
+                      value: <span className="font-mono text-rose-600">{formatTien(exp.amount)}</span>,
+                    },
                     { label: 'Ghi chú', value: exp.notes || '—' },
                   ],
                   actions: (
@@ -557,20 +569,32 @@ export const ChiPhiPage: React.FC = () => {
                   title: adv.person || 'Chủ xưởng',
                   subtitle: formatNgay(adv.date),
                   badge: (
-                    <span className={cn('rounded-full px-2 py-1 text-xs font-bold', isAdvance ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800')}>
+                    <span
+                      className={cn(
+                        'rounded-full px-2 py-1 text-xs font-bold',
+                        isAdvance ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800',
+                      )}
+                    >
                       {isAdvance ? 'Ứng tiền' : 'Hoàn ứng'}
                     </span>
                   ),
                   accentColor: isAdvance ? '#f59e0b' : '#10b981',
                   fields: [
-                    { label: 'Số tiền', value: <span className="font-mono text-[var(--primary-600)]">{formatTien(adv.amount)}</span> },
+                    {
+                      label: 'Số tiền',
+                      value: (
+                        <span className="font-mono text-[var(--primary-600)]">{formatTien(adv.amount)}</span>
+                      ),
+                    },
                     { label: 'Ghi chú', value: adv.notes || '—' },
                   ],
                   actions: (
                     <>
                       <button
                         type="button"
-                        onClick={() => setAttachTarget({ type: 'advance', id: adv.id, label: adv.person || 'Chủ xưởng' })}
+                        onClick={() =>
+                          setAttachTarget({ type: 'advance', id: adv.id, label: adv.person || 'Chủ xưởng' })
+                        }
                         className="tap-target flex items-center justify-center rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"
                         aria-label={`Đính kèm ảnh cho ${adv.person || 'Chủ xưởng'}`}
                       >
