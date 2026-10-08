@@ -13,6 +13,7 @@ import { PeriodFilter } from '../components/PeriodFilter';
 import { useAuth } from '../contexts/auth';
 import { calculateAttendancePay } from '../lib/payroll';
 import { summarizeOperations } from '../lib/operatingMetrics';
+import { computeMassDifference } from '../lib/calc';
 import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
 import { grindingService } from '../services/grindingService';
@@ -228,6 +229,13 @@ export const BaoCaoPage: React.FC = () => {
     [imports, exports, expenses, attendance],
   );
 
+  const importExportLoss = computeMassDifference(summary.totalImportKg, summary.totalExportKg);
+  const grindingInputKg = grinding.reduce((sum, row) => sum + (Number(row.input_qty_kg) || 0), 0);
+  const grindingOutputKg = grinding.reduce((sum, row) => sum + (Number(row.output_qty_kg) || 0), 0);
+  const grindingLoss = computeMassDifference(grindingInputKg, grindingOutputKg);
+  const lossPercent = (value: number | null) =>
+    value === null ? '—' : `${value.toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`;
+
   // Supplier distribution for Pie Chart
   const supplierDistribution = useMemo(() => {
     const map: Record<string, number> = {};
@@ -296,6 +304,11 @@ export const BaoCaoPage: React.FC = () => {
         ['Tổng sản lượng nhập (kg)', summary.totalImportKg],
         ['Tổng chi phí mua phế (VNĐ)', summary.totalImportCost],
         ['Tổng sản lượng xuất (kg)', summary.totalExportKg],
+        ['Chênh lệch nhập − xuất trong kỳ (kg)', importExportLoss.differenceKg],
+        ['Tỷ lệ chênh lệch nhập − xuất (%)', importExportLoss.differencePct ?? '—'],
+        ['Lưu ý chênh lệch nhập − xuất', 'Bao gồm tồn kho và hàng chưa xay; không phải hao hụt thực tế.'],
+        ['Hao hụt xay trong kỳ (kg)', grindingLoss.differenceKg],
+        ['Tỷ lệ hao hụt xay (%)', grindingLoss.differencePct ?? '—'],
         ['Tổng doanh thu xuất phế (VNĐ)', summary.totalRevenue],
       ];
       if (canSeeFinance) {
@@ -468,7 +481,7 @@ export const BaoCaoPage: React.FC = () => {
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
           )}
         >
-          Hiệu suất xay
+          Hao hụt
         </button>
         {canSeeFinance && (
           <button
@@ -592,6 +605,68 @@ export const BaoCaoPage: React.FC = () => {
 
         {activeTab === 'hieusuat' && (
           <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-[var(--text-primary)]">Hao hụt & đối chiếu khối lượng</h3>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                Theo kỳ {range.from} – {range.to}. Chênh lệch nhập–xuất và hao hụt xay được đối chiếu riêng.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+              <KpiCard
+                title="Tổng nhập trong kỳ"
+                value={formatKg(summary.totalImportKg)}
+                icon={Package}
+                color="success"
+              />
+              <KpiCard
+                title="Tổng xuất trong kỳ"
+                value={formatKg(summary.totalExportKg)}
+                icon={TrendingUp}
+                color="info"
+              />
+              <KpiCard
+                title="Chênh lệch nhập − xuất"
+                value={formatKg(importExportLoss.differenceKg)}
+                subtitle="Nhập − xuất trong kỳ"
+                icon={Package}
+                color="warning"
+              />
+              <KpiCard
+                title="% chênh lệch nhập − xuất"
+                value={lossPercent(importExportLoss.differencePct)}
+                subtitle="(Nhập − xuất) / nhập × 100"
+                icon={TrendingUp}
+                color="warning"
+              />
+            </div>
+            <p className="rounded-xl bg-[var(--bg-subtle)] px-4 py-3 text-xs leading-relaxed text-[var(--text-secondary)]">
+              Chênh lệch nhập–xuất bao gồm hàng còn tồn, hàng chưa xay và ảnh hưởng của tồn đầu kỳ. Nhập
+              nguyên liệu và xuất thành phẩm chưa phải cùng một lô hàng. Vì vậy tỷ lệ này chưa xác định được
+              hao hụt thực tế; số âm có thể xuất hiện khi xuất hàng tồn từ kỳ trước. Kỳ không có nhập thì
+              không tính %.
+            </p>
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+              <KpiCard title="Đầu vào xay" value={formatKg(grindingInputKg)} icon={Package} color="success" />
+              <KpiCard
+                title="Thành phẩm xay ra"
+                value={formatKg(grindingOutputKg)}
+                icon={Package}
+                color="info"
+              />
+              <KpiCard
+                title="Hao hụt xay ghi nhận"
+                value={formatKg(grindingLoss.differenceKg)}
+                icon={Package}
+                color="warning"
+              />
+              <KpiCard
+                title="% hao hụt xay"
+                value={lossPercent(grindingLoss.differencePct)}
+                subtitle="(Đầu vào − đầu ra) / đầu vào × 100"
+                icon={TrendingUp}
+                color="warning"
+              />
+            </div>
             <div>
               <h3 className="text-sm font-bold text-[var(--text-primary)]">Tỷ lệ hao hụt khi xay theo thợ</h3>
               <p className="text-xs text-[var(--text-muted)] mt-1">

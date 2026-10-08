@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { computeInventory, computeRemaining, computeRemainingWithLegacyStatus } from './calc';
+import {
+  computeInventory,
+  computeRemaining,
+  computeRemainingWithLegacyStatus,
+  computeMassDifference,
+} from './calc';
 
 describe('computeInventory', () => {
   it('tồn kho = đã xay ra trừ đã xuất bán', () => {
@@ -74,5 +79,19 @@ describe('computeRemainingWithLegacyStatus', () => {
 
   it('thiếu trạng thái thanh toán thì tính theo số đã trả', () => {
     expect(computeRemainingWithLegacyStatus(10_000_000, 1_000_000, undefined)).toBe(9_000_000);
+  });
+});
+
+describe('computeMassDifference', () => {
+  it('matches the report period, using imports as the denominator', () => {
+    const result = computeMassDifference(265248, 195496.5);
+    expect(result.differenceKg).toBe(69751.5);
+    expect(result.differencePct).toBeCloseTo(26.296711, 5);
+  });
+  it('keeps a negative difference when exports include opening stock', () => {
+    expect(computeMassDifference(100, 150)).toEqual({ differenceKg: -50, differencePct: -50 });
+  });
+  it('does not invent a percentage with no input', () => {
+    expect(computeMassDifference(0, 150)).toEqual({ differenceKg: -150, differencePct: null });
   });
 });

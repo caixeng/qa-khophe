@@ -49,3 +49,9 @@ export function computeRemainingWithLegacyStatus(
   if (paymentStatus === 'paid' && (!paidAmount || paidAmount <= 0)) return 0;
   return computeRemaining(totalAmount, paidAmount);
 }
+
+/** Signed period mass difference; includes stock movements when used for imports/exports. */
+export function computeMassDifference(inputKg: number, outputKg: number) {
+  const differenceKg = inputKg - outputKg;
+  return { differenceKg, differencePct: inputKg > 0 ? (differenceKg / inputKg) * 100 : null };
+}
