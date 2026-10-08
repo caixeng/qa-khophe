@@ -545,6 +545,43 @@ export const BaoCaoPage: React.FC = () => {
               )}
             </div>
 
+            <div className="card p-4 sm:p-5 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                  Hao hụt & chênh lệch nhập–xuất
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('hieusuat')}
+                  className="btn-secondary text-xs"
+                >
+                  Xem chi tiết hao hụt
+                </button>
+              </div>
+              <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+                <div className="rounded-xl bg-[var(--bg-subtle)] p-3">
+                  <p className="text-xs text-[var(--text-muted)]">Nhập − xuất trong kỳ</p>
+                  <p className="mt-1 font-bold tabular-nums">{formatKg(importExportLoss.differenceKg)}</p>
+                </div>
+                <div className="rounded-xl bg-[var(--bg-subtle)] p-3">
+                  <p className="text-xs text-[var(--text-muted)]">% chênh lệch nhập − xuất</p>
+                  <p className="mt-1 font-bold tabular-nums">{lossPercent(importExportLoss.differencePct)}</p>
+                </div>
+                <div className="rounded-xl bg-[var(--bg-subtle)] p-3">
+                  <p className="text-xs text-[var(--text-muted)]">Hao hụt xay ghi nhận</p>
+                  <p className="mt-1 font-bold tabular-nums">{formatKg(grindingLoss.differenceKg)}</p>
+                </div>
+                <div className="rounded-xl bg-[var(--bg-subtle)] p-3">
+                  <p className="text-xs text-[var(--text-muted)]">% hao hụt xay</p>
+                  <p className="mt-1 font-bold tabular-nums">{lossPercent(grindingLoss.differencePct)}</p>
+                </div>
+              </div>
+              <p className="text-xs leading-relaxed text-[var(--text-muted)]">
+                Tỷ lệ nhập–xuất = (nhập − xuất) / nhập × 100; bao gồm hàng tồn/chưa xay, chưa phải hao hụt
+                thực tế. Hao hụt xay tính trên đầu vào và đầu ra của phiếu xay trong kỳ.
+              </p>
+            </div>
+
             {canSeeFinance && (
               <p className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-3 text-xs leading-relaxed text-[var(--text-secondary)]">
                 Chi phí vận hành = chi phí xưởng + lương phát sinh (công × đơn giá + tăng ca), trước khi trừ
