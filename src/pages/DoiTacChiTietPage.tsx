@@ -28,7 +28,7 @@ export const DoiTacChiTietPage: React.FC = () => {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const canSeeFinance = user?.role === 'manager' || user?.role === 'admin';
+  const canSeeFinance = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'accountant';
   const { range, setRange } = useDateRange();
 
   const {

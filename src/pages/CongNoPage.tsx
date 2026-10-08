@@ -21,7 +21,7 @@ export const CongNoPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'receivables' | 'payables'>('receivables');
   const { user } = useAuth();
   const { toast } = useToast();
-  const canRecordPayment = user?.role === 'manager' || user?.role === 'admin';
+  const canRecordPayment = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'accountant';
 
   // Công nợ cần TOÀN BỘ lịch sử — một khoản nợ phát sinh 3 tháng trước vẫn
   // phải hiện ở đây, nên không lọc theo kỳ như các trang danh sách khác.

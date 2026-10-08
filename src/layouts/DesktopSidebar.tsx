@@ -1,3 +1,4 @@
+import { formatRole } from '../lib/utils';
 import * as React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Recycle } from 'lucide-react';
@@ -114,13 +115,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-semibold truncate text-white">{user?.name || 'Người dùng'}</p>
-              <p className="text-[11px] text-slate-300 truncate mt-0.5">
-                {user?.role === 'admin'
-                  ? 'Quản trị viên'
-                  : user?.role === 'manager'
-                    ? 'Quản lý xưởng'
-                    : 'Nhân viên'}
-              </p>
+              <p className="text-[11px] text-slate-300 truncate mt-0.5">{formatRole(user?.role)}</p>
             </div>
           )}
         </div>

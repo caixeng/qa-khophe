@@ -73,7 +73,12 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
   ];
 
   const visibleActions = actions.filter(
-    (action) => !action.managerOnly || user?.role === 'manager' || user?.role === 'admin',
+    (action) =>
+      (user?.role !== 'accountant' || action.managerOnly) &&
+      (!action.managerOnly ||
+        user?.role === 'manager' ||
+        user?.role === 'admin' ||
+        user?.role === 'accountant'),
   );
 
   return (

@@ -95,21 +95,21 @@ export const LoginPage = () => {
 
             <div>
               <label htmlFor="login-email" className="label-field">
-                Email
+                Tên đăng nhập hoặc email
               </label>
               <div className="relative mt-1">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <User className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
-                  type="email"
+                  type="text"
                   id="login-email"
                   required
                   autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input-field pl-10 font-semibold"
-                  placeholder="ten@congty.vn"
+                  placeholder="thanhnam / xuantu / mimi"
                 />
               </div>
             </div>

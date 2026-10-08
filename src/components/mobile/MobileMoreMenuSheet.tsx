@@ -1,3 +1,4 @@
+import { formatRole } from '../../lib/utils';
 import * as React from 'react';
 import { NavLink } from 'react-router-dom';
 import { MobileBottomSheet } from './MobileBottomSheet';
@@ -44,7 +45,7 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
   const { user, logout } = useAuth();
   const { theme, setTheme, primaryColor, setPrimaryColor } = useTheme();
 
-  const isManagerOrAdmin = user?.role === 'manager' || user?.role === 'admin';
+  const isManagerOrAdmin = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'accountant';
   const isAdmin = user?.role === 'admin';
   const visibleItems = MENU_ITEMS.filter(
     (item) => (!item.managerOnly || isManagerOrAdmin) && (!item.adminOnly || isAdmin),
@@ -64,11 +65,7 @@ export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen
             </h4>
             <p className="text-xs text-[var(--text-muted)] truncate">{user?.email || '—'}</p>
             <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-extrabold uppercase bg-[var(--primary-50)] text-[var(--primary-600)]">
-              {user?.role === 'admin'
-                ? 'Quản trị viên'
-                : user?.role === 'manager'
-                  ? 'Giám đốc / Quản lý'
-                  : 'Nhân viên xưởng'}
+              {formatRole(user?.role)}
             </span>
           </div>
         </div>

@@ -29,7 +29,7 @@ const OVERDUE_DEBT_DAYS = 30;
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const canSeeFinance = user?.role === 'manager' || user?.role === 'admin';
+  const canSeeFinance = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'accountant';
 
   const {
     data: imports,

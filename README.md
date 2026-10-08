@@ -141,3 +141,21 @@ Chạy `npm audit` để xem chi tiết trước khi quyết định nâng cấp
 Đối chiếu DB thật kỳ 09/09–08/10/2026: nhập 265.248 kg / 1.275.652.500đ, xuất 195.496,5 kg / 1.151.090.000đ; chi xưởng 1.707.000đ + lương 5.080.000đ = 6.787.000đ; chênh lệch giá trị −131.349.500đ. Không tự sửa lịch sử tài chính.
 
 Kiểm tra sau nâng cấp: build, lint, format, 74 unit tests; DB rollback integration tests; browser desktop/mobile bằng dữ liệu giả lập, Excel tải xuống có kiểm tra số, lỗi nguồn dữ liệu không hiện KPI thiếu và quyền staff không thấy chi phí. Chưa kiểm thử đăng nhập bằng tài khoản vận hành thật hoặc triển khai bản frontend mới.
+
+
+### Phân loại và đối soát tiền ứng (08/10/2026)
+
+Trong Tài chính → Chi phí & Ứng tiền → Sổ ứng tiền:
+
+- Có 5 mục đích: chưa phân loại, chi xưởng, mua nguyên liệu, ứng lương và khác. Sửa được phiếu cũ; lọc và tổng hợp riêng từng nhóm.
+- Đối soát ứng chi xưởng/khác với phiếu chi đã ghi; ứng nguyên liệu với thanh toán phiếu nhập; ứng lương với lượt ứng trong chấm công của đúng nhân sự. Một chứng từ chỉ có một nguồn ứng. Chứng từ được liên kết toàn bộ số tiền, không tự chia nguồn.
+- Nếu ứng lương chưa có trong chấm công, chọn tạo lượt ứng mới: 0 công, 0 lương, ứng bằng số chưa đối soát. Nếu đã có lượt ứng, chọn lượt đó để tránh trừ hai lần. Kỳ lương đã chốt không cho thay đổi.
+- Hoàn ứng chọn phiếu gốc và kế thừa mục đích/nhân sự. Không cho đối soát hoặc hoàn vượt số tiền; phiếu đã đối soát không đổi số tiền, mục đích, ngày hay nhân sự. Gỡ liên kết để sửa chứng từ nếu kỳ chưa chốt.
+- Số còn chưa đối soát = tiền ứng − chứng từ liên kết − hoàn ứng của phiếu gốc. Không trừ tất cả chi phí xưởng khỏi tất cả tiền ứng như trước đây. Tiền ứng không cộng thêm vào chi phí; lương phát sinh vẫn là tiền công trước ứng.
+- Báo cáo và Excel có phân loại tiền ứng. Tiền ứng/hoàn tính theo kỳ đang chọn; số đã đối soát và số còn lại là hiện trạng của các phiếu ứng trong kỳ.
+
+Migrations bổ sung: `20261008094131_classify_workshop_advances.sql`, `20261008094956_workshop_account_roles.sql`, `20261008095459_advance_reconciliation_guards.sql`. Tests DB trong `supabase/tests/advances.sql` và `supabase/tests/account_roles.sql` dùng fixtures rồi rollback.
+
+Theo xác nhận của chủ xưởng, hai phiếu 10 triệu ngày 17/09 và 5 triệu ngày 21/09 cho Xếp Nam được phân loại ứng lương, gắn hồ sơ Anh Nam và đối soát vào chấm công. Đơn giá lương Anh Nam chưa được cung cấp, hiện 0; không suy đoán số công/tiền lương.
+
+Tên đăng nhập có thể dùng thay email. Phân quyền mới: quản trị viên toàn hệ thống, quản lý kho sửa vận hành và kiểm kê nhưng không đọc tài chính/lương, kế toán xử lý tài chính/lương và đọc kho nhưng không sửa nghiệp vụ kho. Menu người dùng có Đổi mật khẩu, yêu cầu mật khẩu hiện tại. Tài khoản được tạo qua Supabase Auth Admin API, không chèn trực tiếp mật khẩu vào DB hoặc lưu mật khẩu trong repo.

@@ -63,7 +63,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
   const { data: contacts } = useAsyncList(contactsService.getAll, []);
   const { toast } = useToast();
   const { user } = useAuth();
-  const canManage = user?.role === 'manager' || user?.role === 'admin';
+  const canManage = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'warehouse_manager';
 
   const initialDraft = useMemo(() => loadDraft(), []);
   const restoredOnMount = useRef(!!initialDraft);

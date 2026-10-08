@@ -121,10 +121,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, pass: string): Promise<{ error?: string }> => {
     setSigningIn(true);
     try {
-      const trimmed = email.trim();
+      const entered = email.trim().toLowerCase();
+      const trimmed = entered.includes('@') ? entered : `${entered}@accounts.khophe.local`;
 
-      if (!trimmed.includes('@')) {
-        return { error: 'Vui lòng đăng nhập bằng địa chỉ email đã được cấp.' };
+      if (!entered.includes('@') && !/^[a-z0-9._-]{3,40}$/.test(entered)) {
+        return { error: 'Tên đăng nhập không hợp lệ.' };
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -133,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       if (error || !data.session) {
-        return { error: 'Email hoặc mật khẩu không đúng.' };
+        return { error: 'Tên đăng nhập hoặc mật khẩu không đúng.' };
       }
 
       const profileError = await applySession(data.session);

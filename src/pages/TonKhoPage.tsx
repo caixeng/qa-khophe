@@ -21,7 +21,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 export const TonKhoPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const canCount = user?.role === 'manager' || user?.role === 'admin';
+  const canCount = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'warehouse_manager';
   const canEditOpeningStock = user?.role === 'admin';
 
   // Tồn kho là số cộng dồn từ đầu — cần toàn bộ lịch sử, không lọc theo kỳ.

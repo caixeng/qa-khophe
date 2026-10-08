@@ -52,13 +52,16 @@ export const AppLayout = () => {
   }, []);
 
   const isAdmin = user?.role === 'admin';
-  const isManagerOrAdmin = user?.role === 'manager' || isAdmin;
+  const isManagerOrAdmin = user?.role === 'manager' || user?.role === 'accountant' || isAdmin;
 
   const visibleMenuItems = useMemo(() => {
     return MENU_ITEMS.filter(
-      (item) => (!item.managerOnly || isManagerOrAdmin) && (!item.adminOnly || isAdmin),
+      (item) =>
+        (user?.role !== 'accountant' || item.id !== 'phe') &&
+        (!item.managerOnly || isManagerOrAdmin) &&
+        (!item.adminOnly || isAdmin),
     );
-  }, [isAdmin, isManagerOrAdmin]);
+  }, [isAdmin, isManagerOrAdmin, user?.role]);
 
   return (
     <div className="app-viewport flex w-full bg-[var(--bg-app)] text-[var(--text-primary)] overflow-hidden">

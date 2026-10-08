@@ -47,6 +47,8 @@ const ROLE_LABELS: Record<string, string> = {
   admin: 'Quản trị viên',
   manager: 'Quản lý',
   staff: 'Nhân viên',
+  warehouse_manager: 'Quản lý kho',
+  accountant: 'Kế toán',
 };
 
 export function formatRole(role?: string): string {

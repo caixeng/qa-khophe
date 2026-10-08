@@ -1,3 +1,4 @@
+import { useAuth } from '../contexts/auth';
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Home, Recycle, Package, Menu, Plus } from 'lucide-react';
@@ -6,6 +7,7 @@ import { MobileMoreMenuSheet } from '../components/mobile/MobileMoreMenuSheet';
 import { MobileQuickActionModal } from '../components/mobile/MobileQuickActionModal';
 
 export const MobileBottomNav = () => {
+  const { user } = useAuth();
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [quickActionOpen, setQuickActionOpen] = useState(false);
 
@@ -32,7 +34,7 @@ export const MobileBottomNav = () => {
         </NavLink>
 
         <NavLink
-          to="/phe"
+          to={user?.role === 'accountant' ? '/tai-chinh' : '/phe'}
           className={({ isActive }) =>
             cn(
               'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all active:scale-95',
@@ -43,7 +45,7 @@ export const MobileBottomNav = () => {
           }
         >
           <Recycle size={20} />
-          <span className="text-[11px] truncate">QL Phế</span>
+          <span className="text-[11px] truncate">{user?.role === 'accountant' ? 'Tài chính' : 'QL Phế'}</span>
         </NavLink>
 
         {/* Center Floating Action Button (FAB) */}

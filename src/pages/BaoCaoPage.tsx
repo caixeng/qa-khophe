@@ -5,6 +5,8 @@ import { Download, Package, TrendingUp, DollarSign } from 'lucide-react';
 import { cn, formatTien, formatKg } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
 import { KpiCard } from '../components/KpiCard';
+import { AdvanceSummary } from '../components/AdvanceSummary';
+import { advancePurposeLabels } from '../lib/advances';
 import { DataState } from '../components/DataState';
 import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useAsyncList } from '../hooks/useAsyncData';
@@ -46,7 +48,7 @@ export const BaoCaoPage: React.FC = () => {
       : 'tongquan';
   const [activeTab, setActiveTab] = useState<ReportTab>(initialTab);
   const { user } = useAuth();
-  const canSeeFinance = user?.role === 'manager' || user?.role === 'admin';
+  const canSeeFinance = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'accountant';
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -115,6 +117,18 @@ export const BaoCaoPage: React.FC = () => {
   } = useAsyncList(
     canSeeFinance
       ? () => attendanceService.getAttendance({ from: range.from, to: range.to, all: true })
+      : async () => [],
+    [canSeeFinance, range.from, range.to],
+  );
+
+  const {
+    data: advances,
+    loading: advLoading,
+    error: advError,
+    refetch: refetchAdv,
+  } = useAsyncList(
+    canSeeFinance
+      ? () => expensesService.getAdvances({ from: range.from, to: range.to, all: true })
       : async () => [],
     [canSeeFinance, range.from, range.to],
   );
@@ -351,6 +365,31 @@ export const BaoCaoPage: React.FC = () => {
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(exportRows), 'Xuất phế');
 
       if (canSeeFinance) {
+        const advanceRows = [
+          [
+            'Ngày',
+            'Người nhận',
+            'Loại',
+            'Mục đích',
+            'Số tiền',
+            'Đã đối soát',
+            'Hoàn từ phiếu này',
+            'Còn chưa đối soát',
+            'Ghi chú',
+          ],
+          ...advances.map((row) => [
+            row.date,
+            row.person || '',
+            row.type,
+            advancePurposeLabels[row.purpose || 'unclassified'],
+            Number(row.amount),
+            Number(row.accounted_amount) || 0,
+            Number(row.returned_amount) || 0,
+            Number(row.outstanding_amount) || 0,
+            row.notes || '',
+          ]),
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(advanceRows), 'Phân loại tiền ứng');
         const expenseRows = [
           ['Ngày', 'Danh mục', 'Số tiền', 'Diễn giải', 'Ghi chú'],
           ...expenses.map((e) => [e.date, e.category, e.amount, e.description || '', e.notes || '']),
@@ -391,6 +430,7 @@ export const BaoCaoPage: React.FC = () => {
   };
 
   const loading =
+    advLoading ||
     impLoading ||
     expLoading ||
     expesLoading ||
@@ -401,6 +441,7 @@ export const BaoCaoPage: React.FC = () => {
     prevExpenseLoading ||
     prevAttLoading;
   const error =
+    advError ||
     impError ||
     expError ||
     expesError ||
@@ -412,6 +453,7 @@ export const BaoCaoPage: React.FC = () => {
     prevAttError;
   const retry = () => {
     [
+      refetchAdv,
       refetchImp,
       refetchExp,
       refetchExpes,
@@ -582,6 +624,7 @@ export const BaoCaoPage: React.FC = () => {
               </p>
             </div>
 
+            {canSeeFinance && <AdvanceSummary advances={advances} />}
             {canSeeFinance && (
               <p className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-3 text-xs leading-relaxed text-[var(--text-secondary)]">
                 Chi phí vận hành = chi phí xưởng + lương phát sinh (công × đơn giá + tăng ca), trước khi trừ

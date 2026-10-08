@@ -88,13 +88,20 @@ function App() {
                       <Route index element={<DashboardPage />} />
 
                       {/* Consolidated Module: Quản lý Phế */}
-                      <Route path="phe" element={<QuanLyPhePage />} />
+                      <Route
+                        path="phe"
+                        element={
+                          <RequireRole allow={['admin', 'manager', 'warehouse_manager', 'staff']}>
+                            <QuanLyPhePage />
+                          </RequireRole>
+                        }
+                      />
 
                       {/* Consolidated Module: Tài chính — chi phí, ứng lương, công nợ */}
                       <Route
                         path="tai-chinh"
                         element={
-                          <RequireRole allow={['manager', 'admin']}>
+                          <RequireRole allow={['manager', 'admin', 'accountant']}>
                             <TaiChinhPage />
                           </RequireRole>
                         }
@@ -104,7 +111,7 @@ function App() {
                       <Route
                         path="nhan-vien"
                         element={
-                          <RequireRole allow={['manager', 'admin']}>
+                          <RequireRole allow={['manager', 'admin', 'accountant']}>
                             <NhanVienPage />
                           </RequireRole>
                         }

@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, LogOut, Check, Sun, Leaf, Moon } from 'lucide-react';
+import { ChangePasswordModal } from '../components/ChangePasswordModal';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/auth';
 import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/theme';
@@ -13,6 +14,7 @@ const THEME_OPTIONS: { id: Theme; label: string; icon: React.ElementType }[] = [
 ];
 
 export const UserProfilePopover = () => {
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const { user, logout } = useAuth();
   const { theme, setTheme, primaryColor, setPrimaryColor, density, setDensity } = useTheme();
@@ -58,6 +60,7 @@ export const UserProfilePopover = () => {
 
   return (
     <div className="relative">
+      {passwordOpen && <ChangePasswordModal onClose={() => setPasswordOpen(false)} />}
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         aria-expanded={showDropdown}
@@ -72,7 +75,9 @@ export const UserProfilePopover = () => {
           <span className="text-[13px] font-bold text-[var(--text-primary)] leading-tight">
             {user?.name || 'Người dùng'}
           </span>
-          <span className="text-[11px] text-[var(--text-muted)] leading-tight">{user?.email || '—'}</span>
+          <span className="text-[11px] text-[var(--text-muted)] leading-tight">
+            {user?.email?.endsWith('@accounts.khophe.local') ? user.email.split('@')[0] : user?.email || '—'}
+          </span>
         </div>
         <ChevronDown size={14} className="text-[var(--text-muted)] hidden sm:block" />
       </button>
@@ -91,7 +96,11 @@ export const UserProfilePopover = () => {
             {/* User info header */}
             <div className="pb-3 border-b border-[var(--border-color)]">
               <p className="text-[13px] font-bold text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
-              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{user?.email || '—'}</p>
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+                {user?.email?.endsWith('@accounts.khophe.local')
+                  ? user.email.split('@')[0]
+                  : user?.email || '—'}
+              </p>
             </div>
 
             {/* CÀI ĐẶT CÁ NHÂN */}
@@ -180,6 +189,16 @@ export const UserProfilePopover = () => {
               </div>
             </div>
 
+            <button
+              type="button"
+              className="btn-secondary w-full mt-3 text-xs"
+              onClick={() => {
+                setShowDropdown(false);
+                setPasswordOpen(true);
+              }}
+            >
+              Đổi mật khẩu
+            </button>
             {/* Logout Button */}
             <div className="pt-2">
               <button

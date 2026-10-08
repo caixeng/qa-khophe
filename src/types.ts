@@ -5,7 +5,7 @@
 
 // --- Type aliases ---
 
-export type UserRole = 'admin' | 'manager' | 'staff';
+export type UserRole = 'admin' | 'manager' | 'staff' | 'warehouse_manager' | 'accountant';
 export type ContactType = 'supplier' | 'customer' | 'partner';
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 export type ProcessingStatus = 'pending' | 'grinding' | 'done';
@@ -127,12 +127,20 @@ export interface Expense {
   created_at?: string;
 }
 
+export type AdvancePurpose = 'unclassified' | 'workshop' | 'materials' | 'payroll' | 'other';
+
 export interface Advance {
   id: string;
   date: string;
   amount: number;
   person?: string;
   type: AdvanceType;
+  purpose?: AdvancePurpose;
+  employee_id?: string;
+  original_advance_id?: string;
+  accounted_amount?: number;
+  returned_amount?: number;
+  outstanding_amount?: number;
   notes?: string;
   created_by?: string;
   created_at?: string;

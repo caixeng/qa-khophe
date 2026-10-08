@@ -28,7 +28,7 @@ export const AttachmentUploader: React.FC<AttachmentUploaderProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const canDelete = user?.role === 'manager' || user?.role === 'admin';
+  const canDelete = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'accountant';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [items, setItems] = useState<Attachment[]>([]);

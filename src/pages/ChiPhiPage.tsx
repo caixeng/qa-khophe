@@ -17,6 +17,8 @@ import {
   ArrowUpRight,
   Trash2,
   Paperclip,
+  Pencil,
+  Link2,
 } from 'lucide-react';
 import { cn, formatTien, formatNgay } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
@@ -31,6 +33,10 @@ import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
 import { useToast } from '../contexts/toast';
+import { AdvanceSummary } from '../components/AdvanceSummary';
+import { AdvanceReconciliationModal } from '../components/AdvanceReconciliationModal';
+import { summarizeAdvances, advancePurposeLabels } from '../lib/advances';
+import { employeesService } from '../services/employeesService';
 import { expensesService } from '../services/expensesService';
 import type { Expense, Advance } from '../types';
 import { today } from '../lib/date';
@@ -62,6 +68,13 @@ export const ChiPhiPage: React.FC = () => {
     error: advError,
     refetch: refetchAdv,
   } = useAsyncList(expensesService.getAdvances, []);
+
+  const { data: employees } = useAsyncList(employeesService.getAll, []);
+  const [reconcileTarget, setReconcileTarget] = useState<Advance | null>(null);
+  const [purposeFilter, setPurposeFilter] = useState('all');
+  const shownAdvances = advances.filter(
+    (row) => purposeFilter === 'all' || (row.purpose || 'unclassified') === purposeFilter,
+  );
 
   const { searchQuery, setSearchQuery } = useTableControls();
   const { toast } = useToast();
@@ -99,6 +112,7 @@ export const ChiPhiPage: React.FC = () => {
       amount: 0,
       person: 'Chủ xưởng',
       type: 'advance',
+      purpose: 'unclassified',
       notes: '',
     },
   });
@@ -152,13 +166,10 @@ export const ChiPhiPage: React.FC = () => {
     .filter((e) => !['fuel', 'blade'].includes(e.category))
     .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
-  const totalUng = advances
-    .filter((a) => a.type === 'advance' || (a.type as string) === 'ung')
-    .reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
-  const totalHoan = advances
-    .filter((a) => a.type === 'settlement' || (a.type as string) === 'hoan')
-    .reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
-  const totalConLai = totalUng - totalExpense - totalHoan;
+  const advanceTotals = summarizeAdvances(advances);
+  const totalUng = advanceTotals.issued;
+  const totalHoan = advanceTotals.returned;
+  const totalConLai = advanceTotals.outstanding;
 
   const handleSaveExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -231,14 +242,21 @@ export const ChiPhiPage: React.FC = () => {
 
     setSavingAdv(true);
     try {
-      await expensesService.createAdvance({
+      const payload = {
         date: data.date || today(),
         amount,
         person: data.person || 'Chủ xưởng',
         type: data.type || 'advance',
+        purpose: data.purpose || 'unclassified',
+        employee_id: data.purpose === 'payroll' ? data.employee_id : undefined,
+        original_advance_id: ['settlement', 'hoan'].includes(data.type || '')
+          ? data.original_advance_id
+          : undefined,
         notes: data.notes,
-      });
-      toast.success('Đã ghi nhận khoản ứng tiền');
+      };
+      if (data.id) await expensesService.updateAdvance(data.id, payload);
+      else await expensesService.createAdvance(payload);
+      toast.success('Đã lưu phân loại tiền ứng');
       closeAdvModal();
       refetchAdv();
     } catch (err) {
@@ -248,6 +266,24 @@ export const ChiPhiPage: React.FC = () => {
       setSavingAdv(false);
     }
   };
+
+  if (expLoading || advLoading || expError || advError)
+    return (
+      <div className="page-shell">
+        <PageHeader title="Chi Phí & Ứng Tiền" />
+        <DataState
+          loading={expLoading || advLoading}
+          error={expError || advError}
+          isEmpty={false}
+          onRetry={() => {
+            void refetchAdv();
+            void refetchExp();
+          }}
+        >
+          <div />
+        </DataState>
+      </div>
+    );
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -451,14 +487,14 @@ export const ChiPhiPage: React.FC = () => {
         <div className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             <KpiCard
-              title="Tổng ứng vốn"
+              title="Tổng tiền ứng"
               value={formatTien(totalUng)}
               icon={ArrowDownRight}
               color="warning"
             />
             <KpiCard
-              title="Tổng chi phí xưởng"
-              value={formatTien(totalExpense)}
+              title="Đã đối soát chứng từ"
+              value={formatTien(advanceTotals.accounted)}
               icon={Wallet}
               color="danger"
             />
@@ -469,17 +505,33 @@ export const ChiPhiPage: React.FC = () => {
               color="success"
             />
             <KpiCard
-              title="Vốn ứng còn lại"
+              title="Còn chưa đối soát"
               value={formatTien(totalConLai)}
               icon={DollarSign}
               color="primary"
             />
           </div>
 
+          <AdvanceSummary advances={advances} />
+          <label className="flex flex-wrap gap-2 items-center text-xs font-medium">
+            Lọc mục đích
+            <select
+              className="input-field max-w-xs"
+              value={purposeFilter}
+              onChange={(e) => setPurposeFilter(e.target.value)}
+            >
+              <option value="all">Tất cả mục đích</option>
+              {Object.entries(advancePurposeLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
           <DataState
             loading={advLoading}
             error={advError}
-            isEmpty={advances.length === 0}
+            isEmpty={shownAdvances.length === 0}
             emptyTitle="Chưa có thông tin ứng tiền"
           >
             <div className="erp-table-container hidden lg:block">
@@ -505,7 +557,7 @@ export const ChiPhiPage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {advances.map((adv) => (
+                    {shownAdvances.map((adv) => (
                       <tr key={adv.id} className="tr-hover">
                         <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
                           {formatNgay(adv.date)}
@@ -530,7 +582,16 @@ export const ChiPhiPage: React.FC = () => {
                         <td className="td-cell text-right font-mono font-bold text-xs text-[var(--primary-500)]">
                           {formatTien(adv.amount)}
                         </td>
-                        <td className="td-cell text-xs text-[var(--text-muted)]">{adv.notes || '—'}</td>
+                        <td className="td-cell text-xs text-[var(--text-muted)]">
+                          <p className="font-semibold">
+                            {advancePurposeLabels[adv.purpose || 'unclassified']}
+                          </p>
+                          <p>{adv.notes || '—'}</p>
+                          <p>
+                            Đối soát: {formatTien(Number(adv.accounted_amount) || 0)}đ · Còn:{' '}
+                            {formatTien(Number(adv.outstanding_amount) || 0)}đ
+                          </p>
+                        </td>
                         <td className="td-cell text-right">
                           <div className="flex items-center justify-end gap-1">
                             <button
@@ -547,6 +608,25 @@ export const ChiPhiPage: React.FC = () => {
                               <Paperclip size={16} />
                             </button>
                             <button
+                              type="button"
+                              className="icon-action"
+                              title="Sửa phân loại"
+                              onClick={() => openAdvModal(adv)}
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            {(adv.type === 'advance' || adv.type === 'ung') &&
+                              adv.purpose !== 'unclassified' && (
+                                <button
+                                  type="button"
+                                  className="icon-action"
+                                  title="Đối soát"
+                                  onClick={() => setReconcileTarget(adv)}
+                                >
+                                  <Link2 size={16} />
+                                </button>
+                              )}
+                            <button
                               onClick={() => handleDeleteAdvance(adv.id)}
                               className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
                               title="Xóa"
@@ -562,7 +642,7 @@ export const ChiPhiPage: React.FC = () => {
               </div>
             </div>
             <MobileCardList
-              items={advances.map((adv) => {
+              items={shownAdvances.map((adv) => {
                 const isAdvance = adv.type === 'advance' || (adv.type as string) === 'ung';
                 return {
                   id: adv.id,
@@ -586,6 +666,9 @@ export const ChiPhiPage: React.FC = () => {
                         <span className="font-mono text-[var(--primary-600)]">{formatTien(adv.amount)}</span>
                       ),
                     },
+                    { label: 'Mục đích', value: advancePurposeLabels[adv.purpose || 'unclassified'] },
+                    { label: 'Đã đối soát', value: formatTien(Number(adv.accounted_amount) || 0) },
+                    { label: 'Còn chưa đối soát', value: formatTien(Number(adv.outstanding_amount) || 0) },
                     { label: 'Ghi chú', value: adv.notes || '—' },
                   ],
                   actions: (
@@ -600,6 +683,22 @@ export const ChiPhiPage: React.FC = () => {
                       >
                         <Paperclip size={18} />
                       </button>
+                      <button
+                        type="button"
+                        className="btn-secondary text-xs"
+                        onClick={() => openAdvModal(adv)}
+                      >
+                        Sửa phân loại
+                      </button>
+                      {isAdvance && adv.purpose !== 'unclassified' && (
+                        <button
+                          type="button"
+                          className="btn-secondary text-xs"
+                          onClick={() => setReconcileTarget(adv)}
+                        >
+                          Đối soát
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleDeleteAdvance(adv.id)}
@@ -717,6 +816,67 @@ export const ChiPhiPage: React.FC = () => {
             </select>
           </FormField>
 
+          <FormField label="Mục đích tiền ứng" required>
+            <select
+              className="input-field"
+              value={advForm.data?.purpose || 'unclassified'}
+              onChange={(e) => {
+                handleAdvChange('purpose', e.target.value as Advance['purpose']);
+                handleAdvChange('employee_id', undefined);
+              }}
+            >
+              {Object.entries(advancePurposeLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          {advForm.data?.purpose === 'payroll' && (
+            <FormField label="Nhân sự nhận ứng lương">
+              <select
+                className="input-field"
+                value={advForm.data?.employee_id || ''}
+                onChange={(e) => handleAdvChange('employee_id', e.target.value || undefined)}
+              >
+                <option value="">Chưa xác định hồ sơ (chưa trừ lương)</option>
+                {employees.map((row) => (
+                  <option key={row.id} value={row.id}>
+                    {row.name}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          )}
+          {['settlement', 'hoan'].includes(advForm.data?.type || '') && (
+            <FormField label="Phiếu ứng được hoàn" required>
+              <select
+                required
+                className="input-field"
+                value={advForm.data?.original_advance_id || ''}
+                onChange={(e) => {
+                  const original = advances.find((row) => row.id === e.target.value);
+                  handleAdvChange('original_advance_id', e.target.value);
+                  handleAdvChange('purpose', original?.purpose || 'unclassified');
+                  handleAdvChange('employee_id', original?.employee_id);
+                }}
+              >
+                <option value="">Chọn phiếu ứng gốc</option>
+                {advances
+                  .filter((row) => row.type === 'advance' || row.type === 'ung')
+                  .map((row) => (
+                    <option key={row.id} value={row.id}>
+                      {row.date} · {row.person} · {formatTien(row.amount)}đ
+                    </option>
+                  ))}
+              </select>
+            </FormField>
+          )}
+          <p className="text-xs text-[var(--text-muted)]">
+            Phân loại không tự cộng thêm chi phí hoặc tự trừ lương. Sau khi lưu, dùng Đối soát để liên kết
+            chứng từ hoặc ghi lượt ứng lương.
+          </p>
+
           <FormField label="Số tiền (đ)" required>
             <input
               type="number"
@@ -765,6 +925,16 @@ export const ChiPhiPage: React.FC = () => {
         </form>
       </Modal>
 
+      {reconcileTarget && (
+        <AdvanceReconciliationModal
+          advance={reconcileTarget}
+          onClose={() => setReconcileTarget(null)}
+          onSaved={() => {
+            void refetchAdv();
+            void refetchExp();
+          }}
+        />
+      )}
       <ConfirmDialog
         isOpen={confirmState.isOpen}
         onClose={() => setConfirmState({ isOpen: false, id: '', type: 'expense' })}

@@ -74,7 +74,7 @@ export const expensesService = {
     return readAllPages<Advance>(
       'tải sổ ứng tiền',
       (from, to) => {
-        let q = supabase.from('advances').select('*');
+        let q = supabase.from('v_advance_balances').select('*');
         if (filter.from) q = q.gte('date', filter.from);
         if (filter.to) q = q.lte('date', filter.to);
         return q.order('date', { ascending: false }).order('id').range(from, to);
@@ -92,6 +92,9 @@ export const expensesService = {
           person: advance.person || 'Chủ xưởng',
           amount: Number(advance.amount) || 0,
           type: advance.type || 'advance',
+          purpose: advance.purpose || 'unclassified',
+          employee_id: advance.employee_id || null,
+          original_advance_id: advance.original_advance_id || null,
           notes: advance.notes || null,
         })
         .select()
@@ -111,6 +114,9 @@ export const expensesService = {
           person: advance.person,
           amount: advance.amount !== undefined ? Number(advance.amount) : undefined,
           type: advance.type,
+          purpose: advance.purpose,
+          employee_id: advance.employee_id || null,
+          original_advance_id: advance.original_advance_id || null,
           notes: advance.notes,
         })
         .eq('id', id)
