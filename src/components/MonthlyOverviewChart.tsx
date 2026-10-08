@@ -185,7 +185,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
             <div className="flex items-center justify-between gap-3">
               <span className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-medium">
                 <span className="w-2 h-2 rounded-full bg-rose-600 dark:bg-rose-400 inline-block" />
-                Chi phí xưởng:
+                Chi vận hành:
               </span>
               <span className="font-mono font-bold text-[var(--text-primary)]">
                 {formatTien(currentItem?.operatingCost || 0)} đ
@@ -221,30 +221,30 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
   return (
     <div
       className={cn(
-        'card p-4 sm:p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-4 transition-all',
+        'monthly-overview card p-4 sm:p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-4 transition-all',
         className,
       )}
     >
       {/* HEADER: Title & Interactive Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="monthly-heading flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-2.5">
           <div className="p-2 rounded-xl bg-[var(--primary-50)] text-[var(--primary-600)] dark:bg-[var(--primary-900)] dark:text-[var(--primary-300)]">
             <BarChart3 size={18} />
           </div>
           <div>
             <h3 className="text-sm sm:text-base font-bold text-[var(--text-primary)]">
-              Tổng hợp hoạt động theo tháng
+              Hoạt động theo tháng
             </h3>
             <p className="text-[11px] sm:text-xs text-[var(--text-muted)]">
               {metricMode === 'volume'
-                ? 'So sánh khối lượng nhập, xay & xuất phế qua các tháng'
-                : 'Diễn biến doanh thu xuất, chi phí và chênh lệch bán − mua − chi phí'}
+                ? 'Sản lượng nhập, xay và xuất theo tháng'
+                : 'Giá trị bán, mua và chi phí theo tháng'}
             </p>
           </div>
         </div>
 
         {/* Controls: Mode Switcher & Time Filter */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="monthly-controls flex flex-wrap items-center gap-2">
           {/* Tabs: Sản lượng vs Tài chính (nếu có quyền) */}
           {canSeeFinance && (
             <div className="inline-flex p-0.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs font-semibold">
@@ -319,7 +319,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
 
       {/* MOBILE-FIRST HIGHLIGHT CARDS: Tóm tắt tháng gần nhất */}
       {latestMonth && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 pt-1">
+        <div className="monthly-highlights grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 pt-1">
           {metricMode === 'volume' ? (
             <>
               {/* Nhập phế */}
@@ -431,7 +431,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
               <div className="p-2.5 sm:p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50">
                 <div className="flex items-center justify-between text-rose-700 dark:text-rose-400 mb-0.5">
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">
-                    Chi phí xưởng
+                    Chi vận hành
                   </span>
                 </div>
                 <p className="text-sm sm:text-base font-black font-mono text-rose-900 dark:text-rose-200 truncate">
@@ -456,7 +456,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                     )}
                   >
                     {latestMonth.profit >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                    Chênh lệch bán − mua − chi
+                    Chênh lệch
                   </span>
                   {profitGrowth.pct !== null && (
                     <span
@@ -484,6 +484,12 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
             </>
           )}
         </div>
+      )}
+
+      {metricMode === 'finance' && (
+        <p className="monthly-formula text-[11px] leading-relaxed text-[var(--text-muted)]">
+          Chênh lệch = bán − mua − chi vận hành (gồm lương), chưa tính giá vốn tồn kho.
+        </p>
       )}
 
       {/* CHART CONTAINER: Responsive & Mobile Optimized */}
@@ -614,7 +620,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                   />
                   <Bar
                     dataKey="operatingCost"
-                    name="Chi phí xưởng"
+                    name="Chi vận hành"
                     fill="#e11d48"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={24}
@@ -622,7 +628,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                   <Line
                     type="monotone"
                     dataKey="profit"
-                    name="Chênh lệch bán − mua − chi"
+                    name="Chênh lệch"
                     stroke="#10b981"
                     strokeWidth={2.5}
                     dot={{ r: 3, fill: '#10b981' }}

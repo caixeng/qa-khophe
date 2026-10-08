@@ -372,3 +372,122 @@ table .font-mono {
   margin-top: 6px;
   max-width: 40ch;
 }
+
+@media (max-width: 1023px) {
+  .director-dashboard {
+    gap: 12px;
+  }
+  .director-kpis {
+    gap: 10px;
+  }
+  .director-kpis > .card {
+    padding: 14px 16px;
+    min-width: 0;
+  }
+  .director-kpis > .card > div {
+    gap: 6px;
+    margin-bottom: 7px;
+    align-items: center;
+  }
+  .director-kpis svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+  .director-kpis > .card > div > span {
+    letter-spacing: 0;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  .director-kpis > .card > p:first-of-type {
+    font-family: var(--font-sans, 'Inter Variable', sans-serif);
+    font-size: clamp(14px, 2.8vw, 19px);
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    letter-spacing: -0.035em;
+  }
+  .director-dashboard .monthly-overview {
+    padding: 16px;
+  }
+  .director-dashboard .monthly-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .director-dashboard .monthly-controls {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 8px;
+  }
+  .director-dashboard .monthly-controls > div {
+    display: flex;
+    min-width: 0;
+    border-radius: 10px;
+  }
+  .director-dashboard .monthly-controls button {
+    flex: 1;
+    padding-left: 5px;
+    padding-right: 5px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .director-dashboard .monthly-highlights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .director-dashboard .monthly-highlights > div {
+    padding: 10px 12px;
+    border-radius: 10px;
+    min-width: 0;
+  }
+  .director-dashboard .monthly-highlights > div > div {
+    gap: 4px;
+    min-height: 18px;
+    margin-bottom: 5px;
+  }
+  .director-dashboard .monthly-highlights > div > div > span:first-child {
+    letter-spacing: 0;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+  .director-dashboard .monthly-highlights p {
+    font-family: 'Inter Variable', sans-serif;
+    font-size: 14px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.025em;
+  }
+  .director-alerts {
+    padding: 16px;
+  }
+  .director-alerts > div {
+    padding: 11px 12px;
+    border-radius: 10px;
+    gap: 9px;
+  }
+  .director-alerts > div > div {
+    min-width: 0;
+  }
+  .director-alerts p {
+    line-height: 1.5;
+  }
+}
+@media (max-width: 479px) {
+  .director-kpis > .card {
+    padding: 12px;
+  }
+  .director-kpis > .card > div {
+    min-height: 27px;
+    align-items: flex-start;
+  }
+  .director-dashboard .monthly-controls {
+    grid-template-columns: 1fr;
+  }
+  .director-dashboard .monthly-controls:has(> div:only-child) {
+    grid-template-columns: 1fr;
+  }
+  .director-dashboard .monthly-highlights > div > div {
+    flex-wrap: wrap;
+  }
+}

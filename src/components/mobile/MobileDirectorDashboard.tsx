@@ -53,7 +53,7 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
     summary.lowStockAlert;
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="director-dashboard space-y-4 animate-fade-in">
       {/* Header Banner - Giám Đốc */}
       <div className="workshop-hero director-hero">
         <div className="director-hero-meta">
@@ -65,7 +65,7 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
       </div>
 
       {/* Director Executive KPIs */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="director-kpis grid grid-cols-2 gap-3">
         <div className="card p-3.5 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl shadow-xs">
           <div className="flex items-center space-x-2 text-emerald-600 mb-1">
             <TrendingUp size={16} />
@@ -83,7 +83,7 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
             <div className="flex items-center space-x-2 text-[var(--primary-500)] mb-1">
               <DollarSign size={16} />
               <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                Chênh lệch bán − mua − chi
+                Chênh lệch giá trị
               </span>
             </div>
             <p className="text-base font-black font-mono text-[var(--primary-500)]">
@@ -129,27 +129,27 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
       />
 
       {/* Director Alert Center — dữ liệu thật, không hardcode */}
-      <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-3">
+      <div className="director-alerts card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-3">
         <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2">
           <AlertTriangle size={16} className="text-amber-500" />
           Cảnh Báo Giám Sát
         </h3>
 
         {!hasAlerts && (
-          <div className="p-3.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 border-2 border-emerald-500 flex items-start space-x-3">
+          <div className="p-3.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-500 flex items-start space-x-3">
             <CheckCircle2 size={18} className="text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
             <p className="text-xs font-black text-emerald-950 dark:text-emerald-100">Không có cảnh báo nào</p>
           </div>
         )}
 
         {summary.pendingImports.length > 0 && (
-          <div className="p-3.5 rounded-xl bg-amber-100 dark:bg-amber-950/80 border-2 border-amber-500 flex items-start space-x-3">
+          <div className="p-3.5 rounded-xl bg-amber-100 dark:bg-amber-950/80 border border-amber-500 flex items-start space-x-3">
             <AlertTriangle size={18} className="text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-black text-amber-950 dark:text-amber-100">
                 {summary.pendingImports.length} lô phế chưa xay
               </p>
-              <p className="text-[11px] font-extrabold text-amber-900 dark:text-amber-200 mt-0.5">
+              <p className="text-[11px] font-medium text-amber-900 dark:text-amber-200 mt-0.5">
                 {summary.pendingImports
                   .slice(0, 2)
                   .map((i) => `${i.contact_name || 'Khách'} (${formatKg(i.quantity_kg || 0)})`)
@@ -161,13 +161,13 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
         )}
 
         {summary.totalUnpaidReceivables > 0 && (
-          <div className="p-3.5 rounded-xl bg-rose-100 dark:bg-rose-950/80 border-2 border-rose-500 flex items-start space-x-3">
+          <div className="p-3.5 rounded-xl bg-rose-100 dark:bg-rose-950/80 border border-rose-500 flex items-start space-x-3">
             <ArrowUpRight size={18} className="text-rose-700 dark:text-rose-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-black text-rose-950 dark:text-rose-100">
                 Công nợ phải thu: {formatTien(summary.totalUnpaidReceivables)}
               </p>
-              <p className="text-[11px] font-extrabold text-rose-900 dark:text-rose-200 mt-0.5">
+              <p className="text-[11px] font-medium text-rose-900 dark:text-rose-200 mt-0.5">
                 Xem chi tiết tại trang Tài chính &gt; Công nợ.
               </p>
             </div>
@@ -175,13 +175,13 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
         )}
 
         {summary.overdueReceivables.length > 0 && (
-          <div className="p-3.5 rounded-xl bg-rose-200 dark:bg-rose-900/90 border-2 border-rose-600 flex items-start space-x-3">
+          <div className="p-3.5 rounded-xl bg-rose-200 dark:bg-rose-900/90 border border-rose-600 flex items-start space-x-3">
             <Clock size={18} className="text-rose-800 dark:text-rose-300 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-black text-rose-950 dark:text-rose-100">
                 {summary.overdueReceivables.length} khách nợ quá hạn
               </p>
-              <p className="text-[11px] font-extrabold text-rose-900 dark:text-rose-200 mt-0.5">
+              <p className="text-[11px] font-medium text-rose-900 dark:text-rose-200 mt-0.5">
                 {formatTien(summary.totalOverdueReceivables)} — nên nhắc thu sớm
               </p>
             </div>
@@ -189,11 +189,11 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
         )}
 
         {summary.lowStockAlert && (
-          <div className="p-3.5 rounded-xl bg-amber-100 dark:bg-amber-950/80 border-2 border-amber-500 flex items-start space-x-3">
+          <div className="p-3.5 rounded-xl bg-amber-100 dark:bg-amber-950/80 border border-amber-500 flex items-start space-x-3">
             <TrendingDown size={18} className="text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-black text-amber-950 dark:text-amber-100">Tồn kho xuống thấp</p>
-              <p className="text-[11px] font-extrabold text-amber-900 dark:text-amber-200 mt-0.5">
+              <p className="text-[11px] font-medium text-amber-900 dark:text-amber-200 mt-0.5">
                 Chỉ còn {formatKg(summary.inventoryKg)}
               </p>
             </div>
