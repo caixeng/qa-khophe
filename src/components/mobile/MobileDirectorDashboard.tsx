@@ -55,14 +55,12 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header Banner - Giám Đốc */}
-      <div className="workshop-hero block">
-        <div className="flex justify-between items-center mb-2">
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-white/20 backdrop-blur-md">
-            Giao diện Giám Đốc
-          </span>
-          <span className="text-[11px] font-mono opacity-80">{formatNgay(new Date().toISOString())}</span>
+      <div className="workshop-hero director-hero">
+        <div className="director-hero-meta">
+          <span className="director-hero-label">Tổng quan xưởng</span>
+          <span className="director-hero-date">{formatNgay(new Date())}</span>
         </div>
-        <h2 className="text-lg font-black tracking-tight">Tổng Quan Vận Hành Xưởng</h2>
+        <h2 className="text-lg font-black tracking-tight">Vận hành & tài chính</h2>
         <p className="text-xs opacity-90 mt-0.5">Giám sát doanh thu, sản lượng & công nợ tức thời</p>
       </div>
 
