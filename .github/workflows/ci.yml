@@ -34,7 +34,16 @@ jobs:
           node-version: 24
           cache: npm
 
-      - run: npm ci
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if ! npm ci > "$RUNNER_TEMP/npm-install.log" 2>&1; then
+            cat "$RUNNER_TEMP/npm-install.log"
+            tail -n 30 "$RUNNER_TEMP/npm-install.log" | while IFS= read -r line; do
+              printf '::error::%s\n' "$line"
+            done
+            exit 1
+          fi
 
       - name: Format check
         run: npm run format:check
