@@ -44,6 +44,21 @@ export const AttendanceDetailModal: React.FC<AttendanceDetailModalProps> = ({
           />
         </FormField>
 
+        <FormField label="Hệ số tăng ca (1,5 = 150%)">
+          <input
+            aria-label="Hệ số tăng ca"
+            type="number"
+            min="1"
+            max="5"
+            step="0.01"
+            className="input-field"
+            value={data?.overtime_multiplier ?? ''}
+            placeholder="Mặc định theo cài đặt"
+            onChange={(e) =>
+              onChange('overtime_multiplier', e.target.value === '' ? undefined : Number(e.target.value))
+            }
+          />
+        </FormField>
         <FormField label="Chọn công nhân chấm công" required>
           <select
             className="input-field"

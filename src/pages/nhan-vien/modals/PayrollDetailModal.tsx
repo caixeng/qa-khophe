@@ -56,12 +56,17 @@ export const PayrollDetailModal: React.FC<PayrollDetailModalProps> = ({
           </div>
         </div>
 
+        <p className="text-xs">
+          Số dư chuyển kỳ: <b>{formatTien(detailRow.opening_balance || 0)}đ</b> · Sau bù trừ:{' '}
+          <b>{formatTien(detailRow.balance_due || 0)}đ</b>
+          {detailRow.settled && ` · Đã chốt trả ${formatTien(detailRow.cash_paid || 0)}đ`}
+        </p>
         <div className="flex items-center justify-between">
           <h4 className="text-xs font-extrabold text-[var(--text-secondary)] uppercase tracking-wider">
             Nhật ký chấm công & ứng tiền ({detailAtt.length} lượt)
           </h4>
           <div className="flex items-center gap-2">
-            {detailRow.unpaid > 0 && detailRow.employee_id && (
+            {!detailRow.settled && detailRow.employee_id && (
               <button
                 type="button"
                 onClick={() => {

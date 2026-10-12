@@ -157,7 +157,7 @@ export const TonKhoPage: React.FC = () => {
 
   const openCountModal = () => {
     setCountedBagsStr(String(inventoryStats.currentBags));
-    setCountedKgStr(String(inventoryStats.currentStockKg));
+    setCountedKgStr(inventoryStats.currentStockKg < 0 ? '' : String(inventoryStats.currentStockKg));
     setCountNotes('');
     setIsCountModalOpen(true);
   };

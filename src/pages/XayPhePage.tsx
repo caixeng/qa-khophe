@@ -22,6 +22,7 @@ import { importsService } from '../services/importsService';
 import { settingsService } from '../services/settingsService';
 import { sortByDateDesc } from '../lib/storage';
 import type { Grinding } from '../types';
+import { lossCategoryLabels, type LossCategory } from '../lib/loss';
 import { today } from '../lib/date';
 
 interface XayPhePageProps {
@@ -39,6 +40,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
   } = useAsyncList(() => grindingService.getAll({ from: range.from, to: range.to }), [range.from, range.to]);
   const { data: importsList } = useAsyncList(importsService.getAll, []);
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
+  const { data: lossThreshold } = useAsyncData(settingsService.getLossWarning, []);
   const kgPerBag = kgPerBagData ?? 900;
 
   const { toast } = useToast();
@@ -138,6 +140,10 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
       return;
     }
 
+    if (inputKg > outputKg && (!data.loss_category || data.loss_category === 'unclassified')) {
+      toast.warning('Chọn nguyên nhân hao hụt trước khi lưu');
+      return;
+    }
     setSaving(true);
     try {
       if (data.id) {
@@ -152,6 +158,8 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
           bags_count: Number(data.bags_count) || Math.round(outputKg / kgPerBag),
           worker: data.worker || 'Hoa',
           notes: data.notes,
+          loss_category: data.loss_category,
+          loss_notes: data.loss_notes,
         });
         toast.success('Đã thêm phiếu xay mới');
       }
@@ -183,6 +191,12 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {stats.avgLossPct > (lossThreshold ?? 5) && (
+        <div role="alert" className="card p-3 text-sm text-amber-700">
+          Hao hụt xay {formatPhanTram(stats.avgLossPct)} vượt ngưỡng {lossThreshold ?? 5}%. Kiểm tra cân và
+          nguyên nhân từng phiếu.
+        </div>
+      )}
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
@@ -470,6 +484,11 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                   </div>
                 </div>
 
+                <p className="text-xs">
+                  Nguyên nhân hao hụt:{' '}
+                  <b>{lossCategoryLabels[selectedDetail.loss_category || 'unclassified']}</b>
+                  {selectedDetail.loss_notes && ' · ' + selectedDetail.loss_notes}
+                </p>
                 {selectedDetail.notes && (
                   <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
                     <span className="text-[var(--text-muted)] block font-semibold uppercase mb-1">
@@ -526,6 +545,34 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             />
           </FormField>
 
+          <FormField
+            label="Nguyên nhân hao hụt"
+            required={
+              (Number(formState.data?.input_qty_kg) || 0) > (Number(formState.data?.output_qty_kg) || 0)
+            }
+          >
+            <select
+              aria-label="Nguyên nhân hao hụt"
+              className="input-field"
+              value={formState.data?.loss_category || 'unclassified'}
+              onChange={(e) => handleChange('loss_category', e.target.value as LossCategory)}
+            >
+              {Object.entries(lossCategoryLabels).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label="Diễn giải hao hụt" required={formState.data?.loss_category === 'other'}>
+            <input
+              aria-label="Diễn giải hao hụt"
+              className="input-field"
+              required={formState.data?.loss_category === 'other'}
+              value={formState.data?.loss_notes || ''}
+              onChange={(e) => handleChange('loss_notes', e.target.value)}
+            />
+          </FormField>
           <FormField label="Chọn lô phế nhập">
             <select
               className="input-field"
@@ -540,11 +587,13 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
               }}
             >
               <option value="">-- Lô phế vãng lai --</option>
-              {importsList.map((imp) => (
-                <option key={imp.id} value={imp.id}>
-                  {imp.date} - {imp.contact_name || 'Khách'} ({formatKg(imp.quantity_kg)})
-                </option>
-              ))}
+              {importsList
+                .filter((imp) => imp.import_type !== 'thanh_pham')
+                .map((imp) => (
+                  <option key={imp.id} value={imp.id}>
+                    {imp.date} - {imp.contact_name || 'Khách'} ({formatKg(imp.quantity_kg)})
+                  </option>
+                ))}
             </select>
           </FormField>
 

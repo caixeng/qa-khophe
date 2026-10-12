@@ -5,6 +5,8 @@ import { today } from '../lib/date';
 import { readAllPages } from '../lib/pagination';
 
 type GrindingRow = {
+  loss_category: Grinding['loss_category'];
+  loss_notes: string | null;
   id: string;
   date: string;
   import_id: string | null;
@@ -19,13 +21,15 @@ type GrindingRow = {
 };
 
 const SELECT_COLUMNS =
-  'id, date, import_id, input_qty_kg, output_qty_kg, loss_kg, loss_pct, bags_count, worker, notes, created_at';
+  'id, date, import_id, input_qty_kg, output_qty_kg, loss_kg, loss_pct, loss_category, loss_notes, bags_count, worker, notes, created_at';
 
 function mapRow(item: GrindingRow): Grinding {
   const input = Number(item.input_qty_kg) || 0;
   const output = Number(item.output_qty_kg) || 0;
   return {
     id: item.id,
+    loss_category: item.loss_category,
+    loss_notes: item.loss_notes ?? undefined,
     date: item.date,
     import_id: item.import_id ?? undefined,
     input_qty_kg: input,
@@ -93,6 +97,8 @@ export const grindingService = {
           bags_count: Number(item.bags_count) || 0,
           worker: item.worker || null,
           notes: item.notes || null,
+          loss_category: item.loss_category || 'unclassified',
+          loss_notes: item.loss_notes || null,
         })
         .select(SELECT_COLUMNS)
         .single<GrindingRow>(),
@@ -117,6 +123,8 @@ export const grindingService = {
     if ('output_qty_kg' in item) payload.output_qty_kg = Number(item.output_qty_kg) || 0;
     if ('bags_count' in item) payload.bags_count = Number(item.bags_count) || 0;
     if ('worker' in item) payload.worker = item.worker;
+    if ('loss_category' in item) payload.loss_category = item.loss_category;
+    if ('loss_notes' in item) payload.loss_notes = item.loss_notes || null;
     if ('notes' in item) payload.notes = item.notes || null;
 
     const row = await runQuery<GrindingRow>('cập nhật phiếu xay', () =>

@@ -23,6 +23,7 @@ const MENU_ITEMS: MenuItem[] = [
   { id: 'finance', path: '/tai-chinh', label: 'Tài chính', icon: Wallet, managerOnly: true },
   { id: 'employees', path: '/nhan-vien', label: 'Quản lý Nhân sự', icon: UserCheck, managerOnly: true },
   { id: 'contacts', path: '/danh-ba', label: 'Danh bạ đối tác', icon: Users },
+  { id: 'reconciliation', path: '/doi-soat', label: 'Đối soát dữ liệu', icon: BarChart3 },
   { id: 'reports', path: '/bao-cao', label: 'Báo cáo', icon: BarChart3 },
   { id: 'settings', path: '/cai-dat', label: 'Cài đặt', icon: Settings, adminOnly: true },
 ];

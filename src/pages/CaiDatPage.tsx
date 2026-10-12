@@ -1,3 +1,5 @@
+import { AppErrorPanel } from '../components/AppErrorPanel';
+import { BusinessSettings } from '../components/BusinessSettings';
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/theme';
@@ -83,6 +85,8 @@ export const CaiDatPage = () => {
         </p>
       </div>
 
+      <BusinessSettings />
+      <AppErrorPanel />
       {/* 1. Thông tin tài khoản */}
       <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xs">
         <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-4 flex items-center gap-2">

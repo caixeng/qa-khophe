@@ -51,7 +51,9 @@ export function calculateAttendancePay(attendance: Partial<Attendance>): Attenda
   const overtimeHours = Math.max(0, Number(attendance.overtime_hours) || 0);
   const advance = Math.max(0, Number(attendance.advance_pay) || 0);
   const regular = shifts * dailyPay;
-  const overtime = (overtimeHours * dailyPay * OVERTIME_MULTIPLIER) / STANDARD_WORKDAY_HOURS;
+  const overtime =
+    (overtimeHours * dailyPay * (attendance.overtime_multiplier ?? OVERTIME_MULTIPLIER)) /
+    STANDARD_WORKDAY_HOURS;
   const gross = Math.round(regular + overtime);
 
   return {

@@ -63,6 +63,8 @@ export interface Import {
 }
 
 export interface Grinding {
+  loss_category?: import('./lib/loss').LossCategory;
+  loss_notes?: string;
   id: string;
   date: string;
   import_id?: string;
@@ -160,6 +162,7 @@ export interface Employee {
 }
 
 export interface Attendance {
+  overtime_multiplier?: number;
   id: string;
   date: string;
   employee_id?: string;

@@ -23,52 +23,24 @@ npm run format:check  # prettier --check .
 
 ## Cấu hình Supabase
 
-1. Tạo project tại [supabase.com](https://supabase.com).
-2. Vào **SQL Editor**, chạy lần lượt các file trong `supabase/migrations/` theo đúng thứ tự số:
-   `001` → `003` → `004` → `005` → `006` → `007` → `008` → `009` → `010` → `011` → `012`.
-   **Bỏ qua `002_DEPRECATED_allow_anon_rls.sql.bak`** — file này mở toang RLS cho toàn bộ dữ liệu và đã bị huỷ bỏ; migration `003` thay thế hoàn toàn nó.
-3. Migration `003` bật RLS theo vai trò (`admin` / `manager` / `staff`) và xoá quyền truy cập ẩn danh.
-4. Tạo tài khoản đăng nhập thật: **Authentication > Users > Add user** (email + mật khẩu) cho từng người, rồi cấp vai trò:
-   ```sql
-   INSERT INTO users (email, full_name, role)
-   VALUES ('ban@congty.vn', 'Quản trị viên', 'admin')
-   ON CONFLICT (email) DO UPDATE SET role = 'admin';
-   ```
-   Lần đăng nhập đầu tiên, ứng dụng tự gắn `auth_id` vào đúng dòng này theo email.
-5. Migration `007` seed dữ liệu sổ tay thực tế (tháng 6–7/2026) — an toàn khi chạy lại nhiều lần.
-6. Migration `008` **tự kiểm tra bảo mật**: bật RLS cho mọi bảng, xoá policy `USING(true)` còn sót, và cảnh báo nếu có bảng không có policy hoặc chưa có tài khoản admin. Đọc tab **Messages/Notices** sau khi chạy.
-7. Migration `009` thêm **bảng giá riêng theo đối tác** (`contacts.default_price_per_kg`) và điền sẵn giá từ đơn giá của phiếu gần nhất. Ứng dụng vẫn chạy bình thường nếu chưa chạy migration này — chỉ là không có tính năng tự điền giá khi chọn đối tác.
-8. Migration `010` tự cập nhật `imports.processing_status` (chờ xay → hoàn thành) mỗi khi tạo/xoá phiếu xay có gắn lô nhập — bằng trigger, không phụ thuộc client nhớ gọi.
-9. Migration `011` tạo bucket Storage `attachments` (riêng tư, truy cập qua signed URL) + bảng `attachments` để đính kèm ảnh hoá đơn/chuyển khoản vào phiếu nhập, xuất, chi phí, ứng tiền, phiên cân.
-10. Migration `012` thêm `weighing_sessions.contact_id` — gắn phiên cân với đối tác (NCC khi cân nhập, khách hàng khi cân xuất), cho chọn khi tạo phiếu xuất để tự điền số bao/kg.
-11. Copy `Project URL` và `anon public key` từ **Project Settings > API** vào file `.env`.
+1. Tạo project Supabase và điền URL, anon key vào `.env` theo `.env.example`.
+2. Cài Supabase CLI, đăng nhập và liên kết đúng project bằng `npx supabase link --project-ref <project-ref>`.
+3. Kiểm tra `npx supabase migration list` trước khi chạy `npx supabase db push`. Các file trong `supabase/migrations/` dùng timestamp và chạy theo thứ tự. Baseline tạo schema rỗng trên project mới; không nạp dữ liệu kinh doanh mẫu.
+4. Tạo người dùng trong Supabase Auth, sau đó thêm hồ sơ tương ứng trong `public.users` với email và vai trò phù hợp. Username nội bộ được ánh xạ sang email `username@accounts.khophe.local`. Kế toán cần toàn quyền thì cấp `admin`.
 
-> **Không đăng nhập được?** Ứng dụng chỉ chấp nhận tài khoản Supabase Auth thật, và tài khoản đó phải có một dòng tương ứng trong bảng `users`. Nếu đăng nhập đúng mật khẩu mà báo *"chưa được cấp quyền trong hệ thống"*, nghĩa là bước 4 chưa làm cho email đó.
+**Project hiện hữu:** đối chiếu schema và lịch sử migration trước khi push. Không chạy lại các file trong `supabase/legacy/`; đó là tài liệu lịch sử, có cả seed dữ liệu thật và policy đã bị hủy bỏ. Project `ageezcxrthqmmacnrqpf` đã đồng bộ lịch sử đến `20261012005457` ngày 12/10/2026.
 
-### Chạy migration bằng script (thay cho việc dán tay vào SQL Editor)
-
-Thêm `SUPABASE_ACCESS_TOKEN=sbp_...` vào `.env` (lấy tại [account/tokens](https://supabase.com/dashboard/account/tokens)), rồi:
+### Kiểm thử và sao lưu
 
 ```bash
-node scripts/run_migration.mjs --check                                  # chỉ đọc, không sửa gì
-node scripts/run_migration.mjs supabase/migrations/009_contact_pricing.sql
+npm run test:database                  # PostgreSQL WASM cô lập, dựng schema và chạy test rollback
+npm run backup:data                    # cần SUPABASE_ACCESS_TOKEN trong .env
+npm run test:database -- .backups/<file>.json  # thử khôi phục vào DB bộ nhớ riêng
 ```
 
-`--check` chạy các truy vấn chẩn đoán: policy còn mở toang, phiếu xay sai vật lý (sản lượng ra > lượng vào), phiếu nhập nghi trùng, và trạng thái cột `default_price_per_kg`.
+Bản sao lưu nằm trong `.backups/` (git ignore), gồm dữ liệu các bảng nghiệp vụ public và checksum SHA-256. Kiểm thử khôi phục đối chiếu giá trị, số dòng và khóa ngoại. Bản này không bao gồm tài khoản/mật khẩu Supabase Auth hoặc nội dung file Storage; cần sao lưu riêng hai phần đó và lưu bản sao ở nơi an toàn ngoài máy làm việc. Script không có đường khôi phục ghi vào production.
 
-> Token này có **toàn quyền trên mọi project Supabase** của tài khoản, không giới hạn riêng project này. Dùng xong nên **Revoke** ngay. Anon key trong `.env` không thay thế được vì nó không chạy được DDL.
-
-### Trạng thái đã áp dụng trên DB thật
-
-Lần ghi nhận cũ **08/08/2026**: migration `001`–`012` đã chạy xong trên project `ageezcxrthqmmacnrqpf`. Kiểm tra xác nhận không còn policy `USING(true)` nào, không có phiếu nhập trùng, và `weighing_sessions.contact_id`/bảng `attachments`/bucket Storage `attachments`/trigger tự cập nhật `processing_status` đều đã tồn tại.
-
-**Còn tồn:** 2 phiếu xay có sản lượng ra lớn hơn lượng vào (29/06 lệch +17 kg — khớp ghi chú sổ tay, nhiều khả năng sai số cân; 01/07 lệch **+1.397 kg** — cần đối chiếu sổ tay để sửa). Dữ liệu mới đã bị chặn bởi validation ở `grindingService` và CHECK trong migration `006`.
-
-```sql
--- Tìm lại các dòng sai:
-SELECT id, date, worker, input_qty_kg, output_qty_kg
-FROM grinding WHERE deleted_at IS NULL AND output_qty_kg > input_qty_kg ORDER BY date;
-```
+CI chạy lint, unit test, build và kiểm thử migration trên PostgreSQL 17. `supabase/tests/bootstrap.sql` chỉ dành cho DB kiểm thử, tuyệt đối không chạy trên project thật.
 
 ## Phân quyền
 
@@ -78,7 +50,7 @@ FROM grinding WHERE deleted_at IS NULL AND output_qty_kg > input_qty_kg ORDER BY
 | `manager` | ✅ | ✅ | ✅ | ✅ |
 | `admin` | ✅ | ✅ | ✅ | ✅ + quản lý tài khoản |
 
-Phân quyền được enforce ở **Row Level Security** trong Postgres (xem `supabase/migrations/003_users_roles_and_rls.sql`) — ẩn/hiện menu trên UI chỉ là tiện ích hiển thị, không phải cơ chế bảo mật.
+Phân quyền được enforce ở **Row Level Security** trong Postgres (xem `supabase/legacy/003_users_roles_and_rls.sql`) — ẩn/hiện menu trên UI chỉ là tiện ích hiển thị, không phải cơ chế bảo mật.
 
 ## Cấu trúc thư mục
 
@@ -91,7 +63,9 @@ src/
   pages/        Các trang theo route
   services/     Lớp gọi Supabase — mọi lỗi được throw thật, không có dữ liệu giả
 supabase/
-  migrations/   Schema, RLS, seed — chạy tay qua Supabase SQL Editor
+  migrations/   Migration timestamp: schema, RLS, RPC
+  legacy/       SQL lịch sử, không chạy lại
+  tests/        Kiểm thử nghiệp vụ và phân quyền
 ```
 
 ## Ghi chú kỹ thuật
@@ -106,18 +80,20 @@ supabase/
 - **Xuất Excel đa sheet**: `xlsx` lazy-load — chỉ tải khi bấm Xuất Excel ở trang Báo cáo, nên không nằm trong bundle khởi động.
 - **Tách chunk**: `vite.config.ts` tách vendor (react/router/supabase/charts/icons) khỏi mã ứng dụng để sửa code không bắt người dùng tải lại toàn bộ thư viện.
 
-## Rủi ro bảo mật đã biết (chưa có bản vá từ nhà cung cấp)
+## Nâng cấp vận hành 12/10/2026
 
-`npm audit` báo 3 lỗ hổng:
-- `react-router-dom` 6.x — có bản vá nhưng là **major version breaking change** lên v7, cần kiểm thử lại toàn bộ routing trước khi nâng cấp.
-- `xlsx` (SheetJS) — lỗ hổng ReDoS/prototype pollution, **chưa có bản vá trên npm registry** (chỉ có trên CDN riêng của SheetJS). Rủi ro thấp trong app này vì chỉ dùng để **ghi** file Excel, không đọc file người dùng tải lên.
-
-Chạy `npm audit` để xem chi tiết trước khi quyết định nâng cấp.
-
+- Dashboard dùng một RPC tổng hợp; giao diện chỉ dựng biểu đồ phù hợp kích thước màn hình.
+- Trang Đối soát chỉ rõ công thức tồn kho, lô chưa liên kết, hao hụt chưa phân loại và tiền ứng chưa rõ mục đích; không tự sửa số liệu nguồn.
+- Phiếu xay có danh mục/nguyên nhân hao hụt; chặn vượt lượng nhập của lô. Ngưỡng cảnh báo hao hụt có thể cấu hình.
+- Bảng lương chuyển số dư âm/dương giữa kỳ, giữ hệ số tăng ca lịch sử; chốt lương nguyên tử, chống trả trùng và khóa sửa kỳ đã chốt.
+- Báo cáo có dòng tiền thực thu/chi theo chứng từ, tránh cộng trùng khoản ứng với chi phí dùng tiền ứng. Chênh lệch bán–mua–chi không phải lợi nhuận kế toán.
+- Cài đặt có ngưỡng hao hụt, hệ số tăng ca, tồn nguyên liệu đầu kỳ và nhật ký lỗi tập trung đã lọc thông tin nhạy cảm.
+- Mật khẩu mới tối thiểu 8 ký tự. Kiểm tra mật khẩu rò rỉ chưa bật vì project hiện tại không có gói Pro.
+- Các khoản ứng chưa phân loại và tồn kho âm giữ nguyên để đối chiếu chứng từ; không suy đoán giá vốn hay tự điều chỉnh tồn đầu kỳ.
 
 ### Nâng cấp full stack 08/10/2026
 
-- Migration `20261008063116_fullstack_hardening.sql` đã áp dụng trên project `ageezcxrthqmmacnrqpf`: bảo vệ vai trò/tài khoản ngừng hoạt động, RLS file đính kèm, RPC cân nguyên tử có retry, khôi phục schema chốt lương, khóa kỳ lương đã chốt và RPC tổng tồn kho.
+- Migration `20261008064436_fullstack_hardening.sql` đã áp dụng trên project `ageezcxrthqmmacnrqpf`: bảo vệ vai trò/tài khoản ngừng hoạt động, RLS file đính kèm, RPC cân nguyên tử có retry, khôi phục schema chốt lương, khóa kỳ lương đã chốt và RPC tổng tồn kho.
 - Kiểm thử DB: chạy `supabase/tests/fullstack.sql` bằng SQL Editor hoặc `node scripts/run_migration.mjs supabase/tests/fullstack.sql`. Bộ test tạo dữ liệu tạm rồi `ROLLBACK`, kiểm tra quyền, cân nguyên tử/idempotency, ứng vượt lương, chốt lương, thanh toán và tồn kho. Không dùng dữ liệu mẫu làm dữ liệu vận hành.
 - Các migration 001–016 trước đây được chạy thủ công, không đầy đủ trong lịch sử CLI. Trước khi `db push` phải đối chiếu schema và lịch sử; không đẩy lại toàn bộ SQL cũ lên DB hiện hữu.
 - Node 24; Router 7, Tailwind 4, Vitest 4.1.11, SheetJS 0.20.3 chính thức; Inter phục vụ nội bộ. UI lấy cảm hứng từ `qlda-ddcn-ht-selfhost`: lam đậm, nền kem, nhấn vàng, bảng xen kẽ và mật độ tùy chọn.
@@ -154,7 +130,7 @@ Trong Tài chính → Chi phí & Ứng tiền → Sổ ứng tiền:
 - Số còn chưa đối soát = tiền ứng − chứng từ liên kết − hoàn ứng của phiếu gốc. Không trừ tất cả chi phí xưởng khỏi tất cả tiền ứng như trước đây. Tiền ứng không cộng thêm vào chi phí; lương phát sinh vẫn là tiền công trước ứng.
 - Báo cáo và Excel có phân loại tiền ứng. Tiền ứng/hoàn tính theo kỳ đang chọn; số đã đối soát và số còn lại là hiện trạng của các phiếu ứng trong kỳ.
 
-Migrations bổ sung: `20261008094131_classify_workshop_advances.sql`, `20261008094956_workshop_account_roles.sql`, `20261008095459_advance_reconciliation_guards.sql`. Tests DB trong `supabase/tests/advances.sql` và `supabase/tests/account_roles.sql` dùng fixtures rồi rollback.
+Migrations bổ sung: `20261008094958_classify_workshop_advances.sql`, `20261008095259_workshop_account_roles.sql`, `20261008095544_advance_reconciliation_guards.sql`. Tests DB trong `supabase/tests/advances.sql` và `supabase/tests/account_roles.sql` dùng fixtures rồi rollback.
 
 Theo xác nhận của chủ xưởng, hai phiếu 10 triệu ngày 17/09 và 5 triệu ngày 21/09 cho Xếp Nam được phân loại ứng lương, gắn hồ sơ Anh Nam và đối soát vào chấm công. Đơn giá lương Anh Nam chưa được cung cấp, hiện 0; không suy đoán số công/tiền lương.
 

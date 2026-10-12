@@ -31,6 +31,7 @@ const MENU_ITEMS = [
   { path: '/tai-chinh', label: 'Tài chính', icon: Wallet, managerOnly: true },
   { path: '/nhan-vien', label: 'Quản lý Nhân sự', icon: UserCheck, managerOnly: true },
   { path: '/danh-ba', label: 'Danh bạ đối tác', icon: Users },
+  { path: '/doi-soat', label: 'Đối soát dữ liệu', icon: BarChart3 },
   { path: '/bao-cao', label: 'Báo cáo', icon: BarChart3 },
   { path: '/cai-dat', label: 'Cài đặt hệ thống', icon: Settings, adminOnly: true },
 ];

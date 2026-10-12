@@ -25,9 +25,10 @@ import {
 import type { Import, Export, Grinding, Expense, Attendance } from '../types';
 
 export interface MonthlyOverviewChartProps {
-  imports: Import[];
-  exports: Export[];
-  grinding: Grinding[];
+  imports?: Import[];
+  monthlyStats?: MonthlyStatItem[];
+  exports?: Export[];
+  grinding?: Grinding[];
   expenses?: Expense[];
   attendance?: Attendance[];
   canSeeFinance?: boolean;
@@ -38,9 +39,10 @@ type MetricMode = 'volume' | 'finance';
 type TimeHorizon = '6m' | '12m' | 'year';
 
 export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
-  imports,
-  exports,
-  grinding,
+  imports = [],
+  exports = [],
+  grinding = [],
+  monthlyStats,
   expenses = [],
   attendance = [],
   canSeeFinance = false,
@@ -70,6 +72,8 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
 
   // Tổng hợp dữ liệu các tháng
   const monthlyData = useMemo(() => {
+    if (monthlyStats)
+      return targetMonths.map((month) => monthlyStats.find((row) => row.month === month)!).filter(Boolean);
     return aggregateMonthlyStats({
       months: targetMonths,
       imports,
@@ -78,7 +82,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
       expenses,
       attendance,
     });
-  }, [targetMonths, imports, exports, grinding, expenses, attendance]);
+  }, [targetMonths, imports, exports, grinding, expenses, attendance, monthlyStats]);
 
   // Tháng mới nhất và tháng liền trước để tính tăng trưởng
   const latestMonth = monthlyData[monthlyData.length - 1];

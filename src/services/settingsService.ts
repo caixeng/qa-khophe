@@ -31,6 +31,15 @@ async function setNumericSetting(key: string, value: number): Promise<void> {
 }
 
 export const settingsService = {
+  getRawOpeningStock: () => getNumericSetting('opening_raw_stock_kg', 0),
+  setBusinessSettings: (loss: number, overtime: number, rawOpen: number) =>
+    runQuery<boolean>('lưu cấu hình nghiệp vụ', () =>
+      supabase.rpc('set_business_settings', { p_loss: loss, p_overtime: overtime, p_raw_open: rawOpen }),
+    ),
+  getLossWarning: () => getNumericSetting('loss_warning_pct', 5),
+  setLossWarning: (value: number) => setNumericSetting('loss_warning_pct', value),
+  getOvertimeMultiplier: () => getNumericSetting('overtime_multiplier', 1.5),
+  setOvertimeMultiplier: (value: number) => setNumericSetting('overtime_multiplier', value),
   /**
    * Quy đổi kg/bao — đọc từ bảng `settings` (migration 006). Nếu bảng chưa
    * được tạo hoặc chưa có dòng cấu hình, dùng mặc định 900kg/bao thay vì lỗi

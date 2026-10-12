@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 scratch/
+.backups/
 .env
 
 # Editor directories and files

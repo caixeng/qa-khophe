@@ -29,7 +29,7 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
     <DataState loading={payrollLoading} error={payrollError} isEmpty={false}>
       <div className="space-y-4">
         <div className="card flex flex-wrap items-center justify-between gap-3 bg-[var(--bg-surface)] p-4">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
             <div className="flex items-center gap-2">
               <Calendar size={16} className="text-[var(--primary-500)]" />
               <label htmlFor="payroll-month" className="text-xs font-bold text-[var(--text-secondary)]">
@@ -42,7 +42,7 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                 onChange={(e) => {
                   if (e.target.value) setPayrollMonth(e.target.value);
                 }}
-                className="input-field w-auto"
+                className="input-field w-[170px] min-w-0 max-w-full"
               />
             </div>
             <button
@@ -70,6 +70,11 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
           </div>
         </div>
 
+        <p className="text-xs text-[var(--text-muted)]">
+          Số dư đầu kỳ dương: xưởng còn nợ nhân viên; âm: nhân viên còn ứng trước. Chốt trả chỉ chi phần
+          dương, phần âm chuyển kỳ sau. Số dư đầu kỳ:{' '}
+          <b>{formatTien(payroll.totals.opening_balance || 0)}đ</b>.
+        </p>
         {payroll.rows.length === 0 ? (
           <div className="card bg-[var(--bg-surface)] py-12 text-center">
             <p className="text-sm text-[var(--text-secondary)]">
@@ -94,9 +99,12 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                       <th className="th-cell text-right">Tăng ca</th>
                       <th className="th-cell text-right">Lương gộp</th>
                       <th className="th-cell text-right">Đã tạm ứng</th>
+                      <th className="th-cell text-right">Chuyển kỳ</th>
                       <th className="th-cell text-right font-extrabold text-[var(--primary-600)]">
                         <div>Thực lĩnh còn nợ</div>
-                        <div className="text-[10px] font-normal text-[var(--text-muted)]">(Gộp − Ứng)</div>
+                        <div className="text-[10px] font-normal text-[var(--text-muted)]">
+                          (Chuyển kỳ + Chưa trả trong kỳ)
+                        </div>
                       </th>
                     </tr>
                   </thead>
@@ -134,31 +142,34 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                             </button>
                           </div>
                         </td>
+                        <td className="td-cell text-right font-mono text-xs">
+                          {formatTien(r.opening_balance)}
+                        </td>
                         <td className="td-cell text-right font-mono text-xs font-black">
-                          {r.net < 0 ? (
+                          {!r.settled && r.employee_id && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                requestPayrollSettlement(r.employee_id, r.name);
+                              }}
+                              className="btn-secondary mb-1 text-xs"
+                            >
+                              Chốt kỳ · trả {formatTien(r.unpaid)}đ
+                            </button>
+                          )}
+                          {r.balance_due < 0 ? (
                             <span
                               className="text-amber-700 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-lg border border-amber-300 dark:border-amber-800/40 font-bold"
                               title="Nhân viên đã ứng trước nhiều hơn tiền công tháng này"
                             >
-                              ⚠️ NV Nợ Xưởng {formatTien(Math.abs(r.net))}
+                              ⚠️ NV Nợ Xưởng {formatTien(Math.abs(r.balance_due))}
                             </span>
                           ) : r.unpaid > 0 ? (
                             <div className="flex items-center justify-end gap-2">
                               <span className="text-rose-600 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-lg border border-rose-200 dark:border-rose-800/40">
                                 {formatTien(r.unpaid)}
                               </span>
-                              {r.employee_id && (
-                                <button
-                                  type="button"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    requestPayrollSettlement(r.employee_id, r.name);
-                                  }}
-                                  className="tap-target min-h-11 px-2.5 rounded-lg bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-colors duration-200"
-                                >
-                                  Chốt trả
-                                </button>
-                              )}
                             </div>
                           ) : (
                             <span className="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-lg border border-emerald-200 dark:border-emerald-800/40 font-bold">
@@ -182,6 +193,9 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                       <td className="td-cell text-right font-mono text-xs text-amber-600">
                         -{formatTien(payroll.totals.advance)}
                       </td>
+                      <td className="td-cell text-right font-mono text-xs">
+                        {formatTien(payroll.totals.opening_balance)}
+                      </td>
                       <td className="td-cell text-right font-mono text-xs text-rose-600 font-black">
                         {formatTien(payroll.totals.unpaid)}
                       </td>
@@ -200,18 +214,19 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                   <span
                     className={cn(
                       'rounded-full px-2 py-1 text-xs font-bold',
-                      row.net < 0
+                      row.balance_due < 0
                         ? 'bg-amber-100 text-amber-800'
                         : row.unpaid > 0
                           ? 'bg-rose-100 text-rose-700'
                           : 'bg-emerald-100 text-emerald-700',
                     )}
                   >
-                    {row.net < 0 ? 'Nợ xưởng' : row.unpaid > 0 ? 'Chưa trả đủ' : 'Đã trả đủ'}
+                    {row.balance_due < 0 ? 'Nợ xưởng' : row.unpaid > 0 ? 'Chưa trả đủ' : 'Đã trả đủ'}
                   </span>
                 ),
-                accentColor: row.net < 0 ? '#f59e0b' : row.unpaid > 0 ? '#f43f5e' : '#10b981',
+                accentColor: row.balance_due < 0 ? '#f59e0b' : row.unpaid > 0 ? '#f43f5e' : '#10b981',
                 fields: [
+                  { label: 'Số dư chuyển kỳ', value: formatTien(row.opening_balance) },
                   { label: 'Lương gộp', value: <span className="font-mono">{formatTien(row.gross)}</span> },
                   { label: 'Tăng ca', value: `${row.overtime_hours} giờ • ${formatTien(row.overtime)}` },
                   {
@@ -233,27 +248,27 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                     ),
                   },
                   {
-                    label: row.net < 0 ? 'NV nợ xưởng' : 'Thực lĩnh còn nợ',
+                    label: row.balance_due < 0 ? 'NV nợ xưởng' : 'Thực lĩnh còn nợ',
                     value: (
                       <span
                         className={cn(
                           'font-mono font-bold',
-                          row.net < 0 ? 'text-amber-700' : 'text-rose-600',
+                          row.balance_due < 0 ? 'text-amber-700' : 'text-rose-600',
                         )}
                       >
-                        {formatTien(row.net < 0 ? Math.abs(row.net) : row.unpaid)}
+                        {formatTien(row.balance_due < 0 ? Math.abs(row.balance_due) : row.unpaid)}
                       </span>
                     ),
                   },
                 ],
                 actions:
-                  row.unpaid > 0 && row.employee_id ? (
+                  !row.settled && row.employee_id ? (
                     <button
                       type="button"
                       onClick={() => requestPayrollSettlement(row.employee_id, row.name)}
                       className="tap-target min-h-11 px-3 rounded-xl bg-emerald-600 text-white text-xs font-extrabold transition-colors duration-200"
                     >
-                      Chốt đã trả
+                      Chốt kỳ · trả {formatTien(row.unpaid)}đ
                     </button>
                   ) : undefined,
               }))}

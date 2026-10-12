@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './contexts/auth';
 import { SlidePanelProvider } from './contexts/SlidePanelContext';
 import { AppLayout } from './layouts/AppLayout';
+const DoiSoatPage = React.lazy(() => import('./pages/DoiSoatPage').then((m) => ({ default: m.DoiSoatPage })));
 const LoginPage = React.lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 const DashboardPage = React.lazy(() =>
   import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
@@ -107,6 +108,7 @@ function App() {
                         }
                       />
 
+                      <Route path="doi-soat" element={<DoiSoatPage />} />
                       <Route path="ton-kho" element={<TonKhoPage />} />
                       <Route
                         path="nhan-vien"

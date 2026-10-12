@@ -11,8 +11,12 @@
  * bên dưới, mọi nơi gọi giữ nguyên.
  */
 
+import { supabase } from './supabase';
+import { sanitizeErrorMessage } from './sanitizeErrorMessage';
+
 const STORAGE_KEY = 'khophe_error_log';
 const MAX_ENTRIES = 50;
+let lastRemoteLog = 0;
 
 export interface LoggedError {
   at: string;
@@ -34,6 +38,23 @@ function send(entry: LoggedError) {
     // Hết dung lượng hoặc trình duyệt chặn localStorage — bản thân việc ghi log
     // không bao giờ được phép làm hỏng thêm luồng đang chạy.
   }
+  // Best effort, bounded, and never log failures of the logger recursively.
+  if (Date.now() - lastRemoteLog < 20_000) return;
+  lastRemoteLog = Date.now();
+  void (async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return;
+    const { data: userId, error } = await supabase.rpc('current_user_id');
+    if (error || !userId) return;
+    await supabase.from('app_error_logs').insert({
+      user_id: userId,
+      message: sanitizeErrorMessage(entry.message),
+      context: sanitizeErrorMessage(entry.context || '').slice(0, 100),
+      path: location.pathname.slice(0, 200),
+    });
+  })().catch(() => {});
 }
 
 export function logError(error: unknown, context?: string) {

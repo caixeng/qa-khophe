@@ -10,6 +10,7 @@ export interface QuickAttendanceState {
   attendance_id?: string;
   work_shift: number; // 1, 0.5, 0, or custom
   overtime_hours: number;
+  overtime_multiplier?: number;
   daily_pay: number;
   advance_pay: number;
   notes: string;

@@ -26,6 +26,7 @@ export function normalizeAttendanceRecord(item: any, fallbackName?: string): Att
       `Hồ sơ cũ #${String(item.id || '').slice(0, 6)}`,
     work_shift: nonNegative(item.work_shift),
     overtime_hours: nonNegative(item.overtime_hours),
+    overtime_multiplier: Number(item.overtime_multiplier) || 1.5,
     daily_pay: nonNegative(item.daily_pay),
     advance_pay: nonNegative(item.advance_pay),
     net_pay: Number(item.net_pay) || 0,
@@ -94,7 +95,19 @@ export const employeesService = {
   },
 };
 
+export interface PayrollBalance {
+  employee_id: string;
+  name: string;
+  opening_balance: number;
+  settled: boolean;
+  cash_paid: number;
+  closing_balance: number;
+}
 export const attendanceService = {
+  getBalances: (month: string) =>
+    runQuery<PayrollBalance[]>('tải số dư lương', () =>
+      supabase.rpc('get_payroll_balances', { p_period: month + '-01' }),
+    ),
   async getAttendance(filter: DateRangeFilter = {}): Promise<Attendance[]> {
     const data = await readAllPages<any>(
       'tải bảng chấm công',
@@ -119,6 +132,7 @@ export const attendanceService = {
           employee_id: att.employee_id || null,
           work_shift: nonNegative(att.work_shift, 1),
           overtime_hours: nonNegative(att.overtime_hours),
+          overtime_multiplier: att.overtime_multiplier,
           daily_pay: nonNegative(att.daily_pay),
           advance_pay: nonNegative(att.advance_pay),
           payment_status: att.payment_status || 'unpaid',
@@ -166,6 +180,7 @@ export const attendanceService = {
       employee_id: string;
       work_shift: number;
       overtime_hours?: number;
+      overtime_multiplier?: number;
       daily_pay?: number;
       advance_pay?: number;
       payment_status?: string;
@@ -180,6 +195,7 @@ export const attendanceService = {
         employee_id: r.employee_id,
         work_shift: nonNegative(r.work_shift),
         overtime_hours: nonNegative(r.overtime_hours),
+        overtime_multiplier: r.overtime_multiplier,
         daily_pay: nonNegative(r.daily_pay),
         advance_pay: nonNegative(r.advance_pay),
         payment_status: r.payment_status || 'unpaid',

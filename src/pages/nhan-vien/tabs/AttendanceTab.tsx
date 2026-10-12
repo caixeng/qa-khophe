@@ -195,7 +195,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                     employee_id: emp.id,
                     work_shift: 1,
                     overtime_hours: 0,
-                    daily_pay: emp.daily_salary || 350000,
+                    daily_pay: emp.daily_salary ?? 350000,
                     advance_pay: 0,
                     notes: '',
                   };

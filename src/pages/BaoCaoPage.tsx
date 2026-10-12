@@ -5,6 +5,7 @@ import { Download, Package, TrendingUp, DollarSign } from 'lucide-react';
 import { cn, formatTien, formatKg } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
 import { KpiCard } from '../components/KpiCard';
+import { CashFlowPanel } from '../components/CashFlowPanel';
 import { AdvanceSummary } from '../components/AdvanceSummary';
 import { advancePurposeLabels } from '../lib/advances';
 import { DataState } from '../components/DataState';
@@ -625,6 +626,7 @@ export const BaoCaoPage: React.FC = () => {
             </div>
 
             {canSeeFinance && <AdvanceSummary advances={advances} />}
+            {canSeeFinance && <CashFlowPanel from={range.from} to={range.to} />}
             {canSeeFinance && (
               <p className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-surface)] px-4 py-3 text-xs leading-relaxed text-[var(--text-secondary)]">
                 Chi phí vận hành = chi phí xưởng + lương phát sinh (công × đơn giá + tăng ca), trước khi trừ

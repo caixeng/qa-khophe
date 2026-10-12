@@ -3,12 +3,14 @@ import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Plus, Users, Calendar, DollarSign, UserCheck } from 'lucide-react';
 import { cn, formatTien, formatNgay } from '../../lib/utils';
-import { computePayroll } from '../../lib/payroll';
+import { computePayroll, withPayrollBalances } from '../../lib/payrollBalances';
+import { settingsService } from '../../services/settingsService';
+
 import { PageHeader } from '../../components/PageHeader';
 import { TableToolbar } from '../../components/TableToolbar';
 import { KpiCard } from '../../components/KpiCard';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
-import { useAsyncList } from '../../hooks/useAsyncData';
+import { useAsyncData, useAsyncList } from '../../hooks/useAsyncData';
 import { useCrudForm } from '../../hooks/useCrudForm';
 import { useTableControls } from '../../hooks/useTableControls';
 import { useToast } from '../../contexts/toast';
@@ -182,6 +184,7 @@ export const NhanVienPage: React.FC = () => {
       refetchAtt();
       if ((advPayModal.date || today()).startsWith(historyMonth)) refetchHistory();
       if ((advPayModal.date || today()).startsWith(payrollMonth)) refetchPayroll();
+      refetchBalances();
     } catch (err) {
       toast.error('Lỗi khi ghi nhận ứng lương');
       console.error(err);
@@ -244,6 +247,7 @@ export const NhanVienPage: React.FC = () => {
     };
   }, [attendanceList]);
 
+  const { data: defaultOvertime } = useAsyncData(settingsService.getOvertimeMultiplier, []);
   // Quick Attendance State & View Mode
   const [selectedDate, setSelectedDate] = useState<string>(today());
   const [quickStates, setQuickStates] = useState<Record<string, QuickAttendanceState>>({});
@@ -261,14 +265,15 @@ export const NhanVienPage: React.FC = () => {
         attendance_id: existing?.id,
         work_shift: existing ? Number(existing.work_shift) : 1,
         overtime_hours: existing ? Number(existing.overtime_hours) : 0,
-        daily_pay: existing ? Number(existing.daily_pay) : emp.daily_salary || 350000,
+        overtime_multiplier: existing?.overtime_multiplier ?? defaultOvertime ?? 1.5,
+        daily_pay: existing ? Number(existing.daily_pay) : (emp.daily_salary ?? 350000),
         advance_pay: existing ? Number(existing.advance_pay) : 0,
         notes: existing?.notes || '',
       };
     });
 
     setQuickStates(map);
-  }, [selectedDate, employees, attendanceList]);
+  }, [selectedDate, employees, attendanceList, defaultOvertime]);
 
   const handlePrevDate = () => {
     setSelectedDate(shiftISODate(selectedDate, -1));
@@ -299,6 +304,7 @@ export const NhanVienPage: React.FC = () => {
       refetchAtt();
       if (selectedDate.startsWith(historyMonth)) refetchHistory();
       if (selectedDate.startsWith(payrollMonth)) refetchPayroll();
+      refetchBalances();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu bảng chấm công');
       console.error('Lỗi khi lưu bảng chấm công:', err);
@@ -307,9 +313,16 @@ export const NhanVienPage: React.FC = () => {
     }
   };
 
+  const {
+    data: balances,
+    loading: balanceLoading,
+    error: balanceError,
+    refetch: refetchBalances,
+  } = useAsyncData(() => attendanceService.getBalances(payrollMonth), [payrollMonth]);
   const payroll = useMemo(
-    () => computePayroll(payrollAttendance, payrollMonth),
-    [payrollAttendance, payrollMonth],
+    () =>
+      withPayrollBalances(computePayroll(payrollAttendance, payrollMonth), balances || [], payrollAttendance),
+    [payrollAttendance, payrollMonth, balances],
   );
 
   // Handle Employee Save
@@ -413,6 +426,7 @@ export const NhanVienPage: React.FC = () => {
       if (data.id) {
         await attendanceService.updateAttendance(data.id, {
           ...data,
+          overtime_multiplier: data.overtime_multiplier ?? defaultOvertime ?? 1.5,
           employee_name: empName,
           daily_pay: dailyPay,
         });
@@ -429,6 +443,7 @@ export const NhanVienPage: React.FC = () => {
       refetchAtt();
       refetchHistory();
       refetchPayroll();
+      refetchBalances();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu lượt chấm công');
       console.error('Lỗi khi lưu lượt chấm công:', err);
@@ -448,6 +463,7 @@ export const NhanVienPage: React.FC = () => {
       refetchAtt();
       refetchHistory();
       refetchPayroll();
+      refetchBalances();
     } catch (err) {
       toast.error('Lỗi khi xóa lượt chấm công');
       console.error('Lỗi khi xóa lượt chấm công:', err);
@@ -467,7 +483,7 @@ export const NhanVienPage: React.FC = () => {
     try {
       await attendanceService.payMonthForEmployee(confirmState.id, payrollMonth);
       toast.success(`Đã chốt thanh toán lương tháng ${payrollMonth} cho ${confirmState.name || 'nhân viên'}`);
-      await Promise.all([refetchAtt(), refetchHistory(), refetchPayroll()]);
+      await Promise.all([refetchAtt(), refetchHistory(), refetchPayroll(), refetchBalances()]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Không chốt được thanh toán lương');
       console.error('Lỗi khi chốt lương:', err);
@@ -530,8 +546,8 @@ export const NhanVienPage: React.FC = () => {
         />
         <KpiCard
           title="Lương chưa trả"
-          value={formatTien(attStats.totalUnpaid)}
-          subtitle="Cần thanh toán"
+          value={formatTien(activeTab === 'payroll' ? payroll.totals.unpaid : attStats.totalUnpaid)}
+          subtitle={activeTab === 'payroll' ? 'Gồm số dư chuyển kỳ' : 'Trong tháng hiện tại'}
           icon={DollarSign}
           color="warning"
         />
@@ -668,8 +684,8 @@ export const NhanVienPage: React.FC = () => {
 
       {activeTab === 'payroll' && (
         <PayrollTab
-          payrollLoading={payrollLoading}
-          payrollError={payrollError}
+          payrollLoading={payrollLoading || balanceLoading}
+          payrollError={payrollError || balanceError}
           payrollMonth={payrollMonth}
           setPayrollMonth={setPayrollMonth}
           payroll={payroll}
@@ -692,7 +708,10 @@ export const NhanVienPage: React.FC = () => {
       <AttendanceDetailModal
         isOpen={attForm.isOpen}
         onClose={closeAttModal}
-        data={attForm.data}
+        data={{
+          ...attForm.data,
+          overtime_multiplier: attForm.data?.overtime_multiplier ?? defaultOvertime ?? 1.5,
+        }}
         saving={savingAtt}
         employees={employees}
         onChange={handleAttChange}
@@ -744,7 +763,7 @@ export const NhanVienPage: React.FC = () => {
           confirmState.type === 'employee'
             ? 'Nhân viên sẽ được chuyển sang trạng thái đã nghỉ và không còn xuất hiện trong bảng chấm công mới. Toàn bộ lịch sử công và lương vẫn được giữ lại.'
             : confirmState.type === 'payroll'
-              ? `Xác nhận đã thanh toán đủ lương tháng ${payrollMonth} cho ${confirmState.name || 'nhân viên này'}? Sau khi chốt, các lượt trong kỳ sẽ chuyển sang Đã thanh toán.`
+              ? `Xác nhận đã thanh toán đủ lương tháng ${payrollMonth} cho ${confirmState.name || 'nhân viên này'}? Số tiền trả đã trừ ứng và cộng số dư chuyển kỳ. Công chưa trả đến hết kỳ sẽ được quyết toán; phần ứng vượt lương được chuyển sang kỳ sau.`
               : 'Bạn có chắc chắn muốn xóa lượt chấm công này? Hành động này không thể hoàn tác.'
         }
         variant={confirmState.type === 'attendance' ? 'danger' : 'warning'}

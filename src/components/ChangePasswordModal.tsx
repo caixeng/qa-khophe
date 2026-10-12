@@ -55,7 +55,7 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             className="input-field"
             type="password"
             autoComplete="new-password"
-            minLength={6}
+            minLength={8}
             required
             value={next}
             onChange={(e) => setNext(e.target.value)}
@@ -66,13 +66,13 @@ export function ChangePasswordModal({ onClose }: { onClose: () => void }) {
             className="input-field"
             type="password"
             autoComplete="new-password"
-            minLength={6}
+            minLength={8}
             required
             value={confirmation}
             onChange={(e) => setConfirmation(e.target.value)}
           />
         </FormField>
-        <p className="text-xs text-[var(--text-muted)]">Mật khẩu mới tối thiểu 6 ký tự.</p>
+        <p className="text-xs text-[var(--text-muted)]">Mật khẩu mới tối thiểu 8 ký tự.</p>
         <div className="flex justify-end gap-2">
           <button type="button" className="btn-secondary" onClick={onClose}>
             Hủy

@@ -10,6 +10,7 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import { formatTien, formatKg, formatNgay } from '../../lib/utils';
+import type { MonthlyStatItem } from '../../lib/monthlyStats';
 import type { Import, Export, Grinding, Expense, Attendance } from '../../types';
 import { MonthlyOverviewChart } from '../MonthlyOverviewChart';
 
@@ -24,11 +25,14 @@ interface MobileDirectorDashboardProps {
     inventoryKg: number;
     inventoryBags: number;
     pendingImports: Import[];
+    pendingImportCount: number;
+    overdueCount: number;
     totalUnpaidReceivables: number;
     overdueReceivables: Export[];
     totalOverdueReceivables: number;
     lowStockAlert: boolean;
   };
+  monthlyStats?: MonthlyStatItem[];
   imports?: Import[];
   exports?: Export[];
   grinding?: Grinding[];
@@ -39,6 +43,7 @@ interface MobileDirectorDashboardProps {
 
 export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = ({
   summary,
+  monthlyStats,
   imports = [],
   exports = [],
   grinding = [],
@@ -47,9 +52,9 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
   canSeeFinance = false,
 }) => {
   const hasAlerts =
-    summary.pendingImports.length > 0 ||
+    summary.pendingImportCount > 0 ||
     summary.totalUnpaidReceivables > 0 ||
-    summary.overdueReceivables.length > 0 ||
+    summary.overdueCount > 0 ||
     summary.lowStockAlert;
 
   return (
@@ -120,6 +125,7 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
 
       {/* Biểu đồ tổng hợp các nội dung theo tháng (Tối ưu Mobile) */}
       <MonthlyOverviewChart
+        monthlyStats={monthlyStats}
         imports={imports}
         exports={exports}
         grinding={grinding}
@@ -142,19 +148,19 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
           </div>
         )}
 
-        {summary.pendingImports.length > 0 && (
+        {summary.pendingImportCount > 0 && (
           <div className="p-3.5 rounded-xl bg-amber-100 dark:bg-amber-950/80 border border-amber-500 flex items-start space-x-3">
             <AlertTriangle size={18} className="text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-black text-amber-950 dark:text-amber-100">
-                {summary.pendingImports.length} lô phế chưa xay
+                {summary.pendingImportCount} lô phế chưa xay
               </p>
               <p className="text-[11px] font-medium text-amber-900 dark:text-amber-200 mt-0.5">
                 {summary.pendingImports
                   .slice(0, 2)
                   .map((i) => `${i.contact_name || 'Khách'} (${formatKg(i.quantity_kg || 0)})`)
                   .join(' & ')}
-                {summary.pendingImports.length > 2 && ' ...'}
+                {summary.pendingImportCount > 2 && ' ...'}
               </p>
             </div>
           </div>
@@ -174,12 +180,12 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
           </div>
         )}
 
-        {summary.overdueReceivables.length > 0 && (
+        {summary.overdueCount > 0 && (
           <div className="p-3.5 rounded-xl bg-rose-200 dark:bg-rose-900/90 border border-rose-600 flex items-start space-x-3">
             <Clock size={18} className="text-rose-800 dark:text-rose-300 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-black text-rose-950 dark:text-rose-100">
-                {summary.overdueReceivables.length} khách nợ quá hạn
+                {summary.overdueCount} phiếu nợ quá hạn
               </p>
               <p className="text-[11px] font-medium text-rose-900 dark:text-rose-200 mt-0.5">
                 {formatTien(summary.totalOverdueReceivables)} — nên nhắc thu sớm

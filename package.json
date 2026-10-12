@@ -10,6 +10,8 @@
     "lint": "oxlint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:database": "node scripts/test_database.mjs",
+    "backup:data": "node scripts/backup_database.mjs",
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -27,6 +29,7 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
