@@ -51,6 +51,8 @@ jobs:
 
       - name: Test
         run: npm run test
+        env:
+          TZ: Asia/Ho_Chi_Minh
 
       - name: Build
         run: npm run build

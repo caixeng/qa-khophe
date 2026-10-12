@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { normalizeAttendanceRecord } from './employeesService';
+
+// Normalization is pure; this test must never require a live Supabase project.
+vi.mock('../lib/supabase', () => ({ supabase: {} }));
 
 describe('normalizeAttendanceRecord', () => {
   it('giữ nguyên 0 công cho ngày nghỉ và phiếu chỉ tạm ứng', () => {
