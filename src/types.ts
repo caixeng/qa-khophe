@@ -7,6 +7,7 @@
 
 export type UserRole = 'admin' | 'manager' | 'staff' | 'warehouse_manager' | 'accountant';
 export type ContactType = 'supplier' | 'customer' | 'partner';
+export type SourceCategory = 'factory' | 'warehouse' | 'construction' | 'individual' | 'other';
 export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 export type ProcessingStatus = 'pending' | 'grinding' | 'done';
 export type ExpenseCategory =
@@ -38,6 +39,18 @@ export interface Contact {
   is_active?: boolean;
   /** Giá mặc định đ/kg: giá nhập với NCC, giá xuất với khách hàng. */
   default_price_per_kg?: number;
+  /** Người liên hệ trực tiếp tại đơn vị (chủ vựa, thủ kho, quản đốc...) */
+  contact_person?: string;
+  /** Phân loại nguồn phế: nhà máy, vựa phế, công trình, nhỏ lẻ, khác */
+  source_category?: SourceCategory;
+  /** Khu vực / Tuyến thu mua để Anh Hồ ghép chuyến */
+  region?: string;
+  /** Loại phế chủ lực của đơn vị */
+  main_material_type?: string;
+  /** Thông tin tài khoản ngân hàng thanh toán */
+  bank_info?: string;
+  /** Người phụ trách thu mua đơn vị này (mặc định: Anh Hồ) */
+  collector_name?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -57,6 +70,12 @@ export interface Import {
   total_amount: number;
   payment_status: PaymentStatus;
   processing_status: ProcessingStatus;
+  /** Người trực tiếp đi thu mua lô phế (mặc định: Anh Hồ) */
+  collector_name?: string;
+  /** Biển số xe / chuyến xe vận chuyển */
+  vehicle_info?: string;
+  /** Mã phiếu cân tại đơn vị cung cấp (nếu có) */
+  supplier_slip_code?: string;
   notes?: string;
   created_by?: string;
   created_at?: string;

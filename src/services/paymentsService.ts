@@ -12,6 +12,7 @@ export interface Payment {
   amount: number;
   date: string;
   method: 'cash' | 'transfer' | 'other';
+  advance_id?: string | null;
   notes?: string;
   created_at?: string;
 }
@@ -66,6 +67,7 @@ export const paymentsService = {
     amount: number;
     date?: string;
     method?: 'cash' | 'transfer' | 'other';
+    advance_id?: string | null;
     notes?: string;
   }): Promise<Payment> {
     if (!payment.amount || payment.amount <= 0) {
@@ -81,6 +83,7 @@ export const paymentsService = {
           amount: Number(payment.amount) || 0,
           date: payment.date || today(),
           method: payment.method || 'cash',
+          ...(payment.advance_id ? { advance_id: payment.advance_id } : {}),
           notes: payment.notes || null,
         })
         .select()

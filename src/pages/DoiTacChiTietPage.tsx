@@ -1,8 +1,21 @@
 import * as React from 'react';
 import { useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Phone, MapPin, Package, Truck, Wallet, TrendingUp, Printer } from 'lucide-react';
+import {
+  ArrowLeft,
+  Phone,
+  MapPin,
+  Package,
+  Truck,
+  Wallet,
+  TrendingUp,
+  Printer,
+  ArrowDownToLine,
+  UserCheck,
+  Landmark,
+} from 'lucide-react';
 import { cn, formatTien, formatNgay, formatKg } from '../lib/utils';
+import { getSourceCategoryConfig } from '../lib/supplierSources';
 import { DataState } from '../components/DataState';
 import { StatusBadge } from '../components/StatusBadge';
 import { MobileCardList } from '../components/mobile/MobileCardList';
@@ -18,17 +31,14 @@ import { computeRemainingWithLegacyStatus } from '../lib/calc';
 import { printPhieuNhap, printPhieuXuat } from '../lib/print';
 
 /**
- * Hồ sơ một đối tác: số dư công nợ + toàn bộ lịch sử giao dịch.
- *
- * Trước đây muốn biết "còn nợ ông Hoàn bao nhiêu" phải mở trang Công nợ rồi tự
- * lọc mắt qua danh sách chung. Gom về một trang để lúc đối chiếu tiền với nhà
- * cung cấp tại xưởng chỉ cần mở đúng một màn hình.
+ * Hồ sơ một đối tác / đơn vị cung cấp phế: số dư công nợ + hồ sơ nguồn hàng + toàn bộ lịch sử giao dịch.
  */
 export const DoiTacChiTietPage: React.FC = () => {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { can } = useAuth();
   const canSeeFinance = can('dashboard.finance.view');
+  const canCreateScrap = can('scrap.create');
   const { range, setRange } = useDateRange();
 
   const {
@@ -106,7 +116,7 @@ export const DoiTacChiTietPage: React.FC = () => {
         <button
           onClick={() => navigate('/danh-ba')}
           aria-label="Quay lại danh bạ"
-          className="icon-action border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--primary-600)]"
+          className="icon-action border border-[var(--border-color)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--primary-600)] cursor-pointer"
         >
           <ArrowLeft size={18} />
         </button>
@@ -116,9 +126,9 @@ export const DoiTacChiTietPage: React.FC = () => {
           </h1>
           <p className="text-xs text-[var(--text-muted)]">
             {contact?.type === 'supplier'
-              ? 'Nhà cung cấp phế'
+              ? 'Đơn vị cung cấp phế (Nguồn hàng)'
               : contact?.type === 'customer'
-                ? 'Khách hàng mua phế'
+                ? 'Khách hàng mua phế thành phẩm'
                 : 'Đối tác'}
           </p>
         </div>
@@ -130,40 +140,110 @@ export const DoiTacChiTietPage: React.FC = () => {
       <DataState loading={loading} error={error} isEmpty={!contact}>
         {contact && (
           <>
-            {/* Thông tin liên hệ */}
-            <div className="card flex flex-wrap items-center gap-4 bg-[var(--bg-surface)] p-4">
-              {contact.phone ? (
-                <a
-                  href={`tel:${contact.phone}`}
-                  className="flex items-center gap-2 rounded-xl border border-[var(--primary-500)]/30 bg-[var(--primary-50)] px-3 py-2 text-xs font-bold text-[var(--primary-600)]"
-                >
-                  <Phone size={15} /> {contact.phone}
-                </a>
-              ) : (
-                <span className="text-xs text-[var(--text-muted)]">Chưa có số điện thoại</span>
+            {/* Thông tin hồ sơ đơn vị cung cấp / đối tác */}
+            <div className="card bg-[var(--bg-surface)] p-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                {contact.type === 'supplier' && (
+                  <span
+                    className={cn(
+                      'px-2.5 py-1 rounded-full text-xs font-bold border',
+                      getSourceCategoryConfig(contact.source_category).badgeClass,
+                    )}
+                  >
+                    {getSourceCategoryConfig(contact.source_category).label}
+                  </span>
+                )}
+
+                {contact.phone ? (
+                  <a
+                    href={`tel:${contact.phone}`}
+                    className="flex items-center gap-2 rounded-xl border border-[var(--primary-500)]/30 bg-[var(--primary-50)] px-3 py-1.5 text-xs font-bold text-[var(--primary-600)]"
+                  >
+                    <Phone size={14} /> {contact.phone}
+                  </a>
+                ) : (
+                  <span className="text-xs text-[var(--text-muted)]">Chưa có số điện thoại</span>
+                )}
+
+                {contact.region && (
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-[var(--bg-subtle)] px-2.5 py-1 text-xs font-bold text-[var(--text-primary)]">
+                    <MapPin size={13} className="text-[var(--primary-500)]" /> Tuyến: {contact.region}
+                  </span>
+                )}
+
+                {contact.address && (
+                  <span className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                    <MapPin size={14} className="text-[var(--text-muted)]" /> {contact.address}
+                  </span>
+                )}
+
+                <div className="ml-auto flex items-center gap-2">
+                  {contact.type === 'supplier' && canCreateScrap && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate(`/quan-ly-phe?tab=nhap&open=true&contactId=${encodeURIComponent(contact.id)}`)
+                      }
+                      className="btn-primary !min-h-8 !px-3 !py-1.5 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <ArrowDownToLine size={14} />
+                      <span>Ghi phiếu thu mua</span>
+                    </button>
+                  )}
+                  <Link
+                    to="/danh-ba"
+                    className="text-xs font-bold text-[var(--primary-500)] hover:underline"
+                  >
+                    Danh bạ
+                  </Link>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-[var(--border-color)] text-xs">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">
+                    Đầu mối liên hệ tại đơn vị
+                  </span>
+                  <span className="font-semibold text-[var(--text-primary)]">
+                    {contact.contact_person || 'Chưa cập nhật'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">
+                    Người phụ trách thu mua
+                  </span>
+                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400">
+                    <UserCheck size={13} /> {contact.collector_name || 'Anh Hồ'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">
+                    Phế chủ lực & Đơn giá chuẩn
+                  </span>
+                  <span className="font-semibold text-[var(--text-primary)]">
+                    {contact.main_material_type || 'Tấm nhựa nano'}{' '}
+                    {contact.default_price_per_kg ? (
+                      <b className="font-mono text-[var(--primary-600)]">
+                        ({formatTien(contact.default_price_per_kg)}/kg)
+                      </b>
+                    ) : null}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">
+                    Tài khoản thanh toán
+                  </span>
+                  <span className="inline-flex items-center gap-1 font-mono text-[var(--text-secondary)]">
+                    <Landmark size={13} className="text-[var(--text-muted)]" />
+                    {contact.bank_info || 'Tiền mặt / Chưa lưu STK'}
+                  </span>
+                </div>
+              </div>
+              {contact.notes && (
+                <p className="text-xs italic text-[var(--text-muted)] pt-1">
+                  Ghi chú: {contact.notes}
+                </p>
               )}
-
-              {contact.address && (
-                <span className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
-                  <MapPin size={14} className="text-[var(--text-muted)]" /> {contact.address}
-                </span>
-              )}
-
-              {contact.default_price_per_kg ? (
-                <span className="text-xs text-[var(--text-secondary)]">
-                  Giá thoả thuận:{' '}
-                  <b className="font-mono text-[var(--primary-600)]">
-                    {formatTien(contact.default_price_per_kg)}/kg
-                  </b>
-                </span>
-              ) : null}
-
-              <Link
-                to="/danh-ba"
-                className="ml-auto text-xs font-bold text-[var(--primary-500)] hover:underline"
-              >
-                Sửa thông tin
-              </Link>
             </div>
 
             <PeriodFilter range={range} onChange={setRange} />
@@ -176,7 +256,7 @@ export const DoiTacChiTietPage: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] sm:text-[11px] font-bold uppercase text-[var(--text-muted)] truncate">
-                    Đã nhập
+                    Đã gom ({myImports.length} chuyến)
                   </p>
                   <p className="font-mono text-sm sm:text-lg font-black truncate">
                     {formatKg(summary.importKg)}
@@ -241,7 +321,7 @@ export const DoiTacChiTietPage: React.FC = () => {
             {myImports.length > 0 && (
               <div className="erp-table-container">
                 <h2 className="border-b border-[var(--border-color)] px-4 py-3 text-sm font-bold text-[var(--text-primary)]">
-                  Phiếu nhập từ đối tác này ({myImports.length})
+                  Lịch sử thu mua từ đơn vị này ({myImports.length} chuyến)
                 </h2>
                 <div className="hidden overflow-x-auto lg:block">
                   <table className="w-full text-left border-collapse">
@@ -250,6 +330,9 @@ export const DoiTacChiTietPage: React.FC = () => {
                       <tr>
                         <th scope="col" className="th-cell">
                           Ngày
+                        </th>
+                        <th scope="col" className="th-cell">
+                          Loại phế & Chuyến thu gom
                         </th>
                         <th className="th-cell text-right">Khối lượng</th>
                         <th className="th-cell text-right">Đơn giá</th>
@@ -271,7 +354,17 @@ export const DoiTacChiTietPage: React.FC = () => {
                         return (
                           <tr key={i.id} className="tr-hover">
                             <td className="td-cell font-mono text-xs">{formatNgay(i.date)}</td>
-                            <td className="td-cell text-right font-mono text-xs">
+                            <td className="td-cell text-xs">
+                              <span className="font-bold text-[var(--text-primary)] block">
+                                {i.material_type}
+                              </span>
+                              <span className="text-[11px] text-[var(--text-muted)]">
+                                Thu mua: {i.collector_name || 'Anh Hồ'}
+                                {i.vehicle_info ? ` • ${i.vehicle_info}` : ''}
+                                {i.supplier_slip_code ? ` • Phiếu: ${i.supplier_slip_code}` : ''}
+                              </span>
+                            </td>
+                            <td className="td-cell text-right font-mono text-xs font-bold">
                               {formatKg(i.quantity_kg)}
                             </td>
                             <td className="td-cell text-right font-mono text-xs">
@@ -297,7 +390,7 @@ export const DoiTacChiTietPage: React.FC = () => {
                               <button
                                 onClick={() => printPhieuNhap(i)}
                                 title="In phiếu nhập"
-                                className="icon-action text-[var(--text-muted)] hover:text-[var(--primary-600)]"
+                                className="icon-action text-[var(--text-muted)] hover:text-[var(--primary-600)] cursor-pointer"
                               >
                                 <Printer size={15} />
                               </button>
@@ -319,6 +412,7 @@ export const DoiTacChiTietPage: React.FC = () => {
                       return {
                         id: item.id,
                         title: formatNgay(item.date),
+                        subtitle: `${item.material_type} • ${item.collector_name || 'Anh Hồ'}`,
                         badge: <StatusBadge status={item.payment_status} />,
                         accentColor: remaining > 0 ? '#f59e0b' : '#10b981',
                         fields: [
@@ -416,7 +510,7 @@ export const DoiTacChiTietPage: React.FC = () => {
                               <button
                                 onClick={() => printPhieuXuat(e)}
                                 title="In phiếu xuất"
-                                className="icon-action text-[var(--text-muted)] hover:text-[var(--primary-600)]"
+                                className="icon-action text-[var(--text-muted)] hover:text-[var(--primary-600)] cursor-pointer"
                               >
                                 <Printer size={15} />
                               </button>
