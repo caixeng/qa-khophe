@@ -19,6 +19,7 @@ interface EmployeeListTabProps {
   setItemsPerPage: (items: number) => void;
   onOpenEmpModal: (emp?: Employee) => void;
   onDeleteEmployee: (id: string) => void;
+  canManage?: boolean;
 }
 
 export const EmployeeListTab: React.FC<EmployeeListTabProps> = ({
@@ -32,6 +33,7 @@ export const EmployeeListTab: React.FC<EmployeeListTabProps> = ({
   setItemsPerPage,
   onOpenEmpModal,
   onDeleteEmployee,
+  canManage = true,
 }) => {
   return (
     <DataState loading={loading} error={error} isEmpty={filteredEmployees.length === 0}>
@@ -115,29 +117,31 @@ export const EmployeeListTab: React.FC<EmployeeListTabProps> = ({
                         {emp.notes || '—'}
                       </td>
                       <td className="td-cell text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onOpenEmpModal(emp);
-                            }}
-                            className="icon-action tap-target min-h-11 min-w-11 flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer transition-colors duration-200 rounded-lg"
-                            title="Sửa"
-                          >
-                            <Edit size={16} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteEmployee(emp.id);
-                            }}
-                            className="icon-action tap-target min-h-11 min-w-11 flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer transition-colors duration-200 rounded-lg"
-                            title="Cho nghỉ việc"
-                            disabled={emp.status === 'inactive'}
-                          >
-                            <UserMinus size={16} />
-                          </button>
-                        </div>
+                        {canManage && (
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenEmpModal(emp);
+                              }}
+                              className="icon-action tap-target min-h-11 min-w-11 flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer transition-colors duration-200 rounded-lg"
+                              title="Sửa"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteEmployee(emp.id);
+                              }}
+                              className="icon-action tap-target min-h-11 min-w-11 flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer transition-colors duration-200 rounded-lg"
+                              title="Cho nghỉ việc"
+                              disabled={emp.status === 'inactive'}
+                            >
+                              <UserMinus size={16} />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );
@@ -168,7 +172,7 @@ export const EmployeeListTab: React.FC<EmployeeListTabProps> = ({
                 { label: 'Địa chỉ', value: emp.address || '—' },
                 { label: 'Ghi chú', value: emp.notes || '—' },
               ],
-              actions: (
+              actions: canManage ? (
                 <>
                   <button
                     type="button"
@@ -188,7 +192,7 @@ export const EmployeeListTab: React.FC<EmployeeListTabProps> = ({
                     <UserMinus size={18} />
                   </button>
                 </>
-              ),
+              ) : undefined,
             };
           })}
         emptyMessage="Chưa có hồ sơ nhân viên"

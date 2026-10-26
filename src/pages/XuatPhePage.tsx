@@ -11,6 +11,7 @@ import { DataState } from '../components/DataState';
 import { useAsyncData, useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
+import { useAuth } from '../contexts/auth';
 import { useToast } from '../contexts/toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
@@ -33,6 +34,8 @@ interface XuatPhePageProps {
 }
 
 export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
+  const { can } = useAuth();
+  const canEditDelete = can('scrap.edit_delete');
   const { range, setRange } = useDateRange();
   const [exportTypeFilter, setExportTypeFilter] = useState<'all' | 'thanh_pham' | 'nvl'>('all');
 
@@ -113,15 +116,35 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
 
   React.useEffect(() => {
     if (searchParams.get('open') === 'true') {
-      handleOpenNewModal();
-      const params = new URLSearchParams(window.location.search);
-      if (params.has('open')) {
-        params.delete('open');
-        const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
-        window.history.replaceState({}, '', newUrl);
+      const fromSessionId = searchParams.get('fromSessionId');
+      const bagsParam = Number(searchParams.get('bags')) || 0;
+      const kgParam = Number(searchParams.get('kg')) || 0;
+      const contactIdParam = searchParams.get('contactId') || '';
+      const dateParam = searchParams.get('date') || today();
+
+      if (fromSessionId || kgParam > 0) {
+        const matchedCustomer = customers.find((c) => c.id === contactIdParam);
+        openModal({
+          date: dateParam,
+          export_type: exportTypeFilter === 'nvl' ? 'nvl' : 'thanh_pham',
+          weighing_session_id: fromSessionId || undefined,
+          contact_id: contactIdParam || undefined,
+          contact_name: matchedCustomer?.name,
+          bags_count: bagsParam || 18,
+          total_kg: kgParam || 16200,
+          price_per_kg: matchedCustomer?.default_price_per_kg || 6000,
+          payment_status: 'unpaid',
+          notes: fromSessionId ? `Xuất từ phiên cân #${fromSessionId.slice(0, 8)}` : undefined,
+        });
+      } else {
+        handleOpenNewModal();
       }
+      const params = new URLSearchParams(window.location.search);
+      ['open', 'fromSessionId', 'bags', 'kg', 'contactId', 'date'].forEach((k) => params.delete(k));
+      const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
+      window.history.replaceState({}, '', newUrl);
     }
-  }, [searchParams, handleOpenNewModal]);
+  }, [searchParams, handleOpenNewModal, openModal, customers, exportTypeFilter]);
 
   const filteredData = useMemo(() => {
     const list = exports.filter((item) => {
@@ -234,60 +257,60 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-2.5 sm:space-y-5 animate-fade-in">
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
-          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
-            <Truck className="w-4 h-4 sm:w-6 sm:h-6" />
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2 sm:space-x-4 min-w-0">
+          <div className="p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
+            <Truck className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng khối lượng xuất
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-mono font-black leading-tight text-[var(--text-primary)] truncate">
               {formatKg(stats.totalKg)}
             </p>
           </div>
         </div>
 
-        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
-          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
-            <Package className="w-4 h-4 sm:w-6 sm:h-6" />
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2 sm:space-x-4 min-w-0">
+          <div className="p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+            <Package className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng số bao xuất
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-mono font-black leading-tight text-[var(--text-primary)] truncate">
               {stats.totalBags} bao
             </p>
           </div>
         </div>
 
-        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
-          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
-            <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6" />
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2 sm:space-x-4 min-w-0">
+          <div className="p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+            <TrendingUp className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Doanh thu xuất phế
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-emerald-600 [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-mono font-black leading-tight text-emerald-600 truncate">
               {formatTien(stats.totalRevenue)}
             </p>
           </div>
         </div>
 
-        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
-          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
-            <DollarSign className="w-4 h-4 sm:w-6 sm:h-6" />
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2 sm:space-x-4 min-w-0">
+          <div className="p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
+            <DollarSign className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Chưa thu (Công nợ)
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-rose-600 [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-mono font-black leading-tight text-rose-600 truncate">
               {formatTien(stats.unpaidAmount)}
             </p>
           </div>
@@ -295,15 +318,15 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
       </div>
 
       {/* Table Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-surface)] p-2 rounded-2xl border border-[var(--border-color)] shadow-xs">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 bg-[var(--bg-surface)] p-2 rounded-xl border border-[var(--border-color)] shadow-2xs">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setExportTypeFilter('all')}
             className={cn(
-              'tap-target sm:min-h-0 sm:min-w-0 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              'h-7 px-2.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap',
               exportTypeFilter === 'all'
-                ? 'bg-[var(--primary-500)] text-white shadow-xs'
+                ? 'bg-[var(--primary-500)] text-white shadow-2xs'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
             )}
           >
@@ -313,9 +336,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             type="button"
             onClick={() => setExportTypeFilter('thanh_pham')}
             className={cn(
-              'tap-target sm:min-h-0 sm:min-w-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              'h-7 flex items-center gap-1 px-2.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap',
               exportTypeFilter === 'thanh_pham'
-                ? 'bg-blue-600 text-white shadow-xs'
+                ? 'bg-blue-600 text-white shadow-2xs'
                 : 'text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 dark:text-blue-400',
             )}
           >
@@ -328,9 +351,9 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             type="button"
             onClick={() => setExportTypeFilter('nvl')}
             className={cn(
-              'tap-target sm:min-h-0 sm:min-w-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              'h-7 flex items-center gap-1 px-2.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap',
               exportTypeFilter === 'nvl'
-                ? 'bg-amber-600 text-white shadow-xs'
+                ? 'bg-amber-600 text-white shadow-2xs'
                 : 'text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 dark:text-amber-400',
             )}
           >
@@ -341,7 +364,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
           </button>
         </div>
 
-        <PeriodFilter range={range} onChange={setRange} />
+        <PeriodFilter range={range} onChange={setRange} className="border-0 p-0 sm:p-0 bg-transparent" />
       </div>
 
       <TableToolbar
@@ -450,13 +473,15 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                       </td>
                       <td className="td-cell text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end">
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
-                            title="Xóa phiếu xuất"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {canEditDelete && (
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                              title="Xóa phiếu xuất"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -591,30 +616,34 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                   <Printer size={15} />
                   <span>In phiếu</span>
                 </button>
-                <button
-                  onClick={() => {
-                    const item = selectedDetail;
-                    setSelectedDetail(null);
-                    openModal(item);
-                  }}
-                  className="btn-primary flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
-                >
-                  <Edit size={15} />
-                  <span>Chỉnh sửa</span>
-                </button>
+                {canEditDelete && (
+                  <button
+                    onClick={() => {
+                      const item = selectedDetail;
+                      setSelectedDetail(null);
+                      openModal(item);
+                    }}
+                    className="btn-primary flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
+                  >
+                    <Edit size={15} />
+                    <span>Chỉnh sửa</span>
+                  </button>
+                )}
               </div>
 
-              <button
-                onClick={() => {
-                  const id = selectedDetail.id;
-                  setSelectedDetail(null);
-                  handleDelete(id);
-                }}
-                className="btn-danger flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
-              >
-                <Trash2 size={15} />
-                <span>Xóa</span>
-              </button>
+              {canEditDelete && (
+                <button
+                  onClick={() => {
+                    const id = selectedDetail.id;
+                    setSelectedDetail(null);
+                    handleDelete(id);
+                  }}
+                  className="btn-danger flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
+                >
+                  <Trash2 size={15} />
+                  <span>Xóa</span>
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -2,23 +2,27 @@ import * as React from 'react';
 import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '../contexts/auth';
 import type { UserRole } from '../types';
+import type { PermissionKey } from '../lib/permissions';
 
 /**
- * Chặn route theo vai trò.
+ * Chặn route theo quyền động (`permission`) hoặc theo vai trò (`allow`).
  *
  * Đây là lớp bảo vệ về trải nghiệm, KHÔNG phải lớp bảo mật: RLS trên Supabase
  * mới là thứ thực sự chặn dữ liệu. Mục đích ở đây là để người không có quyền
  * nhận được câu giải thích rõ ràng, thay vì vào trang rồi thấy lỗi đỏ khắp nơi
  * vì mọi truy vấn đều bị từ chối.
  */
-export const RequireRole: React.FC<{ allow: UserRole[]; children: React.ReactElement }> = ({
-  allow,
-  children,
-}) => {
-  const { user } = useAuth();
+export const RequireRole: React.FC<{
+  allow?: UserRole[];
+  permission?: PermissionKey;
+  children: React.ReactElement;
+}> = ({ allow, permission, children }) => {
+  const { user, can } = useAuth();
 
-  if (user && allow.includes(user.role)) {
-    return children;
+  if (user) {
+    if (permission ? can(permission) : allow?.includes(user.role)) {
+      return children;
+    }
   }
 
   return (
@@ -28,8 +32,8 @@ export const RequireRole: React.FC<{ allow: UserRole[]; children: React.ReactEle
       </div>
       <h2 className="text-lg font-bold text-[var(--text-primary)] mb-1">Bạn không có quyền xem mục này</h2>
       <p className="text-sm text-[var(--text-secondary)] max-w-md">
-        Mục này chỉ dành cho {allow.includes('manager') ? 'quản lý và quản trị viên' : 'quản trị viên'}. Nếu
-        bạn cần truy cập, hãy liên hệ quản trị viên để được cấp quyền.
+        Tài khoản của bạn hiện chưa được cấp quyền truy cập phân hệ này. Nếu bạn cần sử dụng, hãy liên hệ quản
+        trị viên để bật quyền trong mục Cài đặt &rarr; Phân quyền.
       </p>
     </div>
   );

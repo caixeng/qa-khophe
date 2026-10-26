@@ -19,21 +19,22 @@ import {
 import { useAuth } from '../../contexts/auth';
 import { useTheme, PRIMARY_COLORS, type Theme } from '../../contexts/theme';
 import { cn } from '../../lib/utils';
+import type { PermissionKey } from '../../lib/permissions';
 
 interface MobileMoreMenuSheetProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const MENU_ITEMS = [
-  { path: '/phe', label: 'Quản lý Phế', icon: Recycle },
-  { path: '/ton-kho', label: 'Tồn kho', icon: Package },
-  { path: '/tai-chinh', label: 'Tài chính', icon: Wallet, managerOnly: true },
-  { path: '/nhan-vien', label: 'Quản lý Nhân sự', icon: UserCheck, managerOnly: true },
-  { path: '/danh-ba', label: 'Danh bạ đối tác', icon: Users },
-  { path: '/doi-soat', label: 'Đối soát dữ liệu', icon: BarChart3 },
-  { path: '/bao-cao', label: 'Báo cáo', icon: BarChart3 },
-  { path: '/cai-dat', label: 'Cài đặt hệ thống', icon: Settings, adminOnly: true },
+const MENU_ITEMS: { path: string; label: string; icon: React.ElementType; permission: PermissionKey }[] = [
+  { path: '/phe', label: 'Quản lý Phế', icon: Recycle, permission: 'scrap.view' },
+  { path: '/ton-kho', label: 'Tồn kho', icon: Package, permission: 'inventory.view' },
+  { path: '/tai-chinh', label: 'Tài chính', icon: Wallet, permission: 'finance.view' },
+  { path: '/nhan-vien', label: 'Quản lý Nhân sự', icon: UserCheck, permission: 'hr.view' },
+  { path: '/danh-ba', label: 'Danh bạ đối tác', icon: Users, permission: 'contacts.view' },
+  { path: '/doi-soat', label: 'Đối soát dữ liệu', icon: BarChart3, permission: 'reconciliation.view' },
+  { path: '/bao-cao', label: 'Báo cáo', icon: BarChart3, permission: 'reports.view' },
+  { path: '/cai-dat', label: 'Cài đặt hệ thống', icon: Settings, permission: 'settings.manage' },
 ];
 
 const THEME_OPTIONS: { id: Theme; label: string; icon: React.ElementType }[] = [
@@ -43,14 +44,10 @@ const THEME_OPTIONS: { id: Theme; label: string; icon: React.ElementType }[] = [
 ];
 
 export const MobileMoreMenuSheet: React.FC<MobileMoreMenuSheetProps> = ({ isOpen, onClose }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const { theme, setTheme, primaryColor, setPrimaryColor } = useTheme();
 
-  const isManagerOrAdmin = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'accountant';
-  const isAdmin = user?.role === 'admin';
-  const visibleItems = MENU_ITEMS.filter(
-    (item) => (!item.managerOnly || isManagerOrAdmin) && (!item.adminOnly || isAdmin),
-  );
+  const visibleItems = MENU_ITEMS.filter((item) => can(item.permission));
 
   return (
     <MobileBottomSheet isOpen={isOpen} onClose={onClose} title="Danh mục & Cài đặt">

@@ -38,7 +38,7 @@ export const TaiChinhPage: React.FC = () => {
       <div
         role="tablist"
         aria-label="Nghiệp vụ tài chính"
-        className="grid w-full grid-cols-2 gap-1 bg-[var(--bg-surface)] p-1.5 rounded-xl shadow-xs border border-[var(--border-color)] sm:flex sm:w-fit"
+        className="grid w-full grid-cols-2 gap-1 bg-[var(--bg-surface)] p-1 rounded-xl shadow-2xs border border-[var(--border-color)] sm:flex sm:w-fit"
       >
         {TABS.map((tab) => {
           const Icon = tab.icon;
@@ -52,14 +52,14 @@ export const TaiChinhPage: React.FC = () => {
               aria-controls={`finance-panel-${tab.id}`}
               onClick={() => handleTabChange(tab.id)}
               className={cn(
-                'tap-target sm:min-h-0 sm:min-w-0 flex items-center justify-center gap-1.5 px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all whitespace-normal sm:whitespace-nowrap cursor-pointer',
+                'h-8 sm:h-9 flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
                 isActive
-                  ? 'bg-[var(--primary-500)] text-white shadow-xs'
+                  ? 'bg-[var(--primary-500)] text-white shadow-2xs'
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
               )}
             >
-              <Icon size={14} className={isActive ? 'text-white' : tab.color} />
-              <span>{tab.label}</span>
+              <Icon size={13} className={cn('shrink-0', isActive ? 'text-white' : tab.color)} />
+              <span className="truncate">{tab.label}</span>
             </button>
           );
         })}

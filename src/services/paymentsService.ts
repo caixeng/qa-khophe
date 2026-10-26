@@ -93,4 +93,96 @@ export const paymentsService = {
       supabase.from('payments').delete().eq('id', id).select('id').single(),
     );
   },
+
+  /**
+   * Thanh toán gộp theo Đối tác (FIFO — gạch nợ từ phiếu cũ nhất đến mới nhất).
+   * Khi có `contact_id`, ưu tiên gọi RPC nguyên tử `record_bulk_partner_payment`
+   * có khoá dòng `FOR UPDATE` trên PostgreSQL; với khách vãng lai không gắn `contact_id`,
+   * thực hiện batch insert trong 1 statement duy nhất.
+   */
+  async recordBulkFifoPayment(params: {
+    contact_id?: string | null;
+    ref_type: PaymentRefType;
+    items: { id: string; date: string; remaining: number }[];
+    totalAmount: number;
+    date?: string;
+    method?: 'cash' | 'transfer' | 'other';
+    notes?: string;
+  }): Promise<{ settledCount: number; allocatedAmount: number }> {
+    const amount = Number(params.totalAmount) || 0;
+    if (amount <= 0) {
+      throw new ServiceError('Tổng số tiền thanh toán phải lớn hơn 0.');
+    }
+
+    const sorted = [...params.items]
+      .filter((x) => x.remaining > 0)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+
+    if (sorted.length === 0) {
+      throw new ServiceError('Không có phiếu công nợ nào cần thanh toán.');
+    }
+
+    const maxAllocatable = sorted.reduce((sum, x) => sum + x.remaining, 0);
+    const effectiveAmount = Math.min(amount, maxAllocatable);
+    const payDate = params.date || today();
+    const payMethod = params.method || 'transfer';
+
+    if (params.contact_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.contact_id)) {
+      const rpcResult = await runQuery<{
+        allocatedCount: number;
+        totalAllocated: number;
+        paymentIds: string[];
+      }>('ghi nhận thanh toán gộp FIFO', () =>
+        supabase.rpc('record_bulk_partner_payment', {
+          p_contact_id: params.contact_id,
+          p_ref_type: params.ref_type,
+          p_total_amount: effectiveAmount,
+          p_date: payDate,
+          p_method: payMethod,
+          p_advance_id: null,
+          p_notes: params.notes || null,
+        }),
+      );
+
+      return {
+        settledCount: Number(rpcResult?.allocatedCount) || 0,
+        allocatedAmount: Number(rpcResult?.totalAllocated) || effectiveAmount,
+      };
+    }
+
+    let remainingBudget = effectiveAmount;
+    const rowsToInsert: {
+      ref_type: PaymentRefType;
+      ref_id: string;
+      amount: number;
+      date: string;
+      method: 'cash' | 'transfer' | 'other';
+      notes: string | null;
+    }[] = [];
+
+    for (const invoice of sorted) {
+      if (remainingBudget <= 0) break;
+      const alloc = Math.min(invoice.remaining, remainingBudget);
+      if (alloc > 0) {
+        rowsToInsert.push({
+          ref_type: params.ref_type,
+          ref_id: invoice.id,
+          amount: alloc,
+          date: payDate,
+          method: payMethod,
+          notes: params.notes ? `${params.notes} (Phân bổ FIFO)` : `Thanh toán gộp FIFO ngày ${payDate}`,
+        });
+        remainingBudget -= alloc;
+      }
+    }
+
+    await runQuery('ghi nhận thanh toán gộp FIFO', () =>
+      supabase.from('payments').insert(rowsToInsert).select('id'),
+    );
+
+    return {
+      settledCount: rowsToInsert.length,
+      allocatedAmount: effectiveAmount - remainingBudget,
+    };
+  },
 };

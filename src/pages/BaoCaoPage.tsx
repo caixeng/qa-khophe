@@ -15,7 +15,7 @@ import { useDateRange } from '../hooks/useDateRange';
 import { PeriodFilter } from '../components/PeriodFilter';
 import { useAuth } from '../contexts/auth';
 import { calculateAttendancePay } from '../lib/payroll';
-import { summarizeOperations } from '../lib/operatingMetrics';
+import { summarizeOperations, calculateUnitCostMetrics } from '../lib/operatingMetrics';
 import { computeMassDifference } from '../lib/calc';
 import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
@@ -48,8 +48,8 @@ export const BaoCaoPage: React.FC = () => {
       ? requestedTab
       : 'tongquan';
   const [activeTab, setActiveTab] = useState<ReportTab>(initialTab);
-  const { user } = useAuth();
-  const canSeeFinance = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'accountant';
+  const { can } = useAuth();
+  const canSeeFinance = can('dashboard.finance.view');
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -242,6 +242,20 @@ export const BaoCaoPage: React.FC = () => {
   const summary = useMemo(
     () => summarizeOperations({ imports, exports, expenses, attendance }),
     [imports, exports, expenses, attendance],
+  );
+
+  const unitCost = useMemo(
+    () =>
+      calculateUnitCostMetrics({
+        totalImportKg: summary.totalImportKg,
+        totalImportCost: summary.totalImportCost,
+        totalExportKg: summary.totalExportKg,
+        totalRevenue: summary.totalRevenue,
+        totalExpenseCost: summary.totalExpenseCost,
+        totalPayrollCost: summary.totalPayrollCost,
+        grinding,
+      }),
+    [summary, grinding],
   );
 
   const importExportLoss = computeMassDifference(summary.totalImportKg, summary.totalExportKg);
@@ -485,16 +499,16 @@ export const BaoCaoPage: React.FC = () => {
       <div
         role="tablist"
         aria-label="Loại báo cáo"
-        className="grid grid-cols-2 border-b border-[var(--border-color)] sm:flex sm:flex-wrap"
+        className="flex items-center overflow-x-auto no-scrollbar border-b border-[var(--border-color)]"
       >
         <button
           role="tab"
           aria-selected={activeTab === 'tongquan'}
           onClick={() => handleTabChange('tongquan')}
           className={cn(
-            'tap-target px-3 sm:px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
+            'px-3 sm:px-6 py-2 sm:py-3 font-bold text-xs border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0',
             activeTab === 'tongquan'
-              ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
+              ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)] rounded-t-lg'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
           )}
         >
@@ -505,9 +519,9 @@ export const BaoCaoPage: React.FC = () => {
           aria-selected={activeTab === 'nhapxuat'}
           onClick={() => handleTabChange('nhapxuat')}
           className={cn(
-            'tap-target px-3 sm:px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
+            'px-3 sm:px-6 py-2 sm:py-3 font-bold text-xs border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0',
             activeTab === 'nhapxuat'
-              ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
+              ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)] rounded-t-lg'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
           )}
         >
@@ -518,9 +532,9 @@ export const BaoCaoPage: React.FC = () => {
           aria-selected={activeTab === 'hieusuat'}
           onClick={() => handleTabChange('hieusuat')}
           className={cn(
-            'tap-target px-3 sm:px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
+            'px-3 sm:px-6 py-2 sm:py-3 font-bold text-xs border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0',
             activeTab === 'hieusuat'
-              ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
+              ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)] rounded-t-lg'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
           )}
         >
@@ -532,9 +546,9 @@ export const BaoCaoPage: React.FC = () => {
             aria-selected={activeTab === 'taichinh'}
             onClick={() => handleTabChange('taichinh')}
             className={cn(
-              'tap-target px-3 sm:px-6 py-3 font-bold text-xs border-b-2 transition-all cursor-pointer',
+              'px-3 sm:px-6 py-2 sm:py-3 font-bold text-xs border-b-2 transition-all cursor-pointer whitespace-nowrap shrink-0',
               activeTab === 'taichinh'
-                ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)]'
+                ? 'border-[var(--primary-500)] text-[var(--primary-600)] bg-[var(--primary-50)] rounded-t-lg'
                 : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
             )}
           >
@@ -545,7 +559,7 @@ export const BaoCaoPage: React.FC = () => {
 
       <DataState loading={loading} error={error} onRetry={retry} isEmpty={false}>
         {activeTab === 'tongquan' && (
-          <div className="space-y-6">
+          <div className="space-y-3 sm:space-y-6">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
               <KpiCard
                 title="Tổng nhập phế"
@@ -624,6 +638,75 @@ export const BaoCaoPage: React.FC = () => {
                 thực tế. Hao hụt xay tính trên đầu vào và đầu ra của phiếu xay trong kỳ.
               </p>
             </div>
+
+            {canSeeFinance && (
+              <div className="card p-4 sm:p-5 space-y-3 border border-[var(--border-color)] bg-[var(--bg-surface)] rounded-2xl">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                      Phân tích giá thành sản xuất 1 kg phế thành phẩm (Unit Cost)
+                    </h3>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                      Bóc tách chi phí cấu thành trên mỗi kg phế trong kỳ đang chọn
+                    </p>
+                  </div>
+                  {unitCost.avgExportPricePerKg > 0 && (
+                    <span
+                      className={cn(
+                        'px-2.5 py-1 rounded-full text-xs font-bold font-mono',
+                        unitCost.netMarginPerKg >= 0
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-rose-100 text-rose-700',
+                      )}
+                    >
+                      Biên lãi: {unitCost.netMarginPerKg >= 0 ? '+' : ''}
+                      {formatTien(unitCost.netMarginPerKg)}đ/kg ({unitCost.netMarginPct}%)
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2.5 text-xs">
+                  <div className="rounded-xl bg-[var(--bg-subtle)] p-3 border border-[var(--border-color)]">
+                    <p className="text-[11px] text-[var(--text-muted)]">1. Giá mua NVL BQ</p>
+                    <p className="mt-1 font-mono font-bold text-sm text-[var(--text-primary)]">
+                      {formatTien(unitCost.avgImportPricePerKg)}đ/kg
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-[var(--bg-subtle)] p-3 border border-[var(--border-color)]">
+                    <p className="text-[11px] text-[var(--text-muted)]">2. Chi phí hao hụt xay</p>
+                    <p className="mt-1 font-mono font-bold text-sm text-amber-600">
+                      +{formatTien(unitCost.lossCostPerKg)}đ/kg
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-[var(--bg-subtle)] p-3 border border-[var(--border-color)]">
+                    <p className="text-[11px] text-[var(--text-muted)]">3. Nhân công / kg</p>
+                    <p className="mt-1 font-mono font-bold text-sm text-[var(--text-primary)]">
+                      +{formatTien(unitCost.laborCostPerKg)}đ/kg
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-[var(--bg-subtle)] p-3 border border-[var(--border-color)]">
+                    <p className="text-[11px] text-[var(--text-muted)]">4. Điện, dầu, dao / kg</p>
+                    <p className="mt-1 font-mono font-bold text-sm text-[var(--text-primary)]">
+                      +{formatTien(unitCost.workshopCostPerKg)}đ/kg
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-[var(--primary-50)]/60 p-3 border border-[var(--primary-500)]/30">
+                    <p className="text-[11px] font-bold text-[var(--primary-600)]">= Tổng giá thành</p>
+                    <p className="mt-1 font-mono font-black text-sm text-[var(--primary-600)]">
+                      {formatTien(unitCost.totalUnitCostPerKg)}đ/kg
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 p-3 border border-emerald-300/60">
+                    <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                      Giá bán bình quân
+                    </p>
+                    <p className="mt-1 font-mono font-black text-sm text-emerald-600">
+                      {formatTien(unitCost.avgExportPricePerKg)}đ/kg
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {canSeeFinance && <AdvanceSummary advances={advances} />}
             {canSeeFinance && <CashFlowPanel from={range.from} to={range.to} />}

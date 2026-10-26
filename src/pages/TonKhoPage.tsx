@@ -19,10 +19,10 @@ import { importsService } from '../services/importsService';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const TonKhoPage: React.FC = () => {
-  const { user } = useAuth();
+  const { can } = useAuth();
   const { toast } = useToast();
-  const canCount = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'warehouse_manager';
-  const canEditOpeningStock = user?.role === 'admin';
+  const canCount = can('inventory.count');
+  const canEditOpeningStock = can('inventory.opening_stock');
 
   // Tồn kho là số cộng dồn từ đầu — cần toàn bộ lịch sử, không lọc theo kỳ.
   const {
@@ -242,7 +242,7 @@ export const TonKhoPage: React.FC = () => {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-4">
         <KpiCard
           title="Tồn thành phẩm"
           value={`${inventoryStats.currentBags} bao`}
@@ -270,19 +270,19 @@ export const TonKhoPage: React.FC = () => {
         />
       </div>
       {(inventoryStats.currentStockKg < 0 || inventoryStats.rawStockKg < 0) && (
-        <div role="alert" className="card p-4 text-rose-700">
+        <div role="alert" className="card p-3 sm:p-4 text-xs sm:text-sm text-rose-700">
           Tồn kho âm. Cần đối soát tồn đầu kỳ và các phiếu nhập, xay, xuất trước khi tiếp tục.
         </div>
       )}
 
       {/* Tồn kho đầu kỳ — bù cho phần tồn kho có sẵn trước khi dùng app */}
-      <div className="card p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs flex items-center justify-between gap-3 flex-wrap">
-        <div>
+      <div className="card p-3 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl shadow-2xs flex items-center justify-between gap-2 sm:gap-3 flex-wrap">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-bold text-[var(--text-primary)]">
             Tồn kho đầu kỳ:{' '}
             <span className="font-mono text-[var(--primary-500)]">{formatKg(openingStock)}</span>
           </p>
-          <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
+          <p className="text-[11px] text-[var(--text-muted)] mt-0.5 line-clamp-2 sm:line-clamp-none">
             Số kg đã có sẵn trong kho trước khi bắt đầu ghi nhận phiếu xay/xuất trên hệ thống — cộng vào tồn
             kho hiện tại ở trên.
           </p>
@@ -290,7 +290,7 @@ export const TonKhoPage: React.FC = () => {
         {canEditOpeningStock && (
           <button
             onClick={openOpeningStockModal}
-            className="btn-secondary flex items-center gap-1.5 text-xs font-bold py-2 px-3 shrink-0 cursor-pointer"
+            className="btn-secondary flex items-center gap-1.5 text-xs font-bold !py-1.5 !px-2.5 shrink-0 cursor-pointer"
           >
             <Settings2 size={14} />
             Cấu hình
@@ -299,9 +299,11 @@ export const TonKhoPage: React.FC = () => {
       </div>
 
       {/* Chart */}
-      <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-4">
-        <h3 className="text-base font-bold text-[var(--text-primary)]">Biểu đồ tồn kho thành phẩm</h3>
-        <div className="h-64 w-full">
+      <div className="card p-3.5 sm:p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl shadow-2xs space-y-3 sm:space-y-4">
+        <h3 className="text-sm sm:text-base font-bold text-[var(--text-primary)]">
+          Biểu đồ tồn kho thành phẩm
+        </h3>
+        <div className="h-52 sm:h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />

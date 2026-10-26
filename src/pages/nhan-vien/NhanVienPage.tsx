@@ -13,6 +13,7 @@ import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { useAsyncData, useAsyncList } from '../../hooks/useAsyncData';
 import { useCrudForm } from '../../hooks/useCrudForm';
 import { useTableControls } from '../../hooks/useTableControls';
+import { useAuth } from '../../contexts/auth';
 import { useToast } from '../../contexts/toast';
 import { employeesService, attendanceService } from '../../services/employeesService';
 import type { Employee, Attendance } from '../../types';
@@ -30,6 +31,8 @@ import { PayrollDetailModal } from './modals/PayrollDetailModal';
 import { AdvancePayModal } from './modals/AdvancePayModal';
 
 export const NhanVienPage: React.FC = () => {
+  const { can } = useAuth();
+  const canManageHr = can('hr.manage');
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
   const initialTab: EmployeeTab =
@@ -511,7 +514,7 @@ export const NhanVienPage: React.FC = () => {
         title="Quản Lý Nhân Sự"
         subtitle="Quản lý hồ sơ công nhân xưởng phế, chấm công hàng ngày và tính lương công"
         action={
-          activeTab === 'payroll'
+          !canManageHr || activeTab === 'payroll'
             ? undefined
             : {
                 label: activeTab === 'employees' ? 'Thêm nhân viên' : 'Chấm công mới',
@@ -557,7 +560,7 @@ export const NhanVienPage: React.FC = () => {
       <div
         role="tablist"
         aria-label="Quản lý nhân sự"
-        className="flex items-center justify-between sm:justify-start gap-1 p-1 rounded-xl shadow-xs border border-[var(--border-color)] bg-[var(--bg-surface)] w-full sm:w-fit"
+        className="grid grid-cols-3 sm:flex items-center gap-1 p-1 rounded-xl shadow-2xs border border-[var(--border-color)] bg-[var(--bg-surface)] w-full sm:w-fit"
       >
         <button
           role="tab"
@@ -565,18 +568,19 @@ export const NhanVienPage: React.FC = () => {
           onClick={() => handleTabChange('employees')}
           title={`Danh sách nhân viên (${employees.length})`}
           className={cn(
-            'tap-target sm:min-h-0 sm:min-w-0 flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
+            'h-8 sm:h-9 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap',
             activeTab === 'employees'
-              ? 'bg-[var(--primary-500)] text-white shadow-xs'
+              ? 'bg-[var(--primary-500)] text-white shadow-2xs'
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
           <Users
-            size={16}
-            className={activeTab === 'employees' ? 'text-white' : 'text-[var(--text-muted)]'}
+            size={14}
+            className={cn('shrink-0', activeTab === 'employees' ? 'text-white' : 'text-[var(--text-muted)]')}
           />
+          <span className="sm:hidden">Nhân viên</span>
           <span className="hidden sm:inline">Danh sách nhân viên</span>
-          <span className="text-[11px] px-1.5 py-0.2 bg-black/10 dark:bg-white/20 rounded-full font-mono">
+          <span className="text-[10px] px-1.5 py-0.2 bg-black/10 dark:bg-white/20 rounded-full font-mono">
             {employees.length}
           </span>
         </button>
@@ -587,18 +591,18 @@ export const NhanVienPage: React.FC = () => {
           onClick={() => handleTabChange('attendance')}
           title={`Chấm công (${attendanceList.length})`}
           className={cn(
-            'tap-target sm:min-h-0 sm:min-w-0 flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
+            'h-8 sm:h-9 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap',
             activeTab === 'attendance'
-              ? 'bg-[var(--primary-500)] text-white shadow-xs'
+              ? 'bg-[var(--primary-500)] text-white shadow-2xs'
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
           <Calendar
-            size={16}
-            className={activeTab === 'attendance' ? 'text-white' : 'text-[var(--text-muted)]'}
+            size={14}
+            className={cn('shrink-0', activeTab === 'attendance' ? 'text-white' : 'text-[var(--text-muted)]')}
           />
-          <span className="hidden sm:inline">Chấm công</span>
-          <span className="text-[11px] px-1.5 py-0.2 bg-black/10 dark:bg-white/20 rounded-full font-mono">
+          <span>Chấm công</span>
+          <span className="text-[10px] px-1.5 py-0.2 bg-black/10 dark:bg-white/20 rounded-full font-mono">
             {attendanceList.length}
           </span>
         </button>
@@ -609,16 +613,17 @@ export const NhanVienPage: React.FC = () => {
           onClick={() => handleTabChange('payroll')}
           title="Bảng lương tháng"
           className={cn(
-            'tap-target sm:min-h-0 sm:min-w-0 flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-2.5 sm:px-3.5 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer',
+            'h-8 sm:h-9 flex items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 rounded-lg text-[11px] sm:text-xs font-bold transition-all cursor-pointer whitespace-nowrap',
             activeTab === 'payroll'
-              ? 'bg-[var(--primary-500)] text-white shadow-xs'
+              ? 'bg-[var(--primary-500)] text-white shadow-2xs'
               : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
           )}
         >
           <DollarSign
-            size={16}
-            className={activeTab === 'payroll' ? 'text-white' : 'text-[var(--text-muted)]'}
+            size={14}
+            className={cn('shrink-0', activeTab === 'payroll' ? 'text-white' : 'text-[var(--text-muted)]')}
           />
+          <span className="sm:hidden">Bảng lương</span>
           <span className="hidden sm:inline">Bảng lương tháng</span>
         </button>
       </div>
@@ -648,6 +653,7 @@ export const NhanVienPage: React.FC = () => {
           setItemsPerPage={setItemsPerPage}
           onOpenEmpModal={openEmpModal}
           onDeleteEmployee={handleDeleteEmployee}
+          canManage={canManageHr}
         />
       )}
 
@@ -679,6 +685,7 @@ export const NhanVienPage: React.FC = () => {
           handleSaveQuickAttendance={handleSaveQuickAttendance}
           onOpenAttModal={openAttModal}
           onDeleteAttendance={handleDeleteAttendance}
+          canManage={canManageHr}
         />
       )}
 
@@ -692,6 +699,7 @@ export const NhanVienPage: React.FC = () => {
           onOpenAdvPayModal={openAdvPayModal}
           setPayrollDetailKey={setPayrollDetailKey}
           requestPayrollSettlement={requestPayrollSettlement}
+          canManage={canManageHr}
         />
       )}
 

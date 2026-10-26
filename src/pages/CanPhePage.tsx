@@ -1,6 +1,19 @@
 import * as React from 'react';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { Calculator, History, Box, Printer, Paperclip, Save, X, Trash2, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Calculator,
+  History,
+  Box,
+  Printer,
+  Paperclip,
+  Save,
+  X,
+  Trash2,
+  Users,
+  Cog,
+  Truck,
+} from 'lucide-react';
 import { cn, formatKg, formatNgay } from '../lib/utils';
 import { Modal } from '../components/Modal';
 import { NumPad } from '../components/NumPad';
@@ -59,11 +72,13 @@ function clearDraft() {
 }
 
 export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
+  const navigate = useNavigate();
   const { data: sessions, loading, error, refetch } = useAsyncList(weighingService.getSessions, []);
   const { data: contacts } = useAsyncList(contactsService.getAll, []);
   const { toast } = useToast();
-  const { user } = useAuth();
-  const canManage = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'warehouse_manager';
+  const { can } = useAuth();
+  const canCreate = can('scrap.create');
+  const canManage = can('scrap.edit_delete');
 
   const initialDraft = useMemo(() => loadDraft(), []);
   const restoredOnMount = useRef(!!initialDraft);
@@ -182,6 +197,31 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
     }
   };
 
+  const handleConvertToGrinding = (s: (typeof sessions)[number]) => {
+    const params = new URLSearchParams({
+      tab: 'xay',
+      open: 'true',
+      fromSessionId: s.id,
+      bags: String(s.total_bags || 0),
+      kg: String(s.total_kg || 0),
+      date: s.date,
+    });
+    navigate(`/phe?${params.toString()}`);
+  };
+
+  const handleConvertToExport = (s: (typeof sessions)[number]) => {
+    const params = new URLSearchParams({
+      tab: 'xuat',
+      open: 'true',
+      fromSessionId: s.id,
+      bags: String(s.total_bags || 0),
+      kg: String(s.total_kg || 0),
+      date: s.date,
+    });
+    if (s.contact_id) params.set('contactId', s.contact_id);
+    navigate(`/phe?${params.toString()}`);
+  };
+
   /**
    * Bắt đầu phiên cân mới. Nếu đang có bao chưa lưu thì hỏi trước — dùng
    * ConfirmDialog thay vì confirm() gốc của trình duyệt, vì hộp thoại gốc bị
@@ -228,20 +268,20 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-3 sm:space-y-5 animate-fade-in">
       {/* Active Weighing Session Header */}
-      <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl shadow-xs space-y-5">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[var(--border-color)] pb-4 gap-3">
+      <div className="card p-3.5 sm:p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl shadow-xs space-y-3 sm:space-y-5">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[var(--border-color)] pb-3 sm:pb-4 gap-2.5 sm:gap-3">
           <div>
             <div className="flex items-center space-x-2">
-              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700">
+              <span className="px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700">
                 {activeBags.length > 0 ? 'Phiên cân đang mở' : 'Chưa có phiên cân nào đang mở'}
               </span>
-              <span className="text-xs text-[var(--text-muted)] font-mono">
+              <span className="text-[11px] sm:text-xs text-[var(--text-muted)] font-mono">
                 {formatNgay(new Date().toISOString())}
               </span>
             </div>
-            <h2 className="text-xl font-bold text-[var(--text-primary)] mt-1">
+            <h2 className="text-sm sm:text-xl font-bold text-[var(--text-primary)] mt-1">
               {activeBags.length > 0
                 ? `Đang cân (${activeBags.length} bao)`
                 : 'Bấm "Mở NumPad" để bắt đầu cân bao mới'}
@@ -253,39 +293,39 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
               <button
                 onClick={handleSaveClick}
                 disabled={saving}
-                className="btn-primary flex items-center space-x-2 shadow-md flex-1 sm:flex-none justify-center cursor-pointer disabled:opacity-60"
+                className="btn-primary flex items-center space-x-1.5 shadow-sm flex-1 sm:flex-none justify-center cursor-pointer disabled:opacity-60"
               >
-                <Save size={18} />
+                <Save size={15} />
                 <span>{saving ? 'Đang lưu...' : 'Lưu phiên cân'}</span>
               </button>
             )}
             <button
               onClick={openAddBag}
               className={cn(
-                'flex items-center space-x-2 shadow-md flex-1 sm:flex-none justify-center cursor-pointer',
+                'flex items-center space-x-1.5 shadow-sm flex-1 sm:flex-none justify-center cursor-pointer',
                 activeBags.length > 0 ? 'btn-secondary' : 'btn-primary',
               )}
             >
-              <Calculator size={18} />
+              <Calculator size={15} />
               <span>Mở NumPad cân bao mới</span>
             </button>
           </div>
         </div>
 
         {/* PALLET SELECTION BAR */}
-        <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-primary)] flex items-center gap-2">
-              <Box size={16} className="text-[var(--primary-500)]" /> Quy định Trừ Bì Ba Lết (Pallet)
+        <div className="p-2.5 sm:p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] space-y-2 sm:space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[var(--text-primary)] flex items-center gap-1.5">
+              <Box size={14} className="text-[var(--primary-500)] shrink-0" /> Trừ Bì Ba Lết (Pallet)
             </span>
-            <span className="text-xs font-mono font-bold text-rose-600">
+            <span className="text-[11px] sm:text-xs font-mono font-bold text-rose-600">
               {tareWeight > 0
                 ? `Trừ bì: -${tareWeight} kg (${PALLET_TYPES[selectedPallet].name})`
                 : 'Không trừ lết'}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 sm:gap-2">
             {(Object.keys(PALLET_TYPES) as PalletType[]).map((pType) => {
               const cfg = PALLET_TYPES[pType];
               const isSelected = selectedPallet === pType;
@@ -294,15 +334,15 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
                   key={pType}
                   onClick={() => setSelectedPallet(pType)}
                   className={cn(
-                    'p-2.5 rounded-xl border text-left transition-all cursor-pointer',
+                    'p-2 sm:p-2.5 rounded-lg sm:rounded-xl border text-left transition-all cursor-pointer',
                     isSelected
-                      ? 'bg-[var(--primary-50)] border-[var(--primary-500)] text-[var(--primary-600)] font-bold shadow-xs'
+                      ? 'bg-[var(--primary-50)] border-[var(--primary-500)] text-[var(--primary-600)] font-bold shadow-2xs'
                       : 'bg-[var(--bg-surface)] border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)]',
                   )}
                 >
-                  <p className="text-xs font-bold">{cfg.name}</p>
-                  <p className="text-[11px] font-mono opacity-80">
-                    {cfg.weightKg > 0 ? `-${cfg.weightKg} kg/lết (${cfg.symbol})` : '0 kg'}
+                  <p className="text-[11px] sm:text-xs font-bold truncate">{cfg.name}</p>
+                  <p className="text-[10px] sm:text-[11px] font-mono opacity-80 truncate">
+                    {cfg.weightKg > 0 ? `-${cfg.weightKg}kg (${cfg.symbol})` : '0 kg'}
                   </p>
                 </button>
               );
@@ -310,7 +350,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
           </div>
 
           {selectedPallet !== 'none' && (
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex items-center gap-2 pt-1">
               <span className="text-xs font-semibold text-[var(--text-secondary)]">Số lượng lết dùng:</span>
               <input
                 type="number"
@@ -319,7 +359,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
                 max="10"
                 value={palletQty}
                 onChange={(e) => setPalletQty(Math.max(1, Number(e.target.value)))}
-                className="input-field w-20 text-center font-mono font-bold py-1"
+                className="input-field !min-h-8 w-16 text-center font-mono font-bold !py-1"
               />
               <span className="text-xs font-mono font-bold text-[var(--primary-500)]">
                 = {tareWeight} kg bì
@@ -329,12 +369,12 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
         </div>
 
         {/* ĐỐI TÁC GẮN VỚI PHIÊN CÂN — để đối chiếu được với phiếu nhập/xuất sau này */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <span className="text-xs font-bold text-[var(--text-secondary)] flex items-center gap-1.5 shrink-0">
-            <Users size={14} className="text-[var(--primary-500)]" /> Đối tác (tuỳ chọn):
+            <Users size={14} className="text-[var(--primary-500)]" /> Đối tác:
           </span>
           <select
-            className="input-field flex-1 text-xs py-1.5"
+            className="input-field !min-h-9 flex-1 text-xs !py-1.5"
             value={contactId}
             onChange={(e) => setContactId(e.target.value)}
           >
@@ -348,37 +388,41 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
         </div>
 
         {/* Real-time Summary Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          <div className="p-2.5 sm:p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+            <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
               Tổng số bao
             </p>
-            <p className="text-2xl font-mono font-black text-[var(--text-primary)] mt-1">
+            <p className="text-base sm:text-2xl font-mono font-black text-[var(--text-primary)] mt-0.5">
               {activeBags.length} bao
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+          <div className="p-2.5 sm:p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+            <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
               Tổng cân thô (Gross)
             </p>
-            <p className="text-2xl font-mono font-black text-[var(--text-primary)] mt-1">
+            <p className="text-base sm:text-2xl font-mono font-black text-[var(--text-primary)] mt-0.5">
               {formatKg(grossWeight)}
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+          <div className="p-2.5 sm:p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+            <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
               Trừ bì lết (Tare)
             </p>
-            <p className="text-2xl font-mono font-black text-rose-600 mt-1">-{tareWeight} kg</p>
+            <p className="text-base sm:text-2xl font-mono font-black text-rose-600 mt-0.5">
+              -{tareWeight} kg
+            </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+          <div className="p-2.5 sm:p-4 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)]">
+            <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
               Thực phế (Net)
             </p>
-            <p className="text-2xl font-mono font-black text-emerald-600 mt-1">{formatKg(netWeight)}</p>
+            <p className="text-base sm:text-2xl font-mono font-black text-emerald-600 mt-0.5">
+              {formatKg(netWeight)}
+            </p>
           </div>
         </div>
 
@@ -421,10 +465,16 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
 
       {/* Sessions History List */}
       <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl space-y-4">
-        <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center space-x-2">
-          <History size={18} className="text-[var(--primary-500)]" />
-          <span>Lịch sử các phiên cân phế</span>
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h3 className="text-base font-bold text-[var(--text-primary)] flex items-center space-x-2">
+            <History size={18} className="text-[var(--primary-500)]" />
+            <span>Lịch sử các phiên cân phế</span>
+          </h3>
+          <p className="text-xs text-[var(--text-muted)]">
+            Bấm <b>Ghi Xay</b> hoặc <b>Tạo Xuất</b> để chuyển thẳng số bao &amp; khối lượng sang phiếu kho mà
+            không cần nhập lại.
+          </p>
+        </div>
 
         <DataState
           loading={loading}
@@ -436,7 +486,7 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
             {sessions.map((s) => (
               <div
                 key={s.id}
-                className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center gap-3"
+                className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3"
               >
                 <div className="min-w-0">
                   <p className="text-xs font-bold text-[var(--text-primary)]">
@@ -444,12 +494,35 @@ export const CanPhePage: React.FC<CanPhePageProps> = ({ actionRef }) => {
                   </p>
                   <p className="text-[11px] text-[var(--text-muted)]">
                     {s.total_bags} bao{s.contact_name ? ` · ${s.contact_name}` : ''}
+                    {s.notes ? ` · ${s.notes}` : ''}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <span className="font-mono font-bold text-xs text-[var(--primary-500)]">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <span className="font-mono font-bold text-xs text-[var(--primary-500)] mr-1">
                     {formatKg(s.total_kg || 0)}
                   </span>
+                  {canCreate && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleConvertToGrinding(s)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors cursor-pointer"
+                        title="Chuyển phiên cân này thành sản lượng Xay phế"
+                      >
+                        <Cog size={13} />
+                        <span>Ghi Xay</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleConvertToExport(s)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer"
+                        title="Tạo phiếu Xuất phế từ phiên cân này"
+                      >
+                        <Truck size={13} />
+                        <span>Tạo Xuất</span>
+                      </button>
+                    </>
+                  )}
                   <button
                     onClick={() => setAttachSessionId(s.id)}
                     className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"

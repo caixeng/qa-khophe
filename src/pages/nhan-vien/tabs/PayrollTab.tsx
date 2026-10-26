@@ -13,6 +13,7 @@ interface PayrollTabProps {
   onOpenAdvPayModal: (employeeId?: string, employeeName?: string) => void;
   setPayrollDetailKey: (key: string) => void;
   requestPayrollSettlement: (employeeId: string, name: string) => void;
+  canManage?: boolean;
 }
 
 export const PayrollTab: React.FC<PayrollTabProps> = ({
@@ -24,6 +25,7 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
   onOpenAdvPayModal,
   setPayrollDetailKey,
   requestPayrollSettlement,
+  canManage = true,
 }) => {
   return (
     <DataState loading={payrollLoading} error={payrollError} isEmpty={false}>
@@ -45,13 +47,15 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                 className="input-field w-[170px] min-w-0 max-w-full"
               />
             </div>
-            <button
-              type="button"
-              onClick={() => onOpenAdvPayModal()}
-              className="tap-target min-h-11 px-3 py-1.5 rounded-xl text-xs font-black text-amber-900 bg-amber-400 hover:bg-amber-500 dark:text-amber-100 dark:bg-amber-700/80 hover:dark:bg-amber-600 transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
-            >
-              <DollarSign size={14} />+ Ứng Lương
-            </button>
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => onOpenAdvPayModal()}
+                className="tap-target min-h-11 px-3 py-1.5 rounded-xl text-xs font-black text-amber-900 bg-amber-400 hover:bg-amber-500 dark:text-amber-100 dark:bg-amber-700/80 hover:dark:bg-amber-600 transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <DollarSign size={14} />+ Ứng Lương
+              </button>
+            )}
           </div>
           <div className="flex flex-wrap gap-4 text-xs">
             <span className="text-[var(--text-muted)]">
@@ -129,24 +133,26 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                             <span className="font-bold text-amber-600">
                               {r.advance > 0 ? `-${formatTien(r.advance)}` : '0 đ'}
                             </span>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onOpenAdvPayModal(r.employee_id, r.name);
-                              }}
-                              className="tap-target min-h-11 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 bg-amber-300 dark:text-amber-100 dark:bg-amber-800/60 rounded hover:bg-amber-400 cursor-pointer transition-colors duration-200"
-                              title={`Ghi nhận ứng lương cho ${r.name}`}
-                            >
-                              + Ứng
-                            </button>
+                            {canManage && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenAdvPayModal(r.employee_id, r.name);
+                                }}
+                                className="tap-target min-h-11 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 bg-amber-300 dark:text-amber-100 dark:bg-amber-800/60 rounded hover:bg-amber-400 cursor-pointer transition-colors duration-200"
+                                title={`Ghi nhận ứng lương cho ${r.name}`}
+                              >
+                                + Ứng
+                              </button>
+                            )}
                           </div>
                         </td>
                         <td className="td-cell text-right font-mono text-xs">
                           {formatTien(r.opening_balance)}
                         </td>
                         <td className="td-cell text-right font-mono text-xs font-black">
-                          {!r.settled && r.employee_id && (
+                          {canManage && !r.settled && r.employee_id && (
                             <button
                               type="button"
                               onClick={(e) => {
@@ -262,7 +268,7 @@ export const PayrollTab: React.FC<PayrollTabProps> = ({
                   },
                 ],
                 actions:
-                  !row.settled && row.employee_id ? (
+                  canManage && !row.settled && row.employee_id ? (
                     <button
                       type="button"
                       onClick={() => requestPayrollSettlement(row.employee_id, row.name)}

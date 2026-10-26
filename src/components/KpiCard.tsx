@@ -56,30 +56,32 @@ export const KpiCard: React.FC<KpiCardProps> = ({
     <div
       role="region"
       aria-label={title}
-      className={cn('card kpi-card p-4 sm:p-5 relative overflow-hidden animate-fade-in-up', className)}
+      className={cn('card kpi-card p-3 sm:p-4 lg:p-5 relative overflow-hidden animate-fade-in-up', className)}
     >
       <div className="flex justify-between items-start gap-2">
         <div className="min-w-0">
-          <p className="text-xs sm:text-sm font-medium text-[var(--text-muted)] mb-2 leading-snug">{title}</p>
-          <h3 className="text-base sm:text-2xl leading-tight font-bold tabular-nums tracking-tight text-[var(--text-primary)] whitespace-nowrap">
+          <p className="text-[11px] sm:text-xs font-semibold text-[var(--text-muted)] mb-1 leading-snug truncate">
+            {title}
+          </p>
+          <h3 className="text-sm sm:text-xl lg:text-2xl leading-tight font-bold tabular-nums tracking-tight text-[var(--text-primary)] whitespace-nowrap truncate">
             {value}
           </h3>
 
           {subtitle && (
-            <p className="text-[11px] sm:text-xs text-[var(--text-muted)] mt-2 break-words">{subtitle}</p>
+            <p className="text-[10px] sm:text-xs text-[var(--text-muted)] mt-1 line-clamp-1">{subtitle}</p>
           )}
 
           {trendVal !== null && (
             <div
               className={cn(
-                'flex items-center text-[10px] sm:text-xs font-medium mt-1.5',
+                'flex items-center text-[10px] sm:text-xs font-medium mt-1',
                 isPos ? 'text-emerald-600' : 'text-rose-600',
               )}
             >
               {signedTrend >= 0 ? (
-                <ArrowUpRight className="w-3 h-3 mr-0.5" />
+                <ArrowUpRight className="w-3 h-3 mr-0.5 shrink-0" />
               ) : (
-                <ArrowDownRight className="w-3 h-3 mr-0.5" />
+                <ArrowDownRight className="w-3 h-3 mr-0.5 shrink-0" />
               )}
               <span className="truncate">
                 {trendVal}% {trendLabel}
@@ -90,14 +92,14 @@ export const KpiCard: React.FC<KpiCardProps> = ({
 
         <div
           className={cn(
-            'kpi-icon p-2.5 rounded-xl flex items-center justify-center shrink-0',
+            'kpi-icon p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0',
             iconBgMap[color],
           )}
         >
           {React.isValidElement(Icon) ? (
             Icon
           ) : Icon ? (
-            <Icon className={cn('w-4 h-4 sm:w-6 sm:h-6', colorMap[color].split(' ')[1])} />
+            <Icon className={cn('w-3.5 h-3.5 sm:w-5 sm:h-5', colorMap[color].split(' ')[1])} />
           ) : null}
         </div>
       </div>

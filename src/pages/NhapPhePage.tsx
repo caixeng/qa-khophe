@@ -12,6 +12,7 @@ import { DataState } from '../components/DataState';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
+import { useAuth } from '../contexts/auth';
 import { useToast } from '../contexts/toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
@@ -31,6 +32,8 @@ interface NhapPhePageProps {
 }
 
 export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
+  const { can } = useAuth();
+  const canEditDelete = can('scrap.edit_delete');
   const { range, setRange } = useDateRange();
   const [importTypeFilter, setImportTypeFilter] = useState<'all' | 'nvl' | 'thanh_pham'>('all');
 
@@ -224,75 +227,75 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-2.5 sm:space-y-5 animate-fade-in">
       {/* Summary KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-        <div className="card p-2.5 sm:p-4 flex items-center space-x-2.5 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
-          <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800">
-            <Package className="w-4 h-4 sm:w-5 sm:h-5" />
+        <div className="card p-2.5 sm:p-4 flex items-center space-x-2 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
+          <div className="flex h-8 w-8 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg sm:rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800">
+            <Package className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
               Tổng nhập trong kỳ
             </p>
-            <p className="text-sm sm:text-xl font-black font-mono leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-black font-mono leading-tight text-[var(--text-primary)] truncate">
               {formatKg(stats.totalKg)}
             </p>
           </div>
         </div>
 
-        <div className="card p-2.5 sm:p-4 flex items-center space-x-2.5 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
-          <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/40 dark:border-blue-800">
-            <Package className="w-4 h-4 sm:w-5 sm:h-5" />
+        <div className="card p-2.5 sm:p-4 flex items-center space-x-2 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
+          <div className="flex h-8 w-8 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg sm:rounded-2xl bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/40 dark:border-blue-800">
+            <Package className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
               Số lượng lô
             </p>
-            <p className="text-sm sm:text-xl font-black font-mono leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-black font-mono leading-tight text-[var(--text-primary)] truncate">
               {stats.totalLots}
             </p>
           </div>
         </div>
 
-        <div className="card p-2.5 sm:p-4 flex items-center space-x-2.5 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
-          <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/40 dark:border-amber-800">
-            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+        <div className="card p-2.5 sm:p-4 flex items-center space-x-2 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
+          <div className="flex h-8 w-8 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg sm:rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/40 dark:border-amber-800">
+            <Clock className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
               Chưa xay
             </p>
-            <p className="text-sm sm:text-xl font-black font-mono leading-tight text-amber-600 [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-black font-mono leading-tight text-amber-600 truncate">
               {stats.pendingLots} lô
             </p>
           </div>
         </div>
 
-        <div className="card p-2.5 sm:p-4 flex items-center space-x-2.5 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
-          <div className="flex h-9 w-9 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-800">
-            <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
+        <div className="card p-2.5 sm:p-4 flex items-center space-x-2 sm:space-x-4 bg-[var(--bg-surface)] min-w-0">
+          <div className="flex h-8 w-8 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-lg sm:rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:border-rose-800">
+            <DollarSign className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-xs text-[var(--text-muted)] font-bold uppercase truncate">
               Chưa thanh toán
             </p>
-            <p className="text-sm sm:text-xl font-black font-mono leading-tight text-rose-600 [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-black font-mono leading-tight text-rose-600 truncate">
               {formatTien(stats.unpaidAmount)}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[var(--bg-surface)] p-2 rounded-2xl border border-[var(--border-color)] shadow-xs">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 bg-[var(--bg-surface)] p-2 rounded-xl border border-[var(--border-color)] shadow-2xs">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
           <button
             type="button"
             onClick={() => setImportTypeFilter('all')}
             className={cn(
-              'tap-target sm:min-h-0 sm:min-w-0 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              'h-7 px-2.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap',
               importTypeFilter === 'all'
-                ? 'bg-[var(--primary-500)] text-white shadow-xs'
+                ? 'bg-[var(--primary-500)] text-white shadow-2xs'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] hover:text-[var(--text-primary)]',
             )}
           >
@@ -302,9 +305,9 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             type="button"
             onClick={() => setImportTypeFilter('nvl')}
             className={cn(
-              'tap-target sm:min-h-0 sm:min-w-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              'h-7 flex items-center gap-1 px-2.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap',
               importTypeFilter === 'nvl'
-                ? 'bg-emerald-600 text-white shadow-xs'
+                ? 'bg-emerald-600 text-white shadow-2xs'
                 : 'text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 dark:text-emerald-400',
             )}
           >
@@ -317,9 +320,9 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             type="button"
             onClick={() => setImportTypeFilter('thanh_pham')}
             className={cn(
-              'tap-target sm:min-h-0 sm:min-w-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap',
+              'h-7 flex items-center gap-1 px-2.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap',
               importTypeFilter === 'thanh_pham'
-                ? 'bg-indigo-600 text-white shadow-xs'
+                ? 'bg-indigo-600 text-white shadow-2xs'
                 : 'text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 dark:text-indigo-400',
             )}
           >
@@ -330,7 +333,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           </button>
         </div>
 
-        <PeriodFilter range={range} onChange={setRange} />
+        <PeriodFilter range={range} onChange={setRange} className="border-0 p-0 sm:p-0 bg-transparent" />
       </div>
 
       {/* Toolbar */}
@@ -438,13 +441,15 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                     </td>
                     <td className="td-cell text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end">
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
-                          title="Xóa phiếu"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {canEditDelete && (
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                            title="Xóa phiếu"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -576,30 +581,34 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                   <Printer size={15} />
                   <span>In phiếu</span>
                 </button>
-                <button
-                  onClick={() => {
-                    const item = selectedDetail;
-                    setSelectedDetail(null);
-                    openModal(item);
-                  }}
-                  className="btn-primary flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
-                >
-                  <Edit size={15} />
-                  <span>Chỉnh sửa</span>
-                </button>
+                {canEditDelete && (
+                  <button
+                    onClick={() => {
+                      const item = selectedDetail;
+                      setSelectedDetail(null);
+                      openModal(item);
+                    }}
+                    className="btn-primary flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
+                  >
+                    <Edit size={15} />
+                    <span>Chỉnh sửa</span>
+                  </button>
+                )}
               </div>
 
-              <button
-                onClick={() => {
-                  const id = selectedDetail.id;
-                  setSelectedDetail(null);
-                  handleDelete(id);
-                }}
-                className="btn-danger flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
-              >
-                <Trash2 size={15} />
-                <span>Xóa</span>
-              </button>
+              {canEditDelete && (
+                <button
+                  onClick={() => {
+                    const id = selectedDetail.id;
+                    setSelectedDetail(null);
+                    handleDelete(id);
+                  }}
+                  className="btn-danger flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
+                >
+                  <Trash2 size={15} />
+                  <span>Xóa</span>
+                </button>
+              )}
             </div>
           </div>
         )}

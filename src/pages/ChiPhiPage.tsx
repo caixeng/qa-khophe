@@ -32,6 +32,9 @@ import { MobileCardList } from '../components/mobile/MobileCardList';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
+import { useDateRange } from '../hooks/useDateRange';
+import { PeriodFilter } from '../components/PeriodFilter';
+import { useAuth } from '../contexts/auth';
 import { useToast } from '../contexts/toast';
 import { AdvanceSummary } from '../components/AdvanceSummary';
 import { AdvanceReconciliationModal } from '../components/AdvanceReconciliationModal';
@@ -53,6 +56,9 @@ const categoryConfig: Record<string, { label: string; icon: React.ElementType; c
 };
 
 export const ChiPhiPage: React.FC = () => {
+  const { can } = useAuth();
+  const canManageExpenses = can('finance.manage_expenses');
+  const { range, setRange } = useDateRange();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialView = searchParams.get('view') === 'ungtien' ? 'ungtien' : 'chiphi';
   const [activeTab, setActiveTab] = useState<'chiphi' | 'ungtien'>(initialView);
@@ -61,7 +67,10 @@ export const ChiPhiPage: React.FC = () => {
     loading: expLoading,
     error: expError,
     refetch: refetchExp,
-  } = useAsyncList(expensesService.getExpenses, []);
+  } = useAsyncList(
+    () => expensesService.getExpenses({ from: range.from, to: range.to }),
+    [range.from, range.to],
+  );
   const {
     data: advances,
     loading: advLoading,
@@ -286,14 +295,16 @@ export const ChiPhiPage: React.FC = () => {
     );
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-3 sm:space-y-5 animate-fade-in">
       <PageHeader
         title="Chi Phí & Ứng Tiền"
         subtitle="Quản lý các khoản chi phát sinh tại xưởng và theo dõi ứng tiền"
         action={
-          activeTab === 'chiphi'
-            ? { label: 'Thêm chi phí', icon: Plus, onClick: () => openModal() }
-            : { label: 'Thêm ứng tiền', icon: Plus, onClick: () => openAdvModal() }
+          canManageExpenses
+            ? activeTab === 'chiphi'
+              ? { label: 'Thêm chi phí', icon: Plus, onClick: () => openModal() }
+              : { label: 'Thêm ứng tiền', icon: Plus, onClick: () => openAdvModal() }
+            : undefined
         }
       />
 
@@ -308,7 +319,7 @@ export const ChiPhiPage: React.FC = () => {
           aria-selected={activeTab === 'chiphi'}
           onClick={() => handleViewChange('chiphi')}
           className={cn(
-            'tap-target pb-3 px-3 text-xs font-bold transition-all border-b-2 cursor-pointer',
+            'py-2 px-3 text-xs font-bold transition-all border-b-2 cursor-pointer',
             activeTab === 'chiphi'
               ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -321,7 +332,7 @@ export const ChiPhiPage: React.FC = () => {
           aria-selected={activeTab === 'ungtien'}
           onClick={() => handleViewChange('ungtien')}
           className={cn(
-            'tap-target pb-3 px-3 text-xs font-bold transition-all border-b-2 cursor-pointer',
+            'py-2 px-3 text-xs font-bold transition-all border-b-2 cursor-pointer',
             activeTab === 'ungtien'
               ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
               : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -332,7 +343,7 @@ export const ChiPhiPage: React.FC = () => {
       </div>
 
       {activeTab === 'chiphi' && (
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-5">
           {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
             <KpiCard title="Tổng chi tháng" value={formatTien(totalExpense)} icon={Wallet} color="danger" />
@@ -344,6 +355,10 @@ export const ChiPhiPage: React.FC = () => {
               icon={FileText}
               color="primary"
             />
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <PeriodFilter range={range} onChange={setRange} />
           </div>
 
           <TableToolbar
@@ -414,13 +429,15 @@ export const ChiPhiPage: React.FC = () => {
                               >
                                 <Paperclip size={16} />
                               </button>
-                              <button
-                                onClick={() => handleDeleteExpense(exp.id)}
-                                className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
-                                title="Xóa"
-                              >
-                                <Trash2 size={16} />
-                              </button>
+                              {canManageExpenses && (
+                                <button
+                                  onClick={() => handleDeleteExpense(exp.id)}
+                                  className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                                  title="Xóa"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -465,14 +482,16 @@ export const ChiPhiPage: React.FC = () => {
                       >
                         <Paperclip size={18} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteExpense(exp.id)}
-                        className="tap-target flex items-center justify-center rounded-xl text-rose-600 hover:bg-rose-50"
-                        aria-label={`Xóa ${exp.description || cfg.label}`}
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      {canManageExpenses && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteExpense(exp.id)}
+                          className="tap-target flex items-center justify-center rounded-xl text-rose-600 hover:bg-rose-50"
+                          aria-label={`Xóa ${exp.description || cfg.label}`}
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
                     </>
                   ),
                 };
@@ -607,32 +626,36 @@ export const ChiPhiPage: React.FC = () => {
                             >
                               <Paperclip size={16} />
                             </button>
-                            <button
-                              type="button"
-                              className="icon-action"
-                              title="Sửa phân loại"
-                              onClick={() => openAdvModal(adv)}
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            {(adv.type === 'advance' || adv.type === 'ung') &&
-                              adv.purpose !== 'unclassified' && (
+                            {canManageExpenses && (
+                              <>
                                 <button
                                   type="button"
                                   className="icon-action"
-                                  title="Đối soát"
-                                  onClick={() => setReconcileTarget(adv)}
+                                  title="Sửa phân loại"
+                                  onClick={() => openAdvModal(adv)}
                                 >
-                                  <Link2 size={16} />
+                                  <Pencil size={16} />
                                 </button>
-                              )}
-                            <button
-                              onClick={() => handleDeleteAdvance(adv.id)}
-                              className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
-                              title="Xóa"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                                {(adv.type === 'advance' || adv.type === 'ung') &&
+                                  adv.purpose !== 'unclassified' && (
+                                    <button
+                                      type="button"
+                                      className="icon-action"
+                                      title="Đối soát"
+                                      onClick={() => setReconcileTarget(adv)}
+                                    >
+                                      <Link2 size={16} />
+                                    </button>
+                                  )}
+                                <button
+                                  onClick={() => handleDeleteAdvance(adv.id)}
+                                  className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                                  title="Xóa"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -683,30 +706,34 @@ export const ChiPhiPage: React.FC = () => {
                       >
                         <Paperclip size={18} />
                       </button>
-                      <button
-                        type="button"
-                        className="btn-secondary text-xs"
-                        onClick={() => openAdvModal(adv)}
-                      >
-                        Sửa phân loại
-                      </button>
-                      {isAdvance && adv.purpose !== 'unclassified' && (
-                        <button
-                          type="button"
-                          className="btn-secondary text-xs"
-                          onClick={() => setReconcileTarget(adv)}
-                        >
-                          Đối soát
-                        </button>
+                      {canManageExpenses && (
+                        <>
+                          <button
+                            type="button"
+                            className="btn-secondary text-xs"
+                            onClick={() => openAdvModal(adv)}
+                          >
+                            Sửa phân loại
+                          </button>
+                          {isAdvance && adv.purpose !== 'unclassified' && (
+                            <button
+                              type="button"
+                              className="btn-secondary text-xs"
+                              onClick={() => setReconcileTarget(adv)}
+                            >
+                              Đối soát
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteAdvance(adv.id)}
+                            className="tap-target flex items-center justify-center rounded-xl text-rose-600 hover:bg-rose-50"
+                            aria-label={`Xóa khoản của ${adv.person || 'Chủ xưởng'}`}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteAdvance(adv.id)}
-                        className="tap-target flex items-center justify-center rounded-xl text-rose-600 hover:bg-rose-50"
-                        aria-label={`Xóa khoản của ${adv.person || 'Chủ xưởng'}`}
-                      >
-                        <Trash2 size={18} />
-                      </button>
                     </>
                   ),
                 };

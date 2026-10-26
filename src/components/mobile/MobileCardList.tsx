@@ -26,14 +26,14 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
 }) => {
   if (items.length === 0) {
     return (
-      <div className="py-12 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-color)]">
+      <div className="py-10 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-surface)] rounded-xl border border-[var(--border-color)]">
         {emptyMessage}
       </div>
     );
   }
 
   return (
-    <div className={cn('space-y-3 lg:hidden', className)}>
+    <div className={cn('space-y-2 lg:hidden', className)}>
       {items.map((item) => (
         <div
           key={item.id}
@@ -48,26 +48,26 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
           role={item.onClick ? 'button' : undefined}
           tabIndex={item.onClick ? 0 : undefined}
           className={cn(
-            'p-4 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-xs transition-all active:scale-[0.99] relative overflow-hidden focus-visible:ring-2 focus-visible:ring-[var(--primary-500)]',
+            'p-3 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-color)] shadow-2xs transition-all active:scale-[0.99] relative overflow-hidden focus-visible:ring-2 focus-visible:ring-[var(--primary-500)]',
             item.onClick && 'cursor-pointer hover:border-[var(--primary-400)]',
           )}
         >
           {/* Accent bar color on left border if defined */}
           {item.accentColor && (
             <div
-              className="absolute left-0 top-0 bottom-0 w-1.5"
+              className="absolute left-0 top-0 bottom-0 w-1"
               style={{ backgroundColor: item.accentColor }}
             />
           )}
 
           {/* Header Row */}
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-sm text-[var(--text-primary)] leading-snug break-words">
+              <h4 className="font-bold text-[13px] text-[var(--text-primary)] leading-snug break-words">
                 {item.title}
               </h4>
               {item.subtitle && (
-                <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{item.subtitle}</p>
+                <p className="text-[11px] text-[var(--text-muted)] mt-0.5 truncate">{item.subtitle}</p>
               )}
             </div>
             {item.badge && <div className="shrink-0">{item.badge}</div>}
@@ -75,11 +75,11 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
 
           {/* Key-Value Fields Grid */}
           {item.fields && item.fields.length > 0 && (
-            <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-[var(--border-color)]/60 text-xs">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2 pt-2 border-t border-[var(--border-color)]/50 text-xs">
               {item.fields.map((f, i) => (
                 <div key={i} className="min-w-0">
-                  <span className="text-[11px] text-[var(--text-muted)] block truncate">{f.label}</span>
-                  <span className="font-semibold text-[var(--text-primary)] break-words block">
+                  <span className="text-[10px] text-[var(--text-muted)] block truncate">{f.label}</span>
+                  <span className="font-semibold text-[12px] text-[var(--text-primary)] break-words block leading-tight">
                     {f.value}
                   </span>
                 </div>
@@ -90,7 +90,7 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
           {/* Footer / Actions */}
           {item.actions && (
             <div
-              className="flex items-center justify-end gap-2 mt-3 pt-2.5 border-t border-[var(--border-color)]/60"
+              className="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-[var(--border-color)]/50"
               onClick={(event) => event.stopPropagation()}
             >
               {item.actions}
@@ -99,8 +99,8 @@ export const MobileCardList: React.FC<MobileCardListProps> = ({
 
           {/* Arrow Indicator if clickable and no custom actions */}
           {item.onClick && !item.actions && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] opacity-60">
-              <ChevronRight size={18} />
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] opacity-50">
+              <ChevronRight size={16} />
             </div>
           )}
         </div>

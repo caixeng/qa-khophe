@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useMemo } from 'react';
-import { DollarSign, ArrowUpRight, ArrowDownLeft, Wallet } from 'lucide-react';
+import { DollarSign, ArrowUpRight, ArrowDownLeft, Wallet, Layers, CheckCircle2 } from 'lucide-react';
 import { cn, formatTien, formatNgay } from '../lib/utils';
 import { PageHeader } from '../components/PageHeader';
 import { KpiCard } from '../components/KpiCard';
@@ -15,13 +15,14 @@ import { importsService } from '../services/importsService';
 import { exportsService } from '../services/exportsService';
 import { paymentsService, type PaymentRefType } from '../services/paymentsService';
 import { computeRemainingWithLegacyStatus } from '../lib/calc';
+import { today } from '../lib/date';
 import type { Import, Export } from '../types';
 
 export const CongNoPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'receivables' | 'payables'>('receivables');
-  const { user } = useAuth();
+  const { can } = useAuth();
   const { toast } = useToast();
-  const canRecordPayment = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'accountant';
+  const canRecordPayment = can('finance.record_payment');
 
   // Công nợ cần TOÀN BỘ lịch sử — một khoản nợ phát sinh 3 tháng trước vẫn
   // phải hiện ở đây, nên không lọc theo kỳ như các trang danh sách khác.
@@ -65,11 +66,27 @@ export const CongNoPage: React.FC = () => {
   const [paymentNotes, setPaymentNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Bulk FIFO payment modal state
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkPartnerKey, setBulkPartnerKey] = useState<string>('');
+  const [bulkAmount, setBulkAmount] = useState<number>(0);
+  const [bulkDate, setBulkDate] = useState<string>(today());
+  const [bulkMethod, setBulkMethod] = useState<'cash' | 'transfer' | 'other'>('transfer');
+  const [bulkNotes, setBulkNotes] = useState<string>('');
+  const [savingBulk, setSavingBulk] = useState(false);
+
   const openPaymentModal = (refType: PaymentRefType, refId: string, label: string, remaining: number) => {
     setPaymentTarget({ refType, refId, label, remaining });
     setPaymentAmount(remaining);
     setPaymentMethod('cash');
     setPaymentNotes('');
+  };
+
+  const reloadAll = () => {
+    refetchImports();
+    refetchExports();
+    refetchPaidImports();
+    refetchPaidExports();
   };
 
   const handleRecordPayment = async (e: React.FormEvent) => {
@@ -90,10 +107,7 @@ export const CongNoPage: React.FC = () => {
       });
       toast.success('Đã ghi nhận thanh toán');
       setPaymentTarget(null);
-      refetchImports();
-      refetchExports();
-      refetchPaidImports();
-      refetchPaidExports();
+      reloadAll();
     } catch (err) {
       toast.error('Lỗi khi ghi nhận thanh toán');
       console.error(err);
@@ -130,6 +144,119 @@ export const CongNoPage: React.FC = () => {
       .filter((x) => x.remaining > 0);
   }, [exports, paidByExport]);
 
+  // Nhóm các khoản nợ theo đối tác để phục vụ Gạch nợ gộp FIFO
+  const partnerGroups = useMemo(() => {
+    const source = activeTab === 'receivables' ? receivables : payables;
+    const map = new Map<
+      string,
+      {
+        key: string;
+        contactId: string | null;
+        name: string;
+        totalRemaining: number;
+        items: { id: string; date: string; totalAmount: number; remaining: number }[];
+      }
+    >();
+
+    for (const row of source) {
+      const name = row.item.contact_name || (activeTab === 'receivables' ? 'Khách mua' : 'Khách vãng lai');
+      const key = row.item.contact_id || name;
+      const existing = map.get(key) ?? {
+        key,
+        contactId: row.item.contact_id || null,
+        name,
+        totalRemaining: 0,
+        items: [],
+      };
+      existing.totalRemaining += row.remaining;
+      existing.items.push({
+        id: row.item.id,
+        date: row.item.date,
+        totalAmount: row.item.total_amount,
+        remaining: row.remaining,
+      });
+      map.set(key, existing);
+    }
+
+    return Array.from(map.values())
+      .map((g) => ({
+        ...g,
+        items: g.items.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id)),
+      }))
+      .sort((a, b) => b.totalRemaining - a.totalRemaining);
+  }, [activeTab, receivables, payables]);
+
+  const selectedPartnerGroup = useMemo(
+    () => partnerGroups.find((g) => g.key === bulkPartnerKey) ?? partnerGroups[0] ?? null,
+    [partnerGroups, bulkPartnerKey],
+  );
+
+  // Preview phân bổ FIFO
+  const fifoPreview = useMemo(() => {
+    if (!selectedPartnerGroup) return [];
+    let budget = Math.max(0, Number(bulkAmount) || 0);
+    return selectedPartnerGroup.items.map((inv) => {
+      const alloc = Math.min(inv.remaining, budget);
+      budget = Math.max(0, budget - alloc);
+      const afterRemaining = inv.remaining - alloc;
+      return {
+        ...inv,
+        allocated: alloc,
+        afterRemaining,
+        status: alloc === 0 ? 'unpaid' : afterRemaining === 0 ? 'paid' : 'partial',
+      };
+    });
+  }, [selectedPartnerGroup, bulkAmount]);
+
+  const openBulkModal = () => {
+    const first = partnerGroups[0];
+    setBulkPartnerKey(first?.key || '');
+    setBulkAmount(first?.totalRemaining || 0);
+    setBulkDate(today());
+    setBulkMethod('transfer');
+    setBulkNotes('');
+    setBulkModalOpen(true);
+  };
+
+  const handlePartnerSelectChange = (newKey: string) => {
+    setBulkPartnerKey(newKey);
+    const found = partnerGroups.find((g) => g.key === newKey);
+    if (found) {
+      setBulkAmount(found.totalRemaining);
+    }
+  };
+
+  const handleRecordBulkFifo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPartnerGroup || savingBulk) return;
+    if (bulkAmount <= 0) {
+      toast.warning('Vui lòng nhập tổng số tiền lớn hơn 0');
+      return;
+    }
+    setSavingBulk(true);
+    try {
+      const res = await paymentsService.recordBulkFifoPayment({
+        contact_id: selectedPartnerGroup.contactId,
+        ref_type: activeTab === 'receivables' ? 'export' : 'import',
+        items: selectedPartnerGroup.items,
+        totalAmount: bulkAmount,
+        date: bulkDate,
+        method: bulkMethod,
+        notes: bulkNotes || `Thanh toán gộp ${selectedPartnerGroup.name}`,
+      });
+      toast.success(
+        `Đã phân bổ ${formatTien(res.allocatedAmount)}đ vào ${res.settledCount} phiếu của ${selectedPartnerGroup.name}`,
+      );
+      setBulkModalOpen(false);
+      reloadAll();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Lỗi khi ghi nhận thanh toán gộp');
+      console.error(err);
+    } finally {
+      setSavingBulk(false);
+    }
+  };
+
   const totalReceivableAmount = useMemo(
     () => receivables.reduce((sum, x) => sum + x.remaining, 0),
     [receivables],
@@ -142,16 +269,7 @@ export const CongNoPage: React.FC = () => {
     return (
       <div className="page-shell">
         <PageHeader title="Công Nợ Đối Tác" subtitle="Đối chiếu đầy đủ phiếu và sổ thanh toán" />
-        <DataState
-          loading={totalsLoading}
-          error={totalsError}
-          isEmpty={false}
-          onRetry={() => {
-            [refetchImports, refetchExports, refetchPaidImports, refetchPaidExports].forEach(
-              (reload) => void reload(),
-            );
-          }}
-        >
+        <DataState loading={totalsLoading} error={totalsError} isEmpty={false} onRetry={reloadAll}>
           <div />
         </DataState>
       </div>
@@ -159,14 +277,14 @@ export const CongNoPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-3 sm:space-y-5 animate-fade-in">
       <PageHeader
         title="Công Nợ Đối Tác"
         subtitle="Quản lý các khoản nợ phải thu (Khách mua) và nợ phải trả (Nhà cung cấp) — tính theo số tiền đã thanh toán thực tế"
       />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
         <KpiCard
           title="Tổng nợ phải thu (Khách nợ)"
           value={formatTien(totalReceivableAmount)}
@@ -184,33 +302,49 @@ export const CongNoPage: React.FC = () => {
           value={formatTien(totalReceivableAmount - totalPayableAmount)}
           icon={DollarSign}
           color="primary"
+          className="col-span-2 sm:col-span-1"
         />
       </div>
 
-      {/* Tabs */}
-      <div className="flex space-x-2 border-b border-[var(--border-color)]">
-        <button
-          onClick={() => setActiveTab('receivables')}
-          className={cn(
-            'pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer',
-            activeTab === 'receivables'
-              ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
-          )}
-        >
-          Nợ phải thu khách hàng ({receivables.length})
-        </button>
-        <button
-          onClick={() => setActiveTab('payables')}
-          className={cn(
-            'pb-3 px-4 text-xs font-bold transition-all border-b-2 cursor-pointer',
-            activeTab === 'payables'
-              ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
-              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
-          )}
-        >
-          Nợ phải trả nhà cung cấp ({payables.length})
-        </button>
+      {/* Tabs + Bulk FIFO Action */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 border-b border-[var(--border-color)] pb-2">
+        <div className="grid grid-cols-2 sm:flex sm:space-x-2">
+          <button
+            onClick={() => setActiveTab('receivables')}
+            className={cn(
+              'py-2 px-3 sm:px-4 text-xs font-bold transition-all border-b-2 cursor-pointer',
+              activeTab === 'receivables'
+                ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
+                : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
+            )}
+          >
+            Nợ phải thu ({receivables.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('payables')}
+            className={cn(
+              'py-2 px-3 sm:px-4 text-xs font-bold transition-all border-b-2 cursor-pointer',
+              activeTab === 'payables'
+                ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
+                : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
+            )}
+          >
+            Nợ phải trả ({payables.length})
+          </button>
+        </div>
+
+        {canRecordPayment && partnerGroups.length > 0 && (
+          <button
+            type="button"
+            onClick={openBulkModal}
+            className="btn-primary text-xs flex items-center justify-center gap-1.5 py-2 px-3.5 cursor-pointer"
+          >
+            <Layers size={15} />
+            <span>
+              {activeTab === 'receivables' ? 'Thu nợ gộp theo Khách (FIFO)' : 'Trả nợ gộp theo NCC (FIFO)'}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Receivables Tab */}
@@ -454,7 +588,7 @@ export const CongNoPage: React.FC = () => {
         </DataState>
       )}
 
-      {/* Payment Modal */}
+      {/* Single Invoice Payment Modal */}
       <Modal
         isOpen={!!paymentTarget}
         onClose={() => setPaymentTarget(null)}
@@ -507,6 +641,137 @@ export const CongNoPage: React.FC = () => {
             </button>
             <button type="submit" disabled={saving} className="btn-primary disabled:opacity-60">
               {saving ? 'Đang lưu...' : 'Xác nhận thanh toán'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Bulk FIFO Partner Payment Modal */}
+      <Modal
+        isOpen={bulkModalOpen}
+        onClose={() => setBulkModalOpen(false)}
+        title={
+          activeTab === 'receivables'
+            ? 'Thu công nợ gộp theo Khách hàng (FIFO)'
+            : 'Trả công nợ gộp theo Nhà cung cấp (FIFO)'
+        }
+      >
+        <form onSubmit={handleRecordBulkFifo} className="space-y-4">
+          <FormField label={activeTab === 'receivables' ? 'Chọn Khách hàng' : 'Chọn Nhà cung cấp'} required>
+            <select
+              className="input-field font-bold"
+              value={selectedPartnerGroup?.key || ''}
+              onChange={(e) => handlePartnerSelectChange(e.target.value)}
+            >
+              {partnerGroups.map((g) => (
+                <option key={g.key} value={g.key}>
+                  {g.name} — {g.items.length} phiếu ({formatTien(g.totalRemaining)}đ)
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          {selectedPartnerGroup && (
+            <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] flex justify-between items-center text-xs">
+              <span className="text-[var(--text-muted)] font-semibold">
+                Tổng dư nợ ({selectedPartnerGroup.items.length} phiếu):
+              </span>
+              <span className="font-mono font-black text-sm text-rose-600">
+                {formatTien(selectedPartnerGroup.totalRemaining)}đ
+              </span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormField label="Tổng số tiền thanh toán (VNĐ)" required>
+              <input
+                type="number"
+                inputMode="decimal"
+                required
+                min="1"
+                max={selectedPartnerGroup?.totalRemaining}
+                className="input-field font-mono font-bold text-emerald-600"
+                value={bulkAmount || ''}
+                onChange={(e) => setBulkAmount(Number(e.target.value))}
+              />
+            </FormField>
+
+            <FormField label="Ngày thanh toán" required>
+              <input
+                type="date"
+                required
+                className="input-field"
+                value={bulkDate}
+                onChange={(e) => setBulkDate(e.target.value)}
+              />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormField label="Hình thức">
+              <select
+                className="input-field"
+                value={bulkMethod}
+                onChange={(e) => setBulkMethod(e.target.value as 'cash' | 'transfer' | 'other')}
+              >
+                <option value="transfer">Chuyển khoản ngân hàng</option>
+                <option value="cash">Tiền mặt</option>
+                <option value="other">Khác</option>
+              </select>
+            </FormField>
+
+            <FormField label="Ghi chú chứng từ / Ủy nhiệm chi">
+              <input
+                type="text"
+                className="input-field"
+                placeholder="VD: UNC Vietcombank đợt 1..."
+                value={bulkNotes}
+                onChange={(e) => setBulkNotes(e.target.value)}
+              />
+            </FormField>
+          </div>
+
+          {/* Bảng xem trước phân bổ FIFO */}
+          {fifoPreview.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1.5">
+                <CheckCircle2 size={13} className="text-emerald-600" />
+                Dự kiến phân bổ tự động từ phiếu cũ nhất (FIFO):
+              </p>
+              <div className="max-h-44 overflow-y-auto rounded-xl border border-[var(--border-color)] divide-y divide-[var(--border-color)] text-xs">
+                {fifoPreview.map((row) => (
+                  <div
+                    key={row.id}
+                    className="px-3 py-2 flex items-center justify-between gap-2 bg-[var(--bg-surface)]"
+                  >
+                    <div>
+                      <span className="font-mono font-bold text-[var(--text-primary)]">
+                        {formatNgay(row.date)}
+                      </span>
+                      <span className="text-[var(--text-muted)] ml-2">Nợ: {formatTien(row.remaining)}đ</span>
+                    </div>
+                    <div className="text-right font-mono">
+                      {row.allocated > 0 ? (
+                        <span className="font-bold text-emerald-600">
+                          Gạch {formatTien(row.allocated)}đ{' '}
+                          {row.afterRemaining === 0 ? '(Đủ)' : `(Còn ${formatTien(row.afterRemaining)}đ)`}
+                        </span>
+                      ) : (
+                        <span className="text-[var(--text-muted)]">Chưa phân bổ</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3 pt-4 border-t border-[var(--border-color)]">
+            <button type="button" onClick={() => setBulkModalOpen(false)} className="btn-secondary">
+              Hủy
+            </button>
+            <button type="submit" disabled={savingBulk} className="btn-primary disabled:opacity-60">
+              {savingBulk ? 'Đang phân bổ...' : 'Xác nhận gạch nợ FIFO'}
             </button>
           </div>
         </form>

@@ -11,6 +11,7 @@ import { DataState } from '../components/DataState';
 import { useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
+import { useAuth } from '../contexts/auth';
 import { useToast } from '../contexts/toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
@@ -20,6 +21,8 @@ import { contactsService } from '../services/contactsService';
 import type { Contact, ContactType } from '../types';
 
 export const DanhBaPage: React.FC = () => {
+  const { can } = useAuth();
+  const canManageContacts = can('contacts.manage');
   const { data: contacts, loading, error, refetch } = useAsyncList(contactsService.getAll, []);
   const [activeTab, setActiveTab] = useState<ContactType>('supplier');
   const { toast } = useToast();
@@ -135,15 +138,19 @@ export const DanhBaPage: React.FC = () => {
       <PageHeader
         title="Danh bạ đối tác"
         subtitle="Quản lý thông tin nhà cung cấp, đối tác, khách hàng"
-        action={{
-          label: 'Thêm liên hệ',
-          icon: Plus,
-          onClick: () => openModal({ type: activeTab }),
-        }}
+        action={
+          canManageContacts
+            ? {
+                label: 'Thêm liên hệ',
+                icon: Plus,
+                onClick: () => openModal({ type: activeTab }),
+              }
+            : undefined
+        }
       />
 
       {/* Tabs */}
-      <div className="flex space-x-2 border-b border-[var(--border-color)]">
+      <div className="grid grid-cols-3 sm:flex sm:space-x-2 border-b border-[var(--border-color)]">
         {(['supplier', 'partner', 'customer'] as ContactType[]).map((tabType) => {
           const labels: Record<ContactType, string> = {
             supplier: 'Nhà cung cấp',
@@ -156,16 +163,16 @@ export const DanhBaPage: React.FC = () => {
               key={tabType}
               onClick={() => setActiveTab(tabType)}
               className={cn(
-                'flex items-center space-x-2 border-b-2 px-4 py-3 text-xs font-bold transition-all cursor-pointer',
+                'flex items-center justify-center space-x-1.5 border-b-2 px-2 sm:px-4 py-2 sm:py-3 text-[11px] sm:text-xs font-bold transition-all cursor-pointer',
                 activeTab === tabType
                   ? 'border-[var(--primary-500)] text-[var(--primary-500)] bg-[var(--primary-50)]/40 rounded-t-xl'
                   : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]',
               )}
             >
-              <span>{labels[tabType]}</span>
+              <span className="truncate">{labels[tabType]}</span>
               <span
                 className={cn(
-                  'rounded-full px-2 py-0.5 text-[11px] font-mono font-bold',
+                  'rounded-full px-1.5 py-0.2 text-[10px] font-mono font-bold shrink-0',
                   activeTab === tabType
                     ? 'bg-[var(--primary-500)] text-white'
                     : 'bg-[var(--bg-subtle)] text-[var(--text-muted)]',
@@ -259,22 +266,24 @@ export const DanhBaPage: React.FC = () => {
                       <StatusBadge status={contact.status || 'active'} />
                     </td>
                     <td className="td-cell text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button
-                          onClick={() => openModal(contact)}
-                          className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
-                          title="Sửa"
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(contact.id)}
-                          className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
-                          title="Xóa"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                      {canManageContacts && (
+                        <div className="flex items-center justify-end space-x-2">
+                          <button
+                            onClick={() => openModal(contact)}
+                            className="icon-action text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] transition-colors cursor-pointer"
+                            title="Sửa"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(contact.id)}
+                            className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                            title="Xóa"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -335,20 +344,22 @@ export const DanhBaPage: React.FC = () => {
                 ) : (
                   <div className="flex-1" />
                 )}
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => openModal(contact)}
-                    className="tap-target p-2 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] text-xs font-bold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Edit size={14} /> Sửa
-                  </button>
-                  <button
-                    onClick={() => handleDelete(contact.id)}
-                    className="tap-target p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                {canManageContacts && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => openModal(contact)}
+                      className="tap-target p-2 rounded-xl border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--bg-subtle)] text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Edit size={14} /> Sửa
+                    </button>
+                    <button
+                      onClick={() => handleDelete(contact.id)}
+                      className="tap-target p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

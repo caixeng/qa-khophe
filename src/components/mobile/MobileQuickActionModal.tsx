@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MobileBottomSheet } from './MobileBottomSheet';
 import { PackagePlus, Settings2, Truck, WalletCards } from 'lucide-react';
 import { useAuth } from '../../contexts/auth';
+import type { PermissionKey } from '../../lib/permissions';
 
 interface MobileQuickActionModalProps {
   isOpen: boolean;
@@ -11,9 +12,19 @@ interface MobileQuickActionModalProps {
 
 export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { can } = useAuth();
 
-  const actions = [
+  const actions: {
+    title: string;
+    desc: string;
+    icon: React.ElementType;
+    color: string;
+    textColor: string;
+    bgColor: string;
+    borderColor: string;
+    action: () => void;
+    permission: PermissionKey;
+  }[] = [
     {
       title: 'Nhập phế mới',
       desc: 'Cân & Nhập phế liệu từ nhà cung cấp',
@@ -26,7 +37,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
         onClose();
         navigate('/phe?tab=nhap&open=true');
       },
-      managerOnly: false,
+      permission: 'scrap.create',
     },
     {
       title: 'Lô Xay phế',
@@ -40,7 +51,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
         onClose();
         navigate('/phe?tab=xay&open=true');
       },
-      managerOnly: false,
+      permission: 'scrap.create',
     },
     {
       title: 'Xuất phế / Bán phế',
@@ -54,7 +65,7 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
         onClose();
         navigate('/phe?tab=xuat&open=true');
       },
-      managerOnly: false,
+      permission: 'scrap.create',
     },
     {
       title: 'Ghi nhận Chi phí',
@@ -68,18 +79,11 @@ export const MobileQuickActionModal: React.FC<MobileQuickActionModalProps> = ({ 
         onClose();
         navigate('/tai-chinh?tab=chiphi&open=true');
       },
-      managerOnly: true,
+      permission: 'finance.manage_expenses',
     },
   ];
 
-  const visibleActions = actions.filter(
-    (action) =>
-      (user?.role !== 'accountant' || action.managerOnly) &&
-      (!action.managerOnly ||
-        user?.role === 'manager' ||
-        user?.role === 'admin' ||
-        user?.role === 'accountant'),
-  );
+  const visibleActions = actions.filter((action) => can(action.permission));
 
   return (
     <MobileBottomSheet isOpen={isOpen} onClose={onClose} title="Thao tác nhanh xưởng phế">

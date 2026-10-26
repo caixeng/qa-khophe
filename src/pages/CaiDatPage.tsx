@@ -1,11 +1,24 @@
 import { AppErrorPanel } from '../components/AppErrorPanel';
 import { BusinessSettings } from '../components/BusinessSettings';
+import { UserManagementPanel } from '../components/UserManagementPanel';
+import { ChangePasswordModal } from '../components/ChangePasswordModal';
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/theme';
 import { useAuth } from '../contexts/auth';
 import { useToast } from '../contexts/toast';
-import { User, Palette, Moon, Sun, Leaf, Check, Monitor, Sliders, PackageMinus } from 'lucide-react';
+import {
+  User,
+  Palette,
+  Moon,
+  Sun,
+  Leaf,
+  Check,
+  Monitor,
+  Sliders,
+  PackageMinus,
+  KeyRound,
+} from 'lucide-react';
 import { cn, formatRole } from '../lib/utils';
 import { useAsyncData } from '../hooks/useAsyncData';
 import { settingsService } from '../services/settingsService';
@@ -14,6 +27,7 @@ export const CaiDatPage = () => {
   const { theme, setTheme, primaryColor, setPrimaryColor, density, setDensity } = useTheme();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const { data: lowStockThresholdData, refetch: refetchThreshold } = useAsyncData(
     settingsService.getLowStockThreshold,
@@ -77,38 +91,61 @@ export const CaiDatPage = () => {
 
   return (
     <div className="page-shell animate-in fade-in duration-300 max-w-5xl mx-auto">
+      {changePasswordOpen && <ChangePasswordModal onClose={() => setChangePasswordOpen(false)} />}
+
       {/* Page Header */}
-      <div className="flex flex-col gap-1">
+      <div className="hidden lg:flex flex-col gap-1">
         <h1 className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Cài Đặt Hệ Thống</h1>
         <p className="text-xs text-[var(--text-secondary)]">
-          Cá nhân hóa giao diện, màu sắc chủ đạo và mật độ hiển thị theo nhu cầu làm việc
+          Quản lý tài khoản người dùng, cấu hình nghiệp vụ và cá nhân hóa giao diện hệ thống
         </p>
       </div>
 
-      <BusinessSettings />
-      <AppErrorPanel />
-      {/* 1. Thông tin tài khoản */}
-      <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xs">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-4 flex items-center gap-2">
-          <User size={16} className="text-[var(--primary-500)]" />
-          Tài Khoản Hiện Tại
-        </h2>
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] flex items-center justify-center text-white text-xl font-black shadow-md shrink-0">
-            {user?.name?.charAt(0) || 'A'}
-          </div>
+      {/* 1. Thông tin tài khoản hiện tại */}
+      <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <p className="text-lg font-bold text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
-            <p className="text-xs text-[var(--text-muted)]">{user?.email || '—'}</p>
-            <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--primary-50)] text-[var(--primary-600)] border border-[var(--primary-500)]/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary-500)]" />
-              {formatRole(user?.role)}
-            </span>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-4 flex items-center gap-2">
+              <User size={16} className="text-[var(--primary-500)]" />
+              Tài Khoản Hiện Tại
+            </h2>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[var(--primary-600)] to-[var(--primary-400)] flex items-center justify-center text-white text-xl font-black shadow-md shrink-0">
+                {user?.name?.charAt(0) || 'A'}
+              </div>
+              <div>
+                <p className="text-lg font-bold text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
+                <p className="text-xs text-[var(--text-muted)] font-mono">
+                  {user?.email?.endsWith('@accounts.khophe.local')
+                    ? `${user.email.split('@')[0]} (${user.email})`
+                    : user?.email || '—'}
+                </p>
+                <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--primary-50)] text-[var(--primary-600)] border border-[var(--primary-500)]/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary-500)]" />
+                  {formatRole(user?.role)}
+                </span>
+              </div>
+            </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setChangePasswordOpen(true)}
+            className="btn-secondary text-xs flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
+          >
+            <KeyRound size={14} />
+            <span>Đổi mật khẩu cá nhân</span>
+          </button>
         </div>
       </div>
 
-      {/* 2. Giao diện - Chế độ nền (3 Themes) */}
+      {/* 2. Quản lý tài khoản & Phân quyền (Admin) */}
+      <UserManagementPanel />
+
+      <BusinessSettings />
+      <AppErrorPanel />
+
+      {/* 3. Giao diện - Chế độ nền (3 Themes) */}
       <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xs">
         <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-4 flex items-center gap-2">
           <Monitor size={16} className="text-[var(--primary-500)]" />
@@ -155,7 +192,7 @@ export const CaiDatPage = () => {
         </div>
       </div>
 
-      {/* 3. Màu sắc chủ đạo (9 Primary Color Palettes) */}
+      {/* 4. Màu sắc chủ đạo (9 Primary Color Palettes) */}
       <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xs">
         <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2 flex items-center gap-2">
           <Palette size={16} className="text-[var(--primary-500)]" />
@@ -195,7 +232,7 @@ export const CaiDatPage = () => {
         </div>
       </div>
 
-      {/* 4. Mật độ hiển thị / Kích cỡ giao diện (Data Density) */}
+      {/* 5. Mật độ hiển thị / Kích cỡ giao diện (Data Density) */}
       <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xs">
         <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2 flex items-center gap-2">
           <Sliders size={16} className="text-[var(--primary-500)]" />
@@ -244,7 +281,7 @@ export const CaiDatPage = () => {
         </div>
       </div>
 
-      {/* 5. Ngưỡng cảnh báo tồn kho thấp */}
+      {/* 6. Ngưỡng cảnh báo tồn kho thấp */}
       <div className="card bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl p-6 shadow-xs">
         <h2 className="text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2 flex items-center gap-2">
           <PackageMinus size={16} className="text-[var(--primary-500)]" />
@@ -271,7 +308,11 @@ export const CaiDatPage = () => {
               onChange={(e) => setThresholdStr(e.target.value)}
             />
           </div>
-          <button type="submit" disabled={savingThreshold} className="btn-primary disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={savingThreshold}
+            className="btn-primary disabled:opacity-60 cursor-pointer"
+          >
             {savingThreshold ? 'Đang lưu...' : 'Lưu ngưỡng'}
           </button>
         </form>

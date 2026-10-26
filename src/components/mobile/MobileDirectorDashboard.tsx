@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock,
   TrendingDown,
+  LayoutGrid,
 } from 'lucide-react';
 import { formatTien, formatKg, formatNgay } from '../../lib/utils';
 import type { MonthlyStatItem } from '../../lib/monthlyStats';
@@ -39,6 +40,7 @@ interface MobileDirectorDashboardProps {
   expenses?: Expense[];
   attendance?: Attendance[];
   canSeeFinance?: boolean;
+  onBackToLauncher?: () => void;
 }
 
 export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = ({
@@ -50,6 +52,7 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
   expenses = [],
   attendance = [],
   canSeeFinance = false,
+  onBackToLauncher,
 }) => {
   const hasAlerts =
     summary.pendingImportCount > 0 ||
@@ -59,14 +62,28 @@ export const MobileDirectorDashboard: React.FC<MobileDirectorDashboardProps> = (
 
   return (
     <div className="director-dashboard space-y-4 animate-fade-in">
+      {/* Nút quay về Cổng biểu tượng 3D (chuẩn qlda-ddcn-ht-selfhost) */}
+      {onBackToLauncher && (
+        <div>
+          <button
+            type="button"
+            onClick={onBackToLauncher}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 text-white text-xs font-extrabold shadow-md shadow-blue-950/25 active:scale-95 transition-transform cursor-pointer"
+          >
+            <LayoutGrid className="w-3.5 h-3.5 text-cyan-300" />
+            <span>← Cổng Điều Hành 3D (Các phân hệ)</span>
+          </button>
+        </div>
+      )}
+
       {/* Header Banner - Giám Đốc */}
       <div className="workshop-hero director-hero">
         <div className="director-hero-meta">
           <span className="director-hero-label">Tổng quan xưởng</span>
           <span className="director-hero-date">{formatNgay(new Date())}</span>
         </div>
-        <h2 className="text-lg font-black tracking-tight">Vận hành & tài chính</h2>
-        <p className="text-xs opacity-90 mt-0.5">Giám sát doanh thu, sản lượng & công nợ tức thời</p>
+        <h2 className="text-lg font-black tracking-tight">Vận hành &amp; tài chính</h2>
+        <p className="text-xs opacity-90 mt-0.5">Giám sát doanh thu, sản lượng &amp; công nợ tức thời</p>
       </div>
 
       {/* Director Executive KPIs */}

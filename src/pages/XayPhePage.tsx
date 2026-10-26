@@ -9,6 +9,7 @@ import { DataState } from '../components/DataState';
 import { useAsyncData, useAsyncList } from '../hooks/useAsyncData';
 import { useCrudForm } from '../hooks/useCrudForm';
 import { useTableControls } from '../hooks/useTableControls';
+import { useAuth } from '../contexts/auth';
 import { useToast } from '../contexts/toast';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PaginationBar } from '../components/PaginationBar';
@@ -30,6 +31,8 @@ interface XayPhePageProps {
 }
 
 export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
+  const { can } = useAuth();
+  const canEditDelete = can('scrap.edit_delete');
   const { range, setRange } = useDateRange();
   // Lọc ngay ở truy vấn: chỉ kéo về phiếu trong kỳ đang xem.
   const {
@@ -38,7 +41,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
     error,
     refetch,
   } = useAsyncList(() => grindingService.getAll({ from: range.from, to: range.to }), [range.from, range.to]);
-  const { data: importsList } = useAsyncList(importsService.getAll, []);
+  const { data: importsList } = useAsyncList(() => importsService.getAll({ importType: 'nvl' }), []);
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
   const { data: lossThreshold } = useAsyncData(settingsService.getLossWarning, []);
   const kgPerBag = kgPerBagData ?? 900;
@@ -82,15 +85,31 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
 
   React.useEffect(() => {
     if (searchParams.get('open') === 'true') {
-      openModal();
-      const params = new URLSearchParams(window.location.search);
-      if (params.has('open')) {
-        params.delete('open');
-        const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
-        window.history.replaceState({}, '', newUrl);
+      const fromSessionId = searchParams.get('fromSessionId');
+      const bagsParam = Number(searchParams.get('bags')) || 0;
+      const kgParam = Number(searchParams.get('kg')) || 0;
+      const dateParam = searchParams.get('date') || today();
+
+      if (kgParam > 0) {
+        const estimatedInput = Math.round(kgParam * 1.025);
+        openModal({
+          date: dateParam,
+          input_qty_kg: estimatedInput,
+          output_qty_kg: kgParam,
+          bags_count: bagsParam || Math.round(kgParam / kgPerBag),
+          worker: 'Anh Tam',
+          loss_category: 'machine',
+          notes: fromSessionId ? `Chốt sản lượng từ phiên cân #${fromSessionId.slice(0, 8)}` : undefined,
+        });
+      } else {
+        openModal();
       }
+      const params = new URLSearchParams(window.location.search);
+      ['open', 'fromSessionId', 'bags', 'kg', 'date'].forEach((k) => params.delete(k));
+      const newUrl = window.location.pathname + (params.toString() ? `?${params.toString()}` : '');
+      window.history.replaceState({}, '', newUrl);
     }
-  }, [searchParams, openModal]);
+  }, [searchParams, openModal, kgPerBag]);
 
   const filteredData = useMemo(() => {
     const list = grindingList.filter((item) => {
@@ -190,66 +209,66 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-2.5 sm:space-y-5 animate-fade-in">
       {stats.avgLossPct > (lossThreshold ?? 5) && (
-        <div role="alert" className="card p-3 text-sm text-amber-700">
+        <div role="alert" className="card p-2.5 sm:p-3 text-xs sm:text-sm text-amber-700">
           Hao hụt xay {formatPhanTram(stats.avgLossPct)} vượt ngưỡng {lossThreshold ?? 5}%. Kiểm tra cân và
           nguyên nhân từng phiếu.
         </div>
       )}
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
-          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
-            <Scissors className="w-4 h-4 sm:w-6 sm:h-6" />
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2 sm:space-x-4 min-w-0">
+          <div className="p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-amber-500/10 text-amber-500 shrink-0">
+            <Scissors className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng xay trong kỳ
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-[var(--text-primary)] [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-mono font-black leading-tight text-[var(--text-primary)] truncate">
               {formatKg(stats.totalInput)}
             </p>
           </div>
         </div>
 
-        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
-          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
-            <Factory className="w-4 h-4 sm:w-6 sm:h-6" />
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2 sm:space-x-4 min-w-0">
+          <div className="p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+            <Factory className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Đầu ra thành phẩm
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-emerald-600 [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-mono font-black leading-tight text-emerald-600 truncate">
               {formatKg(stats.totalOutput)}
             </p>
           </div>
         </div>
 
-        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
-          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
-            <TrendingDown className="w-4 h-4 sm:w-6 sm:h-6" />
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2 sm:space-x-4 min-w-0">
+          <div className="p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
+            <TrendingDown className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               Tổng hao hụt
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-rose-600 [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-mono font-black leading-tight text-rose-600 truncate">
               {formatKg(stats.totalLossKg)}
             </p>
           </div>
         </div>
 
-        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2.5 sm:space-x-4 min-w-0">
-          <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-[var(--primary-500)]/10 text-[var(--primary-500)] shrink-0">
-            <Scissors className="w-4 h-4 sm:w-6 sm:h-6" />
+        <div className="card p-2.5 sm:p-4 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl sm:rounded-2xl flex items-center space-x-2 sm:space-x-4 min-w-0">
+          <div className="p-1.5 sm:p-3 rounded-lg sm:rounded-xl bg-[var(--primary-500)]/10 text-[var(--primary-500)] shrink-0">
+            <Scissors className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-[var(--text-muted)] truncate">
               % Hao hụt trung bình
             </p>
-            <p className="text-sm sm:text-xl font-mono font-black leading-tight text-[var(--primary-500)] [overflow-wrap:anywhere]">
+            <p className="text-xs sm:text-xl font-mono font-black leading-tight text-[var(--primary-500)] truncate">
               {formatPhanTram(stats.avgLossPct)}
             </p>
           </div>
@@ -378,13 +397,15 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                       </td>
                       <td className="td-cell text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end">
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
-                            title="Xóa phiếu xay"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          {canEditDelete && (
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              className="icon-action text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                              title="Xóa phiếu xay"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -498,31 +519,33 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between pt-4 border-t border-[var(--border-color)] gap-2">
-                  <button
-                    onClick={() => {
-                      const item = selectedDetail;
-                      setSelectedDetail(null);
-                      openModal(item);
-                    }}
-                    className="btn-primary flex items-center space-x-1.5 text-xs font-bold py-2 px-4 cursor-pointer"
-                  >
-                    <Edit size={15} />
-                    <span>Chỉnh sửa</span>
-                  </button>
+                {canEditDelete && (
+                  <div className="flex items-center justify-between pt-4 border-t border-[var(--border-color)] gap-2">
+                    <button
+                      onClick={() => {
+                        const item = selectedDetail;
+                        setSelectedDetail(null);
+                        openModal(item);
+                      }}
+                      className="btn-primary flex items-center space-x-1.5 text-xs font-bold py-2 px-4 cursor-pointer"
+                    >
+                      <Edit size={15} />
+                      <span>Chỉnh sửa</span>
+                    </button>
 
-                  <button
-                    onClick={() => {
-                      const id = selectedDetail.id;
-                      setSelectedDetail(null);
-                      handleDelete(id);
-                    }}
-                    className="btn-danger flex items-center space-x-1.5 text-xs font-bold py-2 px-4 cursor-pointer"
-                  >
-                    <Trash2 size={15} />
-                    <span>Xóa</span>
-                  </button>
-                </div>
+                    <button
+                      onClick={() => {
+                        const id = selectedDetail.id;
+                        setSelectedDetail(null);
+                        handleDelete(id);
+                      }}
+                      className="btn-danger flex items-center space-x-1.5 text-xs font-bold py-2 px-4 cursor-pointer"
+                    >
+                      <Trash2 size={15} />
+                      <span>Xóa</span>
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })()}

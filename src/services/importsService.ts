@@ -53,12 +53,14 @@ function mapRow(item: ImportRow): Import {
 }
 
 export const importsService = {
-  async getAll(filter: DateRangeFilter = {}): Promise<Import[]> {
+  async getAll(filter: DateRangeFilter & { importType?: Import['import_type'] } = {}): Promise<Import[]> {
     const rows = await readAllPages<ImportRow>(
       'tải danh sách phiếu nhập',
       (from, to) => {
         let q = supabase.from('imports').select(SELECT_COLUMNS).is('deleted_at', null);
         if (filter.contactId) q = q.eq('contact_id', filter.contactId);
+        if (filter.importType === 'nvl') q = q.neq('import_type', 'thanh_pham');
+        else if (filter.importType === 'thanh_pham') q = q.eq('import_type', 'thanh_pham');
         if (filter.from) q = q.gte('date', filter.from);
         if (filter.to) q = q.lte('date', filter.to);
         return q

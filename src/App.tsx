@@ -92,7 +92,7 @@ function App() {
                       <Route
                         path="phe"
                         element={
-                          <RequireRole allow={['admin', 'manager', 'warehouse_manager', 'staff']}>
+                          <RequireRole permission="scrap.view">
                             <QuanLyPhePage />
                           </RequireRole>
                         }
@@ -102,29 +102,64 @@ function App() {
                       <Route
                         path="tai-chinh"
                         element={
-                          <RequireRole allow={['manager', 'admin', 'accountant']}>
+                          <RequireRole permission="finance.view">
                             <TaiChinhPage />
                           </RequireRole>
                         }
                       />
 
-                      <Route path="doi-soat" element={<DoiSoatPage />} />
-                      <Route path="ton-kho" element={<TonKhoPage />} />
+                      <Route
+                        path="doi-soat"
+                        element={
+                          <RequireRole permission="reconciliation.view">
+                            <DoiSoatPage />
+                          </RequireRole>
+                        }
+                      />
+                      <Route
+                        path="ton-kho"
+                        element={
+                          <RequireRole permission="inventory.view">
+                            <TonKhoPage />
+                          </RequireRole>
+                        }
+                      />
                       <Route
                         path="nhan-vien"
                         element={
-                          <RequireRole allow={['manager', 'admin', 'accountant']}>
+                          <RequireRole permission="hr.view">
                             <NhanVienPage />
                           </RequireRole>
                         }
                       />
-                      <Route path="danh-ba" element={<DanhBaPage />} />
-                      <Route path="danh-ba/:id" element={<DoiTacChiTietPage />} />
-                      <Route path="bao-cao" element={<BaoCaoPage />} />
+                      <Route
+                        path="danh-ba"
+                        element={
+                          <RequireRole permission="contacts.view">
+                            <DanhBaPage />
+                          </RequireRole>
+                        }
+                      />
+                      <Route
+                        path="danh-ba/:id"
+                        element={
+                          <RequireRole permission="contacts.view">
+                            <DoiTacChiTietPage />
+                          </RequireRole>
+                        }
+                      />
+                      <Route
+                        path="bao-cao"
+                        element={
+                          <RequireRole permission="reports.view">
+                            <BaoCaoPage />
+                          </RequireRole>
+                        }
+                      />
                       <Route
                         path="cai-dat"
                         element={
-                          <RequireRole allow={['admin']}>
+                          <RequireRole permission="settings.manage">
                             <CaiDatPage />
                           </RequireRole>
                         }

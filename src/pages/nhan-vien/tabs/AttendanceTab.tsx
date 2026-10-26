@@ -39,6 +39,7 @@ interface AttendanceTabProps {
   handleSaveQuickAttendance: () => void;
   onOpenAttModal: (att: Attendance) => void;
   onDeleteAttendance: (id: string) => void;
+  canManage?: boolean;
 }
 
 export const AttendanceTab: React.FC<AttendanceTabProps> = ({
@@ -67,6 +68,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
   handleSaveQuickAttendance,
   onOpenAttModal,
   onDeleteAttendance,
+  canManage = true,
 }) => {
   const todayStr = new Date().toLocaleDateString('en-CA');
 
@@ -138,7 +140,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {attViewMode === 'quick' && (
+          {attViewMode === 'quick' && canManage && (
             <button
               type="button"
               onClick={handleMarkAllFull}
@@ -216,21 +218,23 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
             </div>
 
             {/* Mobile Sticky Bottom Floating Save Bar */}
-            <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] left-4 right-4 lg:bottom-6 lg:left-72 lg:right-8 z-40 flex items-center justify-center pointer-events-none">
-              <button
-                type="button"
-                onClick={handleSaveQuickAttendance}
-                disabled={savingAtt}
-                className="btn-primary py-3.5 px-6 rounded-2xl text-sm font-extrabold shadow-2xl flex items-center justify-center gap-2.5 border-2 border-white/20 w-full max-w-lg cursor-pointer pointer-events-auto active:scale-95 disabled:opacity-60"
-              >
-                <Zap size={18} />
-                <span>
-                  {savingAtt
-                    ? 'Đang lưu...'
-                    : `Lưu Bảng Chấm Công Ngày ${formatNgay(selectedDate)} (${Object.values(quickStates).filter((x) => x.work_shift > 0).length}/${employees.filter((e) => e.status === 'active').length} làm)`}
-                </span>
-              </button>
-            </div>
+            {canManage && (
+              <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] left-4 right-4 lg:bottom-6 lg:left-72 lg:right-8 z-40 flex items-center justify-center pointer-events-none">
+                <button
+                  type="button"
+                  onClick={handleSaveQuickAttendance}
+                  disabled={savingAtt}
+                  className="btn-primary py-3.5 px-6 rounded-2xl text-sm font-extrabold shadow-2xl flex items-center justify-center gap-2.5 border-2 border-white/20 w-full max-w-lg cursor-pointer pointer-events-auto active:scale-95 disabled:opacity-60"
+                >
+                  <Zap size={18} />
+                  <span>
+                    {savingAtt
+                      ? 'Đang lưu...'
+                      : `Lưu Bảng Chấm Công Ngày ${formatNgay(selectedDate)} (${Object.values(quickStates).filter((x) => x.work_shift > 0).length}/${employees.filter((e) => e.status === 'active').length} làm)`}
+                  </span>
+                </button>
+              </div>
+            )}
           </div>
         </DataState>
       )}
@@ -304,28 +308,30 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                           {att.notes || '—'}
                         </td>
                         <td className="td-cell text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onOpenAttModal(att);
-                              }}
-                              className="icon-action tap-target min-h-11 min-w-11 flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer transition-colors duration-200 rounded-lg"
-                              title="Sửa"
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDeleteAttendance(att.id);
-                              }}
-                              className="icon-action tap-target min-h-11 min-w-11 flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer transition-colors duration-200 rounded-lg"
-                              title="Xóa"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                          {canManage && (
+                            <div className="flex items-center justify-end space-x-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenAttModal(att);
+                                }}
+                                className="icon-action tap-target min-h-11 min-w-11 flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-[var(--primary-500)] cursor-pointer transition-colors duration-200 rounded-lg"
+                                title="Sửa"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteAttendance(att.id);
+                                }}
+                                className="icon-action tap-target min-h-11 min-w-11 flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] hover:text-rose-600 cursor-pointer transition-colors duration-200 rounded-lg"
+                                title="Xóa"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -358,7 +364,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                   { label: 'Ngày chốt', value: att.paid_at ? formatNgay(att.paid_at) : 'Chưa chốt' },
                   { label: 'Ghi chú', value: att.notes || '—' },
                 ],
-                actions: (
+                actions: canManage ? (
                   <>
                     <button
                       type="button"
@@ -377,7 +383,7 @@ export const AttendanceTab: React.FC<AttendanceTabProps> = ({
                       <Trash2 size={18} />
                     </button>
                   </>
-                ),
+                ) : undefined,
               }))}
             emptyMessage="Chưa có lịch sử chấm công"
           />

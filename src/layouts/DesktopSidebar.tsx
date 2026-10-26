@@ -4,12 +4,14 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Recycle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/auth';
+import type { PermissionKey } from '../lib/permissions';
 
 export interface MenuItem {
   id: string;
   path: string;
   label: string;
   icon: React.ElementType;
+  permission?: PermissionKey;
   managerOnly?: boolean;
   adminOnly?: boolean;
 }

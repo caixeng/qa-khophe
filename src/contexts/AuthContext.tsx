@@ -2,6 +2,28 @@ import { useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { AuthContext, type UserProfile } from './auth';
+import {
+  checkUserPermission,
+  resolveEffectivePermissions,
+  type PermissionKey,
+  type PermissionMap,
+} from '../lib/permissions';
+import type { UserRole } from '../types';
+
+async function fetchEffectivePermissions(role: UserRole): Promise<PermissionMap> {
+  if (role === 'admin') {
+    return resolveEffectivePermissions('admin');
+  }
+  try {
+    const { data, error } = await supabase.rpc('get_my_permissions');
+    if (!error && data && typeof data === 'object') {
+      return resolveEffectivePermissions(role, data as Partial<PermissionMap>);
+    }
+  } catch {
+    // Fallback xuống bộ quyền mặc định nếu RPC chưa sẵn sàng
+  }
+  return resolveEffectivePermissions(role);
+}
 
 /**
  * Lấy hồ sơ người dùng trong bảng `users` tương ứng với phiên Supabase Auth.
@@ -23,7 +45,14 @@ async function resolveProfile(session: Session): Promise<UserProfile | null> {
   if (profileError) throw profileError;
 
   if (byAuthId) {
-    return { id: byAuthId.id, name: byAuthId.full_name, email: byAuthId.email, role: byAuthId.role };
+    const permissions = await fetchEffectivePermissions(byAuthId.role);
+    return {
+      id: byAuthId.id,
+      name: byAuthId.full_name,
+      email: byAuthId.email,
+      role: byAuthId.role,
+      permissions,
+    };
   }
 
   if (!email) return null;
@@ -50,7 +79,14 @@ async function resolveProfile(session: Session): Promise<UserProfile | null> {
 
   if (linkError || !linked) throw linkError || new Error(NO_PROFILE_MESSAGE);
   const profile = linked;
-  return { id: profile.id, name: profile.full_name, email: profile.email, role: profile.role };
+  const permissions = await fetchEffectivePermissions(profile.role);
+  return {
+    id: profile.id,
+    name: profile.full_name,
+    email: profile.email,
+    role: profile.role,
+    permissions,
+  };
 }
 
 const NO_PROFILE_MESSAGE =
@@ -79,6 +115,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(profile);
     return undefined;
   }, []);
+
+  const refreshPermissions = useCallback(async () => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      void fetchEffectivePermissions(prev.role).then((permissions) => {
+        setUser((current) => (current ? { ...current, permissions } : null));
+      });
+      return prev;
+    });
+  }, []);
+
+  const can = useCallback(
+    (permission: PermissionKey): boolean => checkUserPermission(user, permission),
+    [user],
+  );
 
   useEffect(() => {
     let active = true;
@@ -158,7 +209,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, signingIn }}>
+    <AuthContext.Provider value={{ user, login, logout, loading, signingIn, can, refreshPermissions }}>
       {children}
     </AuthContext.Provider>
   );

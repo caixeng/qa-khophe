@@ -27,13 +27,19 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   return (
     <div
       className={cn(
-        'page-heading flex flex-col sm:flex-row sm:items-center justify-between gap-4',
+        'page-heading flex items-center justify-between gap-2 sm:gap-4',
+        !action && 'hidden lg:flex',
         className,
       )}
     >
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">{title}</h1>
-        {subText && <p className="text-sm text-[var(--text-secondary)] mt-1">{subText}</p>}
+      <div className="min-w-0 flex-1">
+        {/* Trên mobile đã có tiêu đề ở MobileHeader nên chỉ hiện mô tả ngắn gọn */}
+        <h1 className="hidden lg:block text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+          {title}
+        </h1>
+        {subText && (
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)] lg:mt-1 truncate">{subText}</p>
+        )}
       </div>
 
       {action && (
@@ -41,10 +47,14 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           onClick={action.onClick}
           disabled={action.disabled}
           aria-label={action.label}
-          className="btn-primary flex items-center justify-center gap-2 whitespace-nowrap w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+          className="btn-primary flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {React.isValidElement(IconComp) ? IconComp : IconComp ? <IconComp className="w-4 h-4" /> : null}
-          {action.label}
+          {React.isValidElement(IconComp) ? (
+            IconComp
+          ) : IconComp ? (
+            <IconComp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          ) : null}
+          <span>{action.label}</span>
         </button>
       )}
     </div>

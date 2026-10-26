@@ -27,8 +27,8 @@ import { printPhieuNhap, printPhieuXuat } from '../lib/print';
 export const DoiTacChiTietPage: React.FC = () => {
   const { id = '' } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const canSeeFinance = user?.role === 'manager' || user?.role === 'admin' || user?.role === 'accountant';
+  const { can } = useAuth();
+  const canSeeFinance = can('dashboard.finance.view');
   const { range, setRange } = useDateRange();
 
   const {
@@ -169,54 +169,66 @@ export const DoiTacChiTietPage: React.FC = () => {
             <PeriodFilter range={range} onChange={setRange} />
 
             {/* Số dư */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="card flex items-center gap-3 bg-[var(--bg-surface)] p-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-                  <Package size={20} />
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
+              <div className="card flex items-center gap-2.5 bg-[var(--bg-surface)] p-3 sm:p-4 min-w-0">
+                <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-emerald-50 text-emerald-600">
+                  <Package size={18} />
                 </div>
-                <div>
-                  <p className="text-[11px] font-bold uppercase text-[var(--text-muted)]">Đã nhập</p>
-                  <p className="font-mono text-lg font-black">{formatKg(summary.importKg)}</p>
-                  <p className="text-[11px] text-[var(--text-muted)]">{formatTien(summary.importAmount)}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-[11px] font-bold uppercase text-[var(--text-muted)] truncate">
+                    Đã nhập
+                  </p>
+                  <p className="font-mono text-sm sm:text-lg font-black truncate">
+                    {formatKg(summary.importKg)}
+                  </p>
+                  <p className="text-[10px] sm:text-[11px] text-[var(--text-muted)] truncate">
+                    {formatTien(summary.importAmount)}
+                  </p>
                 </div>
               </div>
 
-              <div className="card flex items-center gap-3 bg-[var(--bg-surface)] p-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                  <Truck size={20} />
+              <div className="card flex items-center gap-2.5 bg-[var(--bg-surface)] p-3 sm:p-4 min-w-0">
+                <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-blue-50 text-blue-600">
+                  <Truck size={18} />
                 </div>
-                <div>
-                  <p className="text-[11px] font-bold uppercase text-[var(--text-muted)]">Đã xuất</p>
-                  <p className="font-mono text-lg font-black">{formatKg(summary.exportKg)}</p>
-                  <p className="text-[11px] text-[var(--text-muted)]">{formatTien(summary.exportAmount)}</p>
+                <div className="min-w-0">
+                  <p className="text-[10px] sm:text-[11px] font-bold uppercase text-[var(--text-muted)] truncate">
+                    Đã xuất
+                  </p>
+                  <p className="font-mono text-sm sm:text-lg font-black truncate">
+                    {formatKg(summary.exportKg)}
+                  </p>
+                  <p className="text-[10px] sm:text-[11px] text-[var(--text-muted)] truncate">
+                    {formatTien(summary.exportAmount)}
+                  </p>
                 </div>
               </div>
 
               {canSeeFinance && (
                 <>
-                  <div className="card flex items-center gap-3 bg-[var(--bg-surface)] p-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
-                      <Wallet size={20} />
+                  <div className="card flex items-center gap-2.5 bg-[var(--bg-surface)] p-3 sm:p-4 min-w-0">
+                    <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-amber-50 text-amber-600">
+                      <Wallet size={18} />
                     </div>
-                    <div>
-                      <p className="text-[11px] font-bold uppercase text-[var(--text-muted)]">
+                    <div className="min-w-0">
+                      <p className="text-[10px] sm:text-[11px] font-bold uppercase text-[var(--text-muted)] truncate">
                         Mình còn nợ họ
                       </p>
-                      <p className="font-mono text-lg font-black text-amber-600">
+                      <p className="font-mono text-sm sm:text-lg font-black text-amber-600 truncate">
                         {formatTien(summary.payable)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="card flex items-center gap-3 bg-[var(--bg-surface)] p-4">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">
-                      <TrendingUp size={20} />
+                  <div className="card flex items-center gap-2.5 bg-[var(--bg-surface)] p-3 sm:p-4 min-w-0">
+                    <div className="flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-rose-50 text-rose-600">
+                      <TrendingUp size={18} />
                     </div>
-                    <div>
-                      <p className="text-[11px] font-bold uppercase text-[var(--text-muted)]">
+                    <div className="min-w-0">
+                      <p className="text-[10px] sm:text-[11px] font-bold uppercase text-[var(--text-muted)] truncate">
                         Họ còn nợ mình
                       </p>
-                      <p className="font-mono text-lg font-black text-rose-600">
+                      <p className="font-mono text-sm sm:text-lg font-black text-rose-600 truncate">
                         {formatTien(summary.receivable)}
                       </p>
                     </div>

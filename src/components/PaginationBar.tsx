@@ -41,12 +41,12 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 py-2 text-xs font-bold w-full">
-      <div className="text-[var(--text-secondary)] whitespace-nowrap">
+    <div className="flex flex-row justify-between items-center gap-2 py-1.5 text-[11px] sm:text-xs font-bold w-full">
+      <div className="text-[var(--text-secondary)] whitespace-nowrap tabular-nums">
         Đang xem {startItem}–{endItem} / {totalItems} bản ghi
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {onItemsPerPageChange && (
           <div className="hidden sm:flex items-center gap-2">
             <span className="text-[var(--text-secondary)]">Hiển thị:</span>
@@ -62,22 +62,22 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
           </div>
         )}
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1">
           <button
             onClick={() => onPageChange(1)}
             disabled={currentPage === 1}
             aria-label="Trang đầu"
-            className="tap-target min-h-11 min-w-11 sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
+            className="h-8 w-8 sm:h-7 sm:w-7 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer"
           >
-            <ChevronsLeft size={16} />
+            <ChevronsLeft size={15} />
           </button>
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1}
             aria-label="Trang trước"
-            className="tap-target min-h-11 min-w-11 sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
+            className="h-8 w-8 sm:h-7 sm:w-7 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer"
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={15} />
           </button>
 
           <div className="hidden sm:flex items-center gap-1">
@@ -86,7 +86,7 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
                 key={page}
                 onClick={() => onPageChange(page)}
                 className={cn(
-                  'tap-target min-h-11 min-w-11 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg transition-colors duration-200',
+                  'w-7 h-7 flex items-center justify-center rounded-lg transition-colors duration-200 cursor-pointer',
                   page === currentPage
                     ? 'bg-[var(--primary-500)] text-white'
                     : 'hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]',
@@ -97,25 +97,25 @@ export const PaginationBar: React.FC<PaginationBarProps> = ({
             ))}
           </div>
 
-          <div className="sm:hidden flex items-center px-2 text-[var(--text-secondary)]">
-            {currentPage} / {totalPages || 1}
+          <div className="sm:hidden flex items-center px-1.5 text-[var(--text-secondary)] tabular-nums">
+            {currentPage}/{totalPages || 1}
           </div>
 
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages || totalPages === 0}
             aria-label="Trang sau"
-            className="tap-target min-h-11 min-w-11 sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
+            className="h-8 w-8 sm:h-7 sm:w-7 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer"
           >
-            <ChevronRight size={16} />
+            <ChevronRight size={15} />
           </button>
           <button
             onClick={() => onPageChange(totalPages)}
             disabled={currentPage === totalPages || totalPages === 0}
             aria-label="Trang cuối"
-            className="tap-target min-h-11 min-w-11 sm:min-w-0 sm:min-h-0 sm:p-1 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200"
+            className="h-8 w-8 sm:h-7 sm:w-7 flex items-center justify-center rounded-lg hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200 cursor-pointer"
           >
-            <ChevronsRight size={16} />
+            <ChevronsRight size={15} />
           </button>
         </div>
       </div>
