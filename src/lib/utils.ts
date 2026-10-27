@@ -44,11 +44,11 @@ export function formatPhanTram(pct: number): string {
 export const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const ROLE_LABELS: Record<string, string> = {
-  admin: 'Quản trị viên',
-  manager: 'Quản lý',
-  staff: 'Nhân viên',
-  warehouse_manager: 'Quản lý kho',
-  accountant: 'Kế toán',
+  admin: 'Quản trị hệ thống',
+  manager: 'Giám đốc / Chủ xưởng',
+  warehouse_manager: 'Quản lý xưởng & Kho',
+  accountant: 'Kế toán & Tài chính',
+  staff: 'Thu mua & Nguồn hàng',
 };
 
 export function formatRole(role?: string): string {

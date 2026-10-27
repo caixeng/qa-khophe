@@ -29,36 +29,36 @@ import type { UserRole } from '../types';
 const ROLE_OPTIONS: { value: UserRole; label: string; description: string; badgeClass: string }[] = [
   {
     value: 'admin',
-    label: 'Quản trị viên (Admin)',
-    description: 'Toàn quyền hệ thống: Kho, Tài chính, Nhân sự, Cấu hình & Quản lý tài khoản',
+    label: 'Quản trị hệ thống (Admin)',
+    description: 'Tài khoản kỹ thuật: Toàn quyền cấu hình hệ thống, sao lưu dữ liệu & quản lý phân quyền',
     badgeClass:
       'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/60',
   },
   {
     value: 'manager',
-    label: 'Quản lý (Manager)',
-    description: 'Xem và xử lý Kho, Tài chính, Nhân sự, Báo cáo (không quản lý tài khoản hệ thống)',
+    label: 'Giám đốc / Chủ xưởng (Anh Nam)',
+    description: 'Điều hành toàn diện: Phê duyệt đơn giá, hạn mức ứng tiền, dòng tiền, lương & kiểm kê kho',
     badgeClass:
       'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60',
   },
   {
-    value: 'accountant',
-    label: 'Kế toán (Accountant)',
-    description: 'Toàn quyền Tài chính, Công nợ, Ứng tiền, Chấm công & Lương; chỉ xem dữ liệu Kho',
-    badgeClass:
-      'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60',
-  },
-  {
     value: 'warehouse_manager',
-    label: 'Quản lý kho (Warehouse)',
-    description: 'Toàn quyền thêm/sửa/xóa Nhập, Xay, Xuất, Cân & Kiểm kê kho; không xem Tài chính & Lương',
+    label: 'Quản lý xưởng kiêm Phụ trách kho',
+    description: 'Điều hành sản xuất & kho bãi: Tiếp nhận/cân phế, ghi phiếu Nhập - Xay - Xuất & kiểm kê kho',
     badgeClass:
       'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60',
   },
   {
+    value: 'accountant',
+    label: 'Kế toán & Tài chính',
+    description: 'Quản lý tạm ứng, chi phí xưởng, công nợ đối tác, chấm công & chốt lương; hậu kiểm chứng từ kho',
+    badgeClass:
+      'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60',
+  },
+  {
     value: 'staff',
-    label: 'Nhân viên kho (Staff)',
-    description: 'Ghi phiếu Nhập, Xay, Xuất, Cân mới; không được sửa/xóa phiếu cũ và không xem Tài chính',
+    label: 'Thu mua & Nguồn hàng (Anh Hồ)',
+    description: 'Quản lý hồ sơ đơn vị nhập phế, đi thu mua hàng ngày, ghi phiếu nhập & đối trừ tạm ứng mua hàng',
     badgeClass:
       'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700',
   },

@@ -41,10 +41,25 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
     error,
     refetch,
   } = useAsyncList(() => grindingService.getAll({ from: range.from, to: range.to }), [range.from, range.to]);
-  const { data: importsList } = useAsyncList(() => importsService.getAll({ importType: 'nvl' }), []);
+  const { data: allGrindingList, refetch: refetchAllGrinding } = useAsyncList(
+    () => grindingService.getAll({ all: true }),
+    [],
+  );
+  const { data: importsList, refetch: refetchImports } = useAsyncList(
+    () => importsService.getAll({ importType: 'nvl', all: true }),
+    [],
+  );
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
   const { data: lossThreshold } = useAsyncData(settingsService.getLossWarning, []);
   const kgPerBag = kgPerBagData ?? 900;
+
+  const importsById = useMemo(() => {
+    const map: Record<string, (typeof importsList)[number]> = {};
+    for (const imp of importsList) {
+      map[imp.id] = imp;
+    }
+    return map;
+  }, [importsList]);
 
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -146,6 +161,40 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
     [sortedData, currentPage, itemsPerPage],
   );
 
+  // Tính lượng phế đã đưa vào xay và lượng còn tồn của từng Lô nhập gốc (Điều 9 Quy chế)
+  const lotAvailabilityMap = useMemo(() => {
+    const editingId = formState.data?.id;
+    const usedByImportId: Record<string, number> = {};
+    const sourceGrinding = allGrindingList.length > 0 ? allGrindingList : grindingList;
+    for (const g of sourceGrinding) {
+      if (!g.import_id || g.id === editingId) continue;
+      usedByImportId[g.import_id] = (usedByImportId[g.import_id] || 0) + (Number(g.input_qty_kg) || 0);
+    }
+
+    const map: Record<string, { totalKg: number; usedKg: number; remainingKg: number }> = {};
+    for (const imp of importsList) {
+      const totalKg = Number(imp.quantity_kg) || 0;
+      const usedKg = usedByImportId[imp.id] || 0;
+      const remainingKg = Math.max(0, Number((totalKg - usedKg).toFixed(2)));
+      map[imp.id] = { totalKg, usedKg, remainingKg };
+    }
+    return map;
+  }, [importsList, allGrindingList, grindingList, formState.data?.id]);
+
+  const selectableImports = useMemo(() => {
+    const currentImportId = formState.data?.import_id;
+    return importsList.filter((imp) => {
+      if (imp.import_type === 'thanh_pham') return false;
+      if (imp.id === currentImportId) return true;
+      const avail = lotAvailabilityMap[imp.id];
+      return avail ? avail.remainingKg > 0 : (Number(imp.quantity_kg) || 0) > 0;
+    });
+  }, [importsList, lotAvailabilityMap, formState.data?.import_id]);
+
+  const selectedLotAvailability = formState.data?.import_id
+    ? lotAvailabilityMap[formState.data.import_id]
+    : undefined;
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     // Chặn bấm Lưu nhiều lần — mỗi lần bấm thêm là một phiếu trùng.
@@ -154,8 +203,21 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
     const inputKg = Number(data.input_qty_kg) || 0;
     const outputKg = Number(data.output_qty_kg) || 0;
 
+    if (!data.import_id) {
+      toast.warning('Bắt buộc chọn lô phế nhập gốc trước khi lưu phiếu xay (theo Quy chế Điều 9)');
+      return;
+    }
+
     if (inputKg <= 0) {
       toast.warning('Khối lượng đầu vào phải lớn hơn 0 kg');
+      return;
+    }
+
+    const lotAvail = lotAvailabilityMap[data.import_id];
+    if (lotAvail && inputKg > lotAvail.remainingKg) {
+      toast.warning(
+        `Khối lượng đưa vào (${formatKg(inputKg)}) vượt quá lượng còn lại của lô nhập (${formatKg(lotAvail.remainingKg)})`,
+      );
       return;
     }
 
@@ -171,7 +233,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
       } else {
         await grindingService.create({
           date: data.date || today(),
-          import_id: data.import_id || null,
+          import_id: data.import_id,
           input_qty_kg: inputKg,
           output_qty_kg: outputKg,
           bags_count: Number(data.bags_count) || Math.round(outputKg / kgPerBag),
@@ -184,6 +246,8 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
       }
       closeModal();
       refetch();
+      void refetchAllGrinding();
+      void refetchImports();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu phiếu xay');
       console.error('Lỗi khi lưu phiếu xay:', err);
@@ -201,6 +265,8 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
       await grindingService.delete(confirmState.id);
       toast.success('Đã xóa phiếu xay');
       refetch();
+      void refetchAllGrinding();
+      void refetchImports();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi khi xoá phiếu xay');
       console.error('Lỗi khi xóa phiếu xay:', err);
@@ -357,8 +423,24 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                       <td className="td-cell font-mono text-xs text-[var(--text-secondary)]">
                         {formatNgay(item.date)}
                       </td>
-                      <td className="td-cell font-mono text-xs text-[var(--primary-500)] font-bold">
-                        {item.import_id ? item.import_id.slice(0, 8) : 'Lô vãng lai'}
+                      <td className="td-cell text-xs">
+                        {item.import_id ? (
+                          <div>
+                            <span className="font-bold text-[var(--text-primary)]">
+                              {importsById[item.import_id]?.contact_name || 'Lô nhập'}
+                            </span>
+                            <span className="block font-mono text-[11px] text-[var(--primary-500)]">
+                              #{item.import_id.slice(0, 8)}
+                              {importsById[item.import_id]?.date
+                                ? ` · ${formatNgay(importsById[item.import_id].date)}`
+                                : ''}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            Chưa gắn lô
+                          </span>
+                        )}
                       </td>
                       <td className="td-cell text-right font-mono font-bold text-xs text-[var(--text-primary)]">
                         {formatKg(inputKg)}
@@ -568,6 +650,87 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             />
           </FormField>
 
+          <FormField label="Chọn lô phế nhập gốc (NVL)" required>
+            <select
+              required
+              aria-label="Chọn lô phế nhập gốc"
+              className="input-field"
+              value={formState.data?.import_id || ''}
+              onChange={(e) => {
+                const impId = e.target.value;
+                const avail = lotAvailabilityMap[impId];
+                const imp = importsById[impId];
+                handleChange('import_id', impId);
+                if (avail && avail.remainingKg > 0) {
+                  handleChange('input_qty_kg' as any, avail.remainingKg);
+                } else if (imp && imp.quantity_kg) {
+                  handleChange('input_qty_kg' as any, imp.quantity_kg);
+                }
+              }}
+            >
+              <option value="">-- Chọn lô phế nhập còn tồn kho --</option>
+              {selectableImports.map((imp) => {
+                const avail = lotAvailabilityMap[imp.id];
+                const remKg = avail ? avail.remainingKg : Number(imp.quantity_kg) || 0;
+                return (
+                  <option key={imp.id} value={imp.id}>
+                    {formatNgay(imp.date)} — {imp.contact_name || 'Khách lẻ'} ({imp.material_type}) · Còn:{' '}
+                    {formatKg(remKg)} / {formatKg(imp.quantity_kg)}
+                  </option>
+                );
+              })}
+            </select>
+            {selectedLotAvailability && (
+              <div className="mt-1.5 px-3 py-2 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)] flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                <span className="text-[var(--text-secondary)]">
+                  Tổng lô gốc: <strong className="font-mono">{formatKg(selectedLotAvailability.totalKg)}</strong>
+                </span>
+                <span className="text-[var(--text-secondary)]">
+                  Đã xay: <strong className="font-mono">{formatKg(selectedLotAvailability.usedKg)}</strong>
+                </span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-bold">
+                  Còn lại khả dụng:{' '}
+                  <strong className="font-mono">{formatKg(selectedLotAvailability.remainingKg)}</strong>
+                </span>
+              </div>
+            )}
+          </FormField>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Đầu vào phế thô (kg)" required>
+              <input
+                type="number"
+                inputMode="decimal"
+                required
+                min="1"
+                max={selectedLotAvailability ? selectedLotAvailability.remainingKg : undefined}
+                step="any"
+                className="input-field font-mono font-bold"
+                placeholder="0"
+                value={(formState.data as any)?.input_qty_kg || ''}
+                onChange={(e) => handleChange('input_qty_kg' as any, Number(e.target.value))}
+              />
+            </FormField>
+
+            <FormField label="Đầu ra bột xay (kg)" required>
+              <input
+                type="number"
+                inputMode="decimal"
+                required
+                min="0"
+                step="any"
+                className="input-field font-mono font-bold text-emerald-600"
+                placeholder="0"
+                value={(formState.data as any)?.output_qty_kg || ''}
+                onChange={(e) => {
+                  const outKg = Number(e.target.value);
+                  handleChange('output_qty_kg' as any, outKg);
+                  handleChange('bags_count', outKg > 0 ? Math.round(outKg / kgPerBag) : 0);
+                }}
+              />
+            </FormField>
+          </div>
+
           <FormField
             label="Nguyên nhân hao hụt"
             required={
@@ -596,63 +759,6 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
               onChange={(e) => handleChange('loss_notes', e.target.value)}
             />
           </FormField>
-          <FormField label="Chọn lô phế nhập">
-            <select
-              className="input-field"
-              value={formState.data?.import_id || ''}
-              onChange={(e) => {
-                const impId = e.target.value;
-                const imp = importsList.find((i) => i.id === impId);
-                handleChange('import_id', impId);
-                if (imp && imp.quantity_kg) {
-                  handleChange('input_qty_kg' as any, imp.quantity_kg);
-                }
-              }}
-            >
-              <option value="">-- Lô phế vãng lai --</option>
-              {importsList
-                .filter((imp) => imp.import_type !== 'thanh_pham')
-                .map((imp) => (
-                  <option key={imp.id} value={imp.id}>
-                    {imp.date} - {imp.contact_name || 'Khách'} ({formatKg(imp.quantity_kg)})
-                  </option>
-                ))}
-            </select>
-          </FormField>
-
-          <div className="grid grid-cols-2 gap-4">
-            <FormField label="Đầu vào phế thô (kg)" required>
-              <input
-                type="number"
-                inputMode="decimal"
-                required
-                min="1"
-                step="any"
-                className="input-field font-mono font-bold"
-                placeholder="0"
-                value={(formState.data as any)?.input_qty_kg || ''}
-                onChange={(e) => handleChange('input_qty_kg' as any, Number(e.target.value))}
-              />
-            </FormField>
-
-            <FormField label="Đầu ra bột xay (kg)" required>
-              <input
-                type="number"
-                inputMode="decimal"
-                required
-                min="0"
-                step="any"
-                className="input-field font-mono font-bold text-emerald-600"
-                placeholder="0"
-                value={(formState.data as any)?.output_qty_kg || ''}
-                onChange={(e) => {
-                  const outKg = Number(e.target.value);
-                  handleChange('output_qty_kg' as any, outKg);
-                  handleChange('bags_count', outKg > 0 ? Math.round(outKg / kgPerBag) : 0);
-                }}
-              />
-            </FormField>
-          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <FormField label="Số bao thành phẩm">

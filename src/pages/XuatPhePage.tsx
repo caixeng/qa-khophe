@@ -34,10 +34,12 @@ interface XuatPhePageProps {
 }
 
 export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
-  const { can } = useAuth();
+  const { user, can } = useAuth();
   const canEditDelete = can('scrap.edit_delete');
+  const isDirectorOrAdmin = user?.role === 'manager' || user?.role === 'admin';
   const { range, setRange } = useDateRange();
   const [exportTypeFilter, setExportTypeFilter] = useState<'all' | 'thanh_pham' | 'nvl'>('all');
+  const [directExportApproved, setDirectExportApproved] = useState(false);
 
   // Lọc ngay ở truy vấn: chỉ kéo về phiếu trong kỳ đang xem.
   const {
@@ -48,8 +50,11 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   } = useAsyncList(() => exportsService.getAll({ from: range.from, to: range.to }), [range.from, range.to]);
   const { data: contacts } = useAsyncList(contactsService.getAll, []);
   const { data: kgPerBagData } = useAsyncData(settingsService.getKgPerBag, []);
-  const { data: weighingSessions } = useAsyncList(weighingService.getSessions, []);
-  const { data: unlinkedSessionIds } = useAsyncData(weighingService.getUnlinkedSessionIds, []);
+  const { data: weighingSessions, refetch: refetchSessions } = useAsyncList(weighingService.getSessions, []);
+  const { data: unlinkedSessionIds, refetch: refetchUnlinkedSessions } = useAsyncData(
+    weighingService.getUnlinkedSessionIds,
+    [],
+  );
 
   const kgPerBag = kgPerBagData ?? 900;
   const customers = useMemo(
@@ -90,11 +95,12 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
   });
 
   const handleOpenNewModal = React.useCallback(() => {
+    setDirectExportApproved(false);
     openModal({
       date: today(),
       export_type: exportTypeFilter === 'nvl' ? 'nvl' : 'thanh_pham',
-      bags_count: 18,
-      total_kg: 16200,
+      bags_count: 0,
+      total_kg: 0,
       price_per_kg: 6000,
       payment_status: 'unpaid',
     });
@@ -192,8 +198,20 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
     // Chặn bấm Lưu nhiều lần — mỗi lần bấm thêm là một phiếu trùng.
     if (saving) return;
     const data = formState.data as any;
+    const exportType = data.export_type || 'thanh_pham';
     const qty = Number(data.total_kg) || 0;
     const price = Number(data.price_per_kg) || 0;
+
+    if (
+      exportType === 'thanh_pham' &&
+      !data.weighing_session_id &&
+      !(isDirectorOrAdmin && directExportApproved)
+    ) {
+      toast.warning(
+        'Xuất Phế Thành phẩm bắt buộc phải chọn từ Phiên cân điện tử đã hoàn thành (theo Quy chế Điều 10)',
+      );
+      return;
+    }
 
     if (qty <= 0) {
       toast.warning('Số lượng xuất phải lớn hơn 0 kg');
@@ -208,7 +226,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
       if (data.id) {
         await exportsService.update(data.id, {
           ...data,
-          export_type: data.export_type || 'thanh_pham',
+          export_type: exportType,
           contact_name: contactName,
           total_kg: qty,
           total_amount: qty * price,
@@ -219,7 +237,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
           date: data.date || today(),
           contact_id: data.contact_id || undefined,
           contact_name: contactName,
-          export_type: data.export_type || 'thanh_pham',
+          export_type: exportType,
           bags_count: Number(data.bags_count) || 0,
           total_kg: qty,
           price_per_kg: price,
@@ -231,7 +249,10 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
         toast.success('Đã thêm phiếu xuất mới');
       }
       closeModal();
+      setDirectExportApproved(false);
       refetch();
+      void refetchSessions();
+      void refetchUnlinkedSessions();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi khi lưu phiếu xuất');
       console.error('Lỗi khi lưu phiếu xuất:', err);
@@ -249,6 +270,8 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
       await exportsService.delete(confirmState.id);
       toast.success('Đã xóa phiếu xuất');
       refetch();
+      void refetchSessions();
+      void refetchUnlinkedSessions();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Lỗi khi xoá phiếu xuất');
       console.error('Lỗi khi xóa phiếu xuất:', err);
@@ -621,6 +644,7 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                     onClick={() => {
                       const item = selectedDetail;
                       setSelectedDetail(null);
+                      setDirectExportApproved(!item.weighing_session_id);
                       openModal(item);
                     }}
                     className="btn-primary flex items-center space-x-1.5 text-xs font-bold py-2 px-3 cursor-pointer"
@@ -720,8 +744,23 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
             </select>
           </FormField>
 
-          <FormField label="Lấy số liệu từ phiên cân đã cân (tuỳ chọn)">
+          <FormField
+            label={
+              ((formState.data as any)?.export_type || 'thanh_pham') === 'thanh_pham'
+                ? 'Phiên cân điện tử (Bắt buộc với Thành phẩm)'
+                : 'Lấy số liệu từ phiên cân đã cân (tuỳ chọn)'
+            }
+            required={
+              ((formState.data as any)?.export_type || 'thanh_pham') === 'thanh_pham' &&
+              !(isDirectorOrAdmin && directExportApproved)
+            }
+          >
             <select
+              aria-label="Phiên cân điện tử"
+              required={
+                ((formState.data as any)?.export_type || 'thanh_pham') === 'thanh_pham' &&
+                !(isDirectorOrAdmin && directExportApproved)
+              }
               className="input-field"
               value={(formState.data as any)?.weighing_session_id || ''}
               onChange={(e) => {
@@ -729,16 +768,26 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                 handleChange('weighing_session_id' as any, sessionId || undefined);
                 const s = availableSessions.find((x) => x.id === sessionId);
                 if (s) {
+                  setDirectExportApproved(false);
                   handleChange('bags_count', s.total_bags);
                   handleChange('total_kg' as any, s.total_kg || 0);
                   if (s.contact_id && !formState.data?.contact_id) {
                     handleChange('contact_id', s.contact_id);
+                    const c = customers.find((x) => x.id === s.contact_id);
+                    if (c?.default_price_per_kg && !formState.data?.id) {
+                      handleChange('price_per_kg', c.default_price_per_kg);
+                    }
                     if (s.contact_name) handleChange('contact_name', s.contact_name);
                   }
                 }
               }}
             >
-              <option value="">-- Không gắn, tự nhập số liệu --</option>
+              <option value="">
+                {((formState.data as any)?.export_type || 'thanh_pham') === 'thanh_pham' &&
+                !(isDirectorOrAdmin && directExportApproved)
+                  ? '-- Chọn phiên cân bao thành phẩm đã chốt --'
+                  : '-- Không gắn phiên cân, tự nhập số liệu --'}
+              </option>
               {availableSessions.map((s) => (
                 <option key={s.id} value={s.id}>
                   {formatNgay(s.date)} — {s.total_bags} bao, {formatKg(s.total_kg || 0)}
@@ -746,6 +795,23 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                 </option>
               ))}
             </select>
+
+            {((formState.data as any)?.export_type || 'thanh_pham') === 'thanh_pham' &&
+              !(formState.data as any)?.weighing_session_id &&
+              isDirectorOrAdmin && (
+                <label className="mt-2 flex items-center gap-2 text-xs text-amber-800 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-950/30 p-2.5 rounded-lg border border-amber-200 dark:border-amber-800/60 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={directExportApproved}
+                    onChange={(e) => setDirectExportApproved(e.target.checked)}
+                    className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span>
+                    <strong>Giám đốc duyệt xuất thẳng</strong> (trường hợp đặc biệt không qua phiên cân bao
+                    theo Điều 10.2)
+                  </span>
+                </label>
+              )}
           </FormField>
 
           <div className="grid grid-cols-2 gap-4">
@@ -754,7 +820,12 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                 type="number"
                 inputMode="decimal"
                 min="1"
-                className="input-field font-mono"
+                readOnly={Boolean((formState.data as any)?.weighing_session_id)}
+                className={cn(
+                  'input-field font-mono',
+                  Boolean((formState.data as any)?.weighing_session_id) &&
+                    'bg-[var(--bg-subtle)] cursor-not-allowed opacity-80',
+                )}
                 placeholder="18"
                 value={formState.data?.bags_count || ''}
                 onChange={(e) => {
@@ -774,7 +845,12 @@ export const XuatPhePage: React.FC<XuatPhePageProps> = ({ actionRef }) => {
                 required
                 min="1"
                 step="any"
-                className="input-field font-mono font-bold"
+                readOnly={Boolean((formState.data as any)?.weighing_session_id)}
+                className={cn(
+                  'input-field font-mono font-bold',
+                  Boolean((formState.data as any)?.weighing_session_id) &&
+                    'bg-[var(--bg-subtle)] cursor-not-allowed opacity-80',
+                )}
                 placeholder="16200"
                 value={(formState.data as any)?.total_kg || ''}
                 onChange={(e) => handleChange('total_kg' as any, Number(e.target.value))}

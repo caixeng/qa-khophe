@@ -2,13 +2,18 @@ BEGIN;
 DO $$
 DECLARE
   v_admin_auth uuid := gen_random_uuid();
+  v_staff_auth uuid := gen_random_uuid();
   v_supplier_id uuid;
+  v_supplier2_id uuid;
   v_advance_id uuid;
   v_import_id uuid;
+  v_import2_id uuid;
   v_fifo_res jsonb;
 BEGIN
   INSERT INTO public.users(auth_id, email, full_name, role, is_active)
-  VALUES (v_admin_auth, 'anhho-test-admin@example.invalid', 'Admin Test', 'admin', true);
+  VALUES
+    (v_admin_auth, 'anhho-test-admin@example.invalid', 'Admin Test', 'admin', true),
+    (v_staff_auth, 'anhho-test-staff@example.invalid', 'Anh Hồ Thu Mua', 'staff', true);
 
   PERFORM set_config(
     'request.jwt.claims',
@@ -64,6 +69,32 @@ BEGIN
 
   IF (SELECT outstanding_amount FROM public.v_advance_balances WHERE id = v_advance_id) <> 32000000 THEN
     RAISE EXCEPTION 'Số dư tạm ứng còn lại của Anh Hồ không đúng';
+  END IF;
+
+  -- 4. Kiểm tra tài khoản Thu mua (staff - Anh Hồ) tự thêm mới đơn vị cung cấp và đối trừ tạm ứng 1-chạm
+  PERFORM set_config(
+    'request.jwt.claims',
+    jsonb_build_object('sub', v_staff_auth, 'role', 'authenticated')::text,
+    true
+  );
+
+  INSERT INTO public.contacts(name, type, source_category, region, collector_name)
+  VALUES ('Vựa Phế Liên Chiểu Mới', 'supplier', 'warehouse', 'Đà Nẵng', 'Anh Hồ')
+  RETURNING id INTO v_supplier2_id;
+
+  INSERT INTO public.imports(
+    date, contact_id, material_type, import_type, quantity_kg, price_per_kg,
+    payment_status, processing_status, collector_name
+  ) VALUES (
+    '2041-05-03', v_supplier2_id, 'Tấm nhựa nano', 'nvl', 2000, 4500,
+    'unpaid', 'pending', 'Anh Hồ'
+  ) RETURNING id INTO v_import2_id;
+
+  INSERT INTO public.payments(ref_type, ref_id, amount, date, method, advance_id, notes)
+  VALUES ('import', v_import2_id, 9000000, DATE '2041-05-03', 'cash', v_advance_id, 'Anh Hồ đối trừ tiền ứng 1-chạm');
+
+  IF (SELECT outstanding_amount FROM public.v_advance_balances WHERE id = v_advance_id) <> 23000000 THEN
+    RAISE EXCEPTION 'Số dư tạm ứng sau khi Anh Hồ tự đối trừ không đúng';
   END IF;
 
   EXECUTE 'RESET ROLE';

@@ -48,7 +48,9 @@ describe('permissions matrix & overrides', () => {
     expect(checkUserPermission({ role: 'accountant' }, 'finance.record_payment')).toBe(
       DEFAULT_ROLE_PERMISSIONS.accountant['finance.record_payment'],
     );
-    expect(checkUserPermission({ role: 'accountant' }, 'scrap.view')).toBe(false);
+    expect(checkUserPermission({ role: 'accountant' }, 'scrap.view')).toBe(true);
+    expect(checkUserPermission({ role: 'accountant' }, 'scrap.create')).toBe(false);
+    expect(checkUserPermission({ role: 'staff' }, 'contacts.manage')).toBe(true);
     expect(checkUserPermission(null, 'scrap.view')).toBe(false);
   });
 });

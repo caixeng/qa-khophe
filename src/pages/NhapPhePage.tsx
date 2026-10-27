@@ -59,7 +59,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
   const { can } = useAuth();
   const canEditDelete = can('scrap.edit_delete');
   const canManageContacts = can('contacts.manage');
-  const canRecordPayment = can('finance.record_payment');
+  const canDeductAdvance = can('finance.record_payment') || can('scrap.create');
 
   const { range, setRange } = useDateRange();
   const [importTypeFilter, setImportTypeFilter] = useState<'all' | 'nvl' | 'thanh_pham'>('all');
@@ -380,7 +380,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           notes: data.notes,
         });
 
-        if (chosenAdvance) {
+        if (chosenAdvance && canDeductAdvance) {
           await paymentsService.recordPayment({
             ref_type: 'import',
             ref_id: createdImport.id,
@@ -1316,7 +1316,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           {/* Tích hợp Đối trừ Tạm ứng tiền hàng của Anh Hồ 1-chạm */}
           {!formState.data?.id &&
             (formState.data?.payment_status || 'paid') === 'paid' &&
-            canRecordPayment &&
+            canDeductAdvance &&
             availableMaterialAdvances.length > 0 && (
               <div className="p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/70 space-y-1.5">
                 <label className="text-xs font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
