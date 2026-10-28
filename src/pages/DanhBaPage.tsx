@@ -104,9 +104,7 @@ export const DanhBaPage: React.FC = () => {
   // Tính toán thống kê sản lượng thu mua, số chuyến, ngày lấy gần nhất & công nợ cho từng đơn vị
   const supplierStatsMap = useMemo(() => {
     const refDate =
-      allImports.length > 0
-        ? allImports.reduce((max, i) => (i.date > max ? i.date : max), today())
-        : today();
+      allImports.length > 0 ? allImports.reduce((max, i) => (i.date > max ? i.date : max), today()) : today();
     return computeSupplierCollectionStatsMap(suppliers, allImports, paidImports ?? {}, refDate, 14);
   }, [suppliers, allImports, paidImports]);
 
@@ -190,15 +188,7 @@ export const DanhBaPage: React.FC = () => {
           item.notes?.toLowerCase().includes(q)
         );
       });
-  }, [
-    contacts,
-    activeTab,
-    categoryFilter,
-    regionFilter,
-    collectionFilter,
-    supplierStatsMap,
-    searchQuery,
-  ]);
+  }, [contacts, activeTab, categoryFilter, regionFilter, collectionFilter, supplierStatsMap, searchQuery]);
 
   const sortedData = useMemo(() => sortRows(filteredData, sortConfig), [filteredData, sortConfig]);
 
@@ -370,17 +360,13 @@ export const DanhBaPage: React.FC = () => {
               <p className="font-mono text-sm sm:text-lg font-black text-[var(--text-primary)] truncate">
                 {supplierSummary.totalUnits} đơn vị
               </p>
-              <p className="text-[10px] text-[var(--text-muted)] truncate">
-                Phụ trách chính: Anh Hồ
-              </p>
+              <p className="text-[10px] text-[var(--text-muted)] truncate">Phụ trách chính: Anh Hồ</p>
             </div>
           </button>
 
           <button
             type="button"
-            onClick={() =>
-              setCollectionFilter(collectionFilter === 'active_14d' ? 'all' : 'active_14d')
-            }
+            onClick={() => setCollectionFilter(collectionFilter === 'active_14d' ? 'all' : 'active_14d')}
             className={cn(
               'card p-3 sm:p-4 flex items-center gap-3 text-left transition-all cursor-pointer bg-[var(--bg-surface)]',
               collectionFilter === 'active_14d' && 'ring-2 ring-emerald-500/50',
@@ -405,9 +391,7 @@ export const DanhBaPage: React.FC = () => {
           {canSeeFinance && (
             <button
               type="button"
-              onClick={() =>
-                setCollectionFilter(collectionFilter === 'has_debt' ? 'all' : 'has_debt')
-              }
+              onClick={() => setCollectionFilter(collectionFilter === 'has_debt' ? 'all' : 'has_debt')}
               className={cn(
                 'card p-3 sm:p-4 flex items-center gap-3 text-left transition-all cursor-pointer bg-[var(--bg-surface)]',
                 collectionFilter === 'has_debt' && 'ring-2 ring-amber-500/50',
@@ -432,9 +416,7 @@ export const DanhBaPage: React.FC = () => {
 
           <button
             type="button"
-            onClick={() =>
-              setCollectionFilter(collectionFilter === 'inactive_14d' ? 'all' : 'inactive_14d')
-            }
+            onClick={() => setCollectionFilter(collectionFilter === 'inactive_14d' ? 'all' : 'inactive_14d')}
             className={cn(
               'card p-3 sm:p-4 flex items-center gap-3 text-left transition-all cursor-pointer bg-[var(--bg-surface)]',
               collectionFilter === 'inactive_14d' && 'ring-2 ring-rose-500/50',
@@ -450,9 +432,7 @@ export const DanhBaPage: React.FC = () => {
               <p className="font-mono text-sm sm:text-lg font-black text-rose-600 truncate">
                 {supplierSummary.followUpUnits} mối hàng
               </p>
-              <p className="text-[10px] text-[var(--text-muted)] truncate">
-                Bấm lọc để Anh Hồ gọi hỏi hàng
-              </p>
+              <p className="text-[10px] text-[var(--text-muted)] truncate">Bấm lọc để Anh Hồ gọi hỏi hàng</p>
             </div>
           </button>
         </div>
@@ -733,9 +713,7 @@ export const DanhBaPage: React.FC = () => {
                           {canSeeFinance && (
                             <td className="td-cell text-right font-mono text-xs font-bold">
                               {stat && stat.payableAmount > 0 ? (
-                                <span className="text-amber-600">
-                                  {formatTien(stat.payableAmount)}
-                                </span>
+                                <span className="text-amber-600">{formatTien(stat.payableAmount)}</span>
                               ) : (
                                 <span className="text-emerald-600 text-[11px]">Đã tất toán</span>
                               )}
@@ -864,9 +842,7 @@ export const DanhBaPage: React.FC = () => {
                         <span className="text-[10px] text-[var(--text-muted)] uppercase block">
                           Đã gom ({stat.tripCount} chuyến)
                         </span>
-                        <span className="font-mono font-bold text-emerald-600">
-                          {formatKg(stat.totalKg)}
-                        </span>
+                        <span className="font-mono font-bold text-emerald-600">{formatKg(stat.totalKg)}</span>
                       </div>
                       <div>
                         <span className="text-[10px] text-[var(--text-muted)] uppercase block">
@@ -878,9 +854,7 @@ export const DanhBaPage: React.FC = () => {
                             stat.needsFollowUp ? 'text-rose-600' : 'text-[var(--text-primary)]',
                           )}
                         >
-                          {stat.lastCollectionDate
-                            ? formatNgay(stat.lastCollectionDate)
-                            : 'Chưa lấy'}
+                          {stat.lastCollectionDate ? formatNgay(stat.lastCollectionDate) : 'Chưa lấy'}
                         </span>
                       </div>
                     </>
@@ -980,9 +954,7 @@ export const DanhBaPage: React.FC = () => {
                 <select
                   className="input-field"
                   value={formState.data?.source_category || 'warehouse'}
-                  onChange={(e) =>
-                    handleChange('source_category', e.target.value as SourceCategory)
-                  }
+                  onChange={(e) => handleChange('source_category', e.target.value as SourceCategory)}
                 >
                   {Object.values(SOURCE_CATEGORY_CONFIG).map((cfg) => (
                     <option key={cfg.id} value={cfg.id}>

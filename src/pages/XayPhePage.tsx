@@ -203,17 +203,12 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
     const inputKg = Number(data.input_qty_kg) || 0;
     const outputKg = Number(data.output_qty_kg) || 0;
 
-    if (!data.import_id) {
-      toast.warning('Bắt buộc chọn lô phế nhập gốc trước khi lưu phiếu xay (theo Quy chế Điều 9)');
-      return;
-    }
-
     if (inputKg <= 0) {
       toast.warning('Khối lượng đầu vào phải lớn hơn 0 kg');
       return;
     }
 
-    const lotAvail = lotAvailabilityMap[data.import_id];
+    const lotAvail = data.import_id ? lotAvailabilityMap[data.import_id] : undefined;
     if (lotAvail && inputKg > lotAvail.remainingKg) {
       toast.warning(
         `Khối lượng đưa vào (${formatKg(inputKg)}) vượt quá lượng còn lại của lô nhập (${formatKg(lotAvail.remainingKg)})`,
@@ -650,9 +645,8 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             />
           </FormField>
 
-          <FormField label="Chọn lô phế nhập gốc (NVL)" required>
+          <FormField label="Lô phế nhập gốc (NVL) — Không bắt buộc">
             <select
-              required
               aria-label="Chọn lô phế nhập gốc"
               className="input-field"
               value={formState.data?.import_id || ''}
@@ -668,7 +662,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                 }
               }}
             >
-              <option value="">-- Chọn lô phế nhập còn tồn kho --</option>
+              <option value="">-- Không chọn lô (Xay gộp / Không rõ lô gốc) --</option>
               {selectableImports.map((imp) => {
                 const avail = lotAvailabilityMap[imp.id];
                 const remKg = avail ? avail.remainingKg : Number(imp.quantity_kg) || 0;
@@ -683,7 +677,8 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             {selectedLotAvailability && (
               <div className="mt-1.5 px-3 py-2 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)] flex flex-wrap items-center justify-between gap-2 text-[11px]">
                 <span className="text-[var(--text-secondary)]">
-                  Tổng lô gốc: <strong className="font-mono">{formatKg(selectedLotAvailability.totalKg)}</strong>
+                  Tổng lô gốc:{' '}
+                  <strong className="font-mono">{formatKg(selectedLotAvailability.totalKg)}</strong>
                 </span>
                 <span className="text-[var(--text-secondary)]">
                   Đã xay: <strong className="font-mono">{formatKg(selectedLotAvailability.usedKg)}</strong>

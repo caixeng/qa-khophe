@@ -130,7 +130,10 @@ export const paymentsService = {
     const payDate = params.date || today();
     const payMethod = params.method || 'transfer';
 
-    if (params.contact_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.contact_id)) {
+    if (
+      params.contact_id &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.contact_id)
+    ) {
       const rpcResult = await runQuery<{
         allocatedCount: number;
         totalAllocated: number;

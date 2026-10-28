@@ -2,6 +2,7 @@ import { AppErrorPanel } from '../components/AppErrorPanel';
 import { BusinessSettings } from '../components/BusinessSettings';
 import { UserManagementPanel } from '../components/UserManagementPanel';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
+import { EditProfileModal } from '../components/EditProfileModal';
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/theme';
@@ -18,6 +19,7 @@ import {
   Sliders,
   PackageMinus,
   KeyRound,
+  UserPen,
 } from 'lucide-react';
 import { cn, formatRole } from '../lib/utils';
 import { useAsyncData } from '../hooks/useAsyncData';
@@ -28,6 +30,7 @@ export const CaiDatPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
 
   const { data: lowStockThresholdData, refetch: refetchThreshold } = useAsyncData(
     settingsService.getLowStockThreshold,
@@ -91,6 +94,12 @@ export const CaiDatPage = () => {
 
   return (
     <div className="page-shell animate-in fade-in duration-300 max-w-5xl mx-auto">
+      {editProfileOpen && (
+        <EditProfileModal
+          onClose={() => setEditProfileOpen(false)}
+          onOpenChangePassword={() => setChangePasswordOpen(true)}
+        />
+      )}
       {changePasswordOpen && <ChangePasswordModal onClose={() => setChangePasswordOpen(false)} />}
 
       {/* Page Header */}
@@ -119,6 +128,7 @@ export const CaiDatPage = () => {
                   {user?.email?.endsWith('@accounts.khophe.local')
                     ? `${user.email.split('@')[0]} (${user.email})`
                     : user?.email || '—'}
+                  {user?.phone ? ` · SĐT: ${user.phone}` : ''}
                 </p>
                 <span className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--primary-50)] text-[var(--primary-600)] border border-[var(--primary-500)]/20">
                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary-500)]" />
@@ -128,14 +138,24 @@ export const CaiDatPage = () => {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setChangePasswordOpen(true)}
-            className="btn-secondary text-xs flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
-          >
-            <KeyRound size={14} />
-            <span>Đổi mật khẩu cá nhân</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+            <button
+              type="button"
+              onClick={() => setEditProfileOpen(true)}
+              className="btn-primary text-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <UserPen size={14} />
+              <span>Sửa thông tin cá nhân</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setChangePasswordOpen(true)}
+              className="btn-secondary text-xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <KeyRound size={14} />
+              <span>Đổi mật khẩu</span>
+            </button>
+          </div>
         </div>
       </div>
 

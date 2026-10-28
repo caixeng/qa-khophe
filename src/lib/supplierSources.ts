@@ -165,10 +165,7 @@ export interface CollectorLogSummary {
   unpaidAmount: number;
 }
 
-export function summarizeCollectorLog(
-  imports: Import[],
-  collectorName = 'Anh Hồ',
-): CollectorLogSummary {
+export function summarizeCollectorLog(imports: Import[], collectorName = 'Anh Hồ'): CollectorLogSummary {
   const normalizedTarget = collectorName.trim().toLowerCase();
   const matching = imports.filter(
     (imp) => (imp.collector_name || 'Anh Hồ').trim().toLowerCase() === normalizedTarget,

@@ -358,9 +358,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
       } else {
         // Nếu có chọn đối trừ tạm ứng, tạo phiếu ở trạng thái 'unpaid' rồi ghi payment gắn advance_id
         // để trigger DB tự động chuyển payment_status -> 'paid' và trừ số dư ứng chuẩn xác.
-        const initialPayStatus: PaymentStatus = chosenAdvance
-          ? 'unpaid'
-          : data.payment_status || 'paid';
+        const initialPayStatus: PaymentStatus = chosenAdvance ? 'unpaid' : data.payment_status || 'paid';
 
         const createdImport = await importsService.create({
           date: data.date || today(),
@@ -510,16 +508,12 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                   {formatKg(anhHoLog.totalKg)}
                 </b>{' '}
                 • Tổng tiền hàng:{' '}
-                <b className="font-mono text-[var(--text-primary)]">
-                  {formatTien(anhHoLog.totalAmount)}
-                </b>
+                <b className="font-mono text-[var(--text-primary)]">{formatTien(anhHoLog.totalAmount)}</b>
                 {anhHoOutstandingAdvance > 0 && (
                   <>
                     {' '}
                     • Tiền ứng mua hàng còn dư:{' '}
-                    <b className="font-mono text-amber-600">
-                      {formatTien(anhHoOutstandingAdvance)}
-                    </b>
+                    <b className="font-mono text-amber-600">{formatTien(anhHoOutstandingAdvance)}</b>
                   </>
                 )}
               </p>
@@ -529,9 +523,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() =>
-                setCollectorFilter(collectorFilter === 'anh_ho' ? 'all' : 'anh_ho')
-              }
+              onClick={() => setCollectorFilter(collectorFilter === 'anh_ho' ? 'all' : 'anh_ho')}
               className={cn(
                 'h-8 px-3 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border',
                 collectorFilter === 'anh_ho'
@@ -541,9 +533,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
             >
               <UserCheck size={14} />
               <span>
-                {collectorFilter === 'anh_ho'
-                  ? 'Đang lọc: Chuyến của Anh Hồ'
-                  : 'Lọc riêng chuyến Anh Hồ'}
+                {collectorFilter === 'anh_ho' ? 'Đang lọc: Chuyến của Anh Hồ' : 'Lọc riêng chuyến Anh Hồ'}
               </span>
             </button>
 
@@ -789,7 +779,8 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
               fields: [
                 {
                   label: 'Loại phế',
-                  value: item.import_type === 'thanh_pham' ? 'Phế Thành phẩm' : item.material_type || 'Phế NVL',
+                  value:
+                    item.import_type === 'thanh_pham' ? 'Phế Thành phẩm' : item.material_type || 'Phế NVL',
                 },
                 { label: 'Khối lượng', value: formatKg(item.quantity_kg) },
                 { label: 'Đơn giá', value: `${formatTien(item.price_per_kg)}/kg` },
@@ -846,9 +837,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                 <span className="text-[var(--text-muted)] block font-semibold uppercase">Loại phế</span>
                 <span className="font-bold text-sm text-[var(--text-primary)]">
                   {selectedDetail.material_type ||
-                    (selectedDetail.import_type === 'thanh_pham'
-                      ? 'Phế Thành phẩm'
-                      : 'Phế Nguyên Vật Liệu')}
+                    (selectedDetail.import_type === 'thanh_pham' ? 'Phế Thành phẩm' : 'Phế Nguyên Vật Liệu')}
                 </span>
               </div>
               {(selectedDetail.vehicle_info || selectedDetail.supplier_slip_code) && (
@@ -1132,9 +1121,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                     className="input-field text-xs"
                     placeholder="Tên đơn vị / Vựa / Xưởng *"
                     value={quickSupplier.name}
-                    onChange={(e) =>
-                      setQuickSupplier((prev) => ({ ...prev, name: e.target.value }))
-                    }
+                    onChange={(e) => setQuickSupplier((prev) => ({ ...prev, name: e.target.value }))}
                   />
                   <select
                     className="input-field text-xs"
@@ -1158,9 +1145,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                     className="input-field text-xs"
                     placeholder="Khu vực / Tuyến (VD: Đà Nẵng)"
                     value={quickSupplier.region}
-                    onChange={(e) =>
-                      setQuickSupplier((prev) => ({ ...prev, region: e.target.value }))
-                    }
+                    onChange={(e) => setQuickSupplier((prev) => ({ ...prev, region: e.target.value }))}
                   />
                   <datalist id="quick-supplier-regions">
                     {COMMON_REGIONS.map((r) => (
@@ -1181,9 +1166,7 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                     className="input-field text-xs font-mono"
                     placeholder="Số điện thoại"
                     value={quickSupplier.phone}
-                    onChange={(e) =>
-                      setQuickSupplier((prev) => ({ ...prev, phone: e.target.value }))
-                    }
+                    onChange={(e) => setQuickSupplier((prev) => ({ ...prev, phone: e.target.value }))}
                   />
                   <input
                     type="number"
@@ -1338,7 +1321,8 @@ export const NhapPhePage: React.FC<NhapPhePageProps> = ({ actionRef }) => {
                   ))}
                 </select>
                 <p className="text-[11px] text-amber-800 dark:text-amber-300">
-                  Khi chọn trừ vào tiền ứng, hệ thống tự động tạo phiếu thanh toán và khấu trừ số dư tạm ứng mua hàng của Anh Hồ ngay lập tức.
+                  Khi chọn trừ vào tiền ứng, hệ thống tự động tạo phiếu thanh toán và khấu trừ số dư tạm ứng
+                  mua hàng của Anh Hồ ngay lập tức.
                 </p>
               </div>
             )}

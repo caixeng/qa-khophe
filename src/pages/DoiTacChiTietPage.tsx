@@ -182,7 +182,9 @@ export const DoiTacChiTietPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() =>
-                        navigate(`/quan-ly-phe?tab=nhap&open=true&contactId=${encodeURIComponent(contact.id)}`)
+                        navigate(
+                          `/quan-ly-phe?tab=nhap&open=true&contactId=${encodeURIComponent(contact.id)}`,
+                        )
                       }
                       className="btn-primary !min-h-8 !px-3 !py-1.5 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
                     >
@@ -190,10 +192,7 @@ export const DoiTacChiTietPage: React.FC = () => {
                       <span>Ghi phiếu thu mua</span>
                     </button>
                   )}
-                  <Link
-                    to="/danh-ba"
-                    className="text-xs font-bold text-[var(--primary-500)] hover:underline"
-                  >
+                  <Link to="/danh-ba" className="text-xs font-bold text-[var(--primary-500)] hover:underline">
                     Danh bạ
                   </Link>
                 </div>
@@ -240,9 +239,7 @@ export const DoiTacChiTietPage: React.FC = () => {
                 </div>
               </div>
               {contact.notes && (
-                <p className="text-xs italic text-[var(--text-muted)] pt-1">
-                  Ghi chú: {contact.notes}
-                </p>
+                <p className="text-xs italic text-[var(--text-muted)] pt-1">Ghi chú: {contact.notes}</p>
               )}
             </div>
 

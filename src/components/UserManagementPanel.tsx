@@ -51,14 +51,16 @@ const ROLE_OPTIONS: { value: UserRole; label: string; description: string; badge
   {
     value: 'accountant',
     label: 'Kế toán & Tài chính',
-    description: 'Quản lý tạm ứng, chi phí xưởng, công nợ đối tác, chấm công & chốt lương; hậu kiểm chứng từ kho',
+    description:
+      'Quản lý tạm ứng, chi phí xưởng, công nợ đối tác, chấm công & chốt lương; hậu kiểm chứng từ kho',
     badgeClass:
       'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60',
   },
   {
     value: 'staff',
     label: 'Thu mua & Nguồn hàng (Anh Hồ)',
-    description: 'Quản lý hồ sơ đơn vị nhập phế, đi thu mua hàng ngày, ghi phiếu nhập & đối trừ tạm ứng mua hàng',
+    description:
+      'Quản lý hồ sơ đơn vị nhập phế, đi thu mua hàng ngày, ghi phiếu nhập & đối trừ tạm ứng mua hàng',
     badgeClass:
       'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700',
   },

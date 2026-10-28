@@ -131,20 +131,18 @@ export const contactsService = {
 
     if (schemaLevel === 'full' || schemaLevel === null) {
       if (contact.contact_person !== undefined) basePayload.contact_person = contact.contact_person || null;
-      if (contact.source_category !== undefined) basePayload.source_category = contact.source_category || 'other';
+      if (contact.source_category !== undefined)
+        basePayload.source_category = contact.source_category || 'other';
       if (contact.region !== undefined) basePayload.region = contact.region || null;
       if (contact.main_material_type !== undefined)
         basePayload.main_material_type = contact.main_material_type || null;
       if (contact.bank_info !== undefined) basePayload.bank_info = contact.bank_info || null;
-      if (contact.collector_name !== undefined) basePayload.collector_name = contact.collector_name || 'Anh Hồ';
+      if (contact.collector_name !== undefined)
+        basePayload.collector_name = contact.collector_name || 'Anh Hồ';
     }
 
     const row = await runQuery<ContactRow>('thêm đối tác', () =>
-      supabase
-        .from('contacts')
-        .insert(basePayload)
-        .select(getActiveSelectColumns())
-        .single<ContactRow>(),
+      supabase.from('contacts').insert(basePayload).select(getActiveSelectColumns()).single<ContactRow>(),
     );
 
     return mapRow(row);
@@ -178,7 +176,12 @@ export const contactsService = {
     }
 
     const row = await runQuery<ContactRow>('cập nhật đối tác', () =>
-      supabase.from('contacts').update(payload).eq('id', id).select(getActiveSelectColumns()).single<ContactRow>(),
+      supabase
+        .from('contacts')
+        .update(payload)
+        .eq('id', id)
+        .select(getActiveSelectColumns())
+        .single<ContactRow>(),
     );
 
     return mapRow(row);

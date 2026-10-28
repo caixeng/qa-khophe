@@ -81,7 +81,9 @@ describe('paymentsService.recordBulkFifoPayment', () => {
     });
 
     expect(insertMock).toHaveBeenCalledTimes(1);
-    const insertedRows = (insertMock.mock.calls[0] as unknown as [Array<{ ref_id: string; amount: number }>])[0];
+    const insertedRows = (
+      insertMock.mock.calls[0] as unknown as [Array<{ ref_id: string; amount: number }>]
+    )[0];
     expect(insertedRows).toHaveLength(2);
     expect(insertedRows[0]).toMatchObject({
       ref_id: 'exp-old',

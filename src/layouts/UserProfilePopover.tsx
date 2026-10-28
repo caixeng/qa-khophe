@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, LogOut, Check, Sun, Leaf, Moon } from 'lucide-react';
+import { ChevronDown, LogOut, Check, Sun, Leaf, Moon, UserPen, KeyRound } from 'lucide-react';
 import { ChangePasswordModal } from '../components/ChangePasswordModal';
+import { EditProfileModal } from '../components/EditProfileModal';
 import { cn } from '../lib/utils';
 import { useAuth } from '../contexts/auth';
 import { useTheme, PRIMARY_COLORS, type Theme, type Density } from '../contexts/theme';
@@ -14,6 +15,7 @@ const THEME_OPTIONS: { id: Theme; label: string; icon: React.ElementType }[] = [
 ];
 
 export const UserProfilePopover = () => {
+  const [profileOpen, setProfileOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const { user, logout } = useAuth();
@@ -60,6 +62,12 @@ export const UserProfilePopover = () => {
 
   return (
     <div className="relative">
+      {profileOpen && (
+        <EditProfileModal
+          onClose={() => setProfileOpen(false)}
+          onOpenChangePassword={() => setPasswordOpen(true)}
+        />
+      )}
       {passwordOpen && <ChangePasswordModal onClose={() => setPasswordOpen(false)} />}
       <button
         onClick={() => setShowDropdown(!showDropdown)}
@@ -94,13 +102,29 @@ export const UserProfilePopover = () => {
             className="absolute right-0 mt-2 w-72 origin-top-right rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-color)] p-4 shadow-xl z-50 animate-fade-in text-left"
           >
             {/* User info header */}
-            <div className="pb-3 border-b border-[var(--border-color)]">
-              <p className="text-[13px] font-bold text-[var(--text-primary)]">{user?.name || 'Người dùng'}</p>
-              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
-                {user?.email?.endsWith('@accounts.khophe.local')
-                  ? user.email.split('@')[0]
-                  : user?.email || '—'}
-              </p>
+            <div className="pb-3 border-b border-[var(--border-color)] flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[13px] font-bold text-[var(--text-primary)] truncate">
+                  {user?.name || 'Người dùng'}
+                </p>
+                <p className="text-[11px] text-[var(--text-muted)] mt-0.5 truncate">
+                  {user?.email?.endsWith('@accounts.khophe.local')
+                    ? user.email.split('@')[0]
+                    : user?.email || '—'}
+                  {user?.phone ? ` · ${user.phone}` : ''}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDropdown(false);
+                  setProfileOpen(true);
+                }}
+                title="Chỉnh sửa thông tin cá nhân"
+                className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--primary-600)] hover:bg-[var(--bg-subtle)] transition-colors cursor-pointer shrink-0"
+              >
+                <UserPen size={14} />
+              </button>
             </div>
 
             {/* CÀI ĐẶT CÁ NHÂN */}
@@ -189,16 +213,31 @@ export const UserProfilePopover = () => {
               </div>
             </div>
 
-            <button
-              type="button"
-              className="btn-secondary w-full mt-3 text-xs"
-              onClick={() => {
-                setShowDropdown(false);
-                setPasswordOpen(true);
-              }}
-            >
-              Đổi mật khẩu
-            </button>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                className="btn-secondary w-full text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                onClick={() => {
+                  setShowDropdown(false);
+                  setProfileOpen(true);
+                }}
+              >
+                <UserPen size={13} />
+                <span>Sửa hồ sơ</span>
+              </button>
+              <button
+                type="button"
+                className="btn-secondary w-full text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                onClick={() => {
+                  setShowDropdown(false);
+                  setPasswordOpen(true);
+                }}
+              >
+                <KeyRound size={13} />
+                <span>Đổi mật khẩu</span>
+              </button>
+            </div>
+
             {/* Logout Button */}
             <div className="pt-2">
               <button

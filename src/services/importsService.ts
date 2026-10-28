@@ -132,11 +132,7 @@ export const importsService = {
     }
 
     const row = await runQuery<ImportRow>('thêm phiếu nhập', () =>
-      supabase
-        .from('imports')
-        .insert(payload)
-        .select(getActiveSelectColumns())
-        .single<ImportRow>(),
+      supabase.from('imports').insert(payload).select(getActiveSelectColumns()).single<ImportRow>(),
     );
 
     return mapRow(row);
