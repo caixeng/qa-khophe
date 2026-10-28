@@ -91,6 +91,15 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
       worker: 'Hoa',
     },
   });
+  const inputManuallyEditedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (formState.isOpen) {
+      inputManuallyEditedRef.current = Boolean(
+        formState.data?.id || (Number(formState.data?.input_qty_kg) || 0) > 0,
+      );
+    }
+  }, [formState.isOpen, formState.data?.id]);
 
   const [searchParams] = useSearchParams();
 
@@ -186,8 +195,13 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
     return importsList.filter((imp) => {
       if (imp.import_type === 'thanh_pham') return false;
       if (imp.id === currentImportId) return true;
+      // Ẩn các lô đã đánh dấu "Hoàn thành" ở trang Nhập phế liệu
+      if (imp.processing_status === 'done') return false;
       const avail = lotAvailabilityMap[imp.id];
-      return avail ? avail.remainingKg > 0 : (Number(imp.quantity_kg) || 0) > 0;
+      const remKg = avail ? avail.remainingKg : Number(imp.quantity_kg) || 0;
+      // Lô đang ở trạng thái "Đang xay" luôn hiển thị trong danh sách
+      if (imp.processing_status === 'grinding') return true;
+      return remKg > 0;
     });
   }, [importsList, lotAvailabilityMap, formState.data?.import_id]);
 
@@ -652,13 +666,12 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
               value={formState.data?.import_id || ''}
               onChange={(e) => {
                 const impId = e.target.value;
-                const avail = lotAvailabilityMap[impId];
-                const imp = importsById[impId];
                 handleChange('import_id', impId);
-                if (avail && avail.remainingKg > 0) {
-                  handleChange('input_qty_kg' as any, avail.remainingKg);
-                } else if (imp && imp.quantity_kg) {
-                  handleChange('input_qty_kg' as any, imp.quantity_kg);
+                // Không tự động điền toàn bộ khối lượng cả lô (VD: 37 tấn, 100 tấn) vào ô Đầu vào
+                // để tránh nuốt sạch tồn lô trong 1 mẻ xay lẻ và tính nhầm hao hụt hàng chục tấn.
+                const currentOut = Number((formState.data as any)?.output_qty_kg) || 0;
+                if (!inputManuallyEditedRef.current && currentOut > 0) {
+                  handleChange('input_qty_kg' as any, currentOut);
                 }
               }}
             >
@@ -687,6 +700,18 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                   Còn lại khả dụng:{' '}
                   <strong className="font-mono">{formatKg(selectedLotAvailability.remainingKg)}</strong>
                 </span>
+                {selectedLotAvailability.remainingKg > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      inputManuallyEditedRef.current = true;
+                      handleChange('input_qty_kg' as any, selectedLotAvailability.remainingKg);
+                    }}
+                    className="px-2 py-0.5 rounded bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-semibold transition-colors cursor-pointer"
+                  >
+                    Xay hết tồn lô ({formatKg(selectedLotAvailability.remainingKg)})
+                  </button>
+                )}
               </div>
             )}
           </FormField>
@@ -698,12 +723,20 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                 inputMode="decimal"
                 required
                 min="1"
-                max={selectedLotAvailability ? selectedLotAvailability.remainingKg : undefined}
+                max={
+                  selectedLotAvailability && selectedLotAvailability.remainingKg > 0
+                    ? selectedLotAvailability.remainingKg
+                    : undefined
+                }
                 step="any"
                 className="input-field font-mono font-bold"
-                placeholder="0"
+                placeholder="Tự khớp theo đầu ra"
                 value={(formState.data as any)?.input_qty_kg || ''}
-                onChange={(e) => handleChange('input_qty_kg' as any, Number(e.target.value))}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  inputManuallyEditedRef.current = val > 0;
+                  handleChange('input_qty_kg' as any, val);
+                }}
               />
             </FormField>
 
@@ -721,6 +754,9 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                   const outKg = Number(e.target.value);
                   handleChange('output_qty_kg' as any, outKg);
                   handleChange('bags_count', outKg > 0 ? Math.round(outKg / kgPerBag) : 0);
+                  if (!inputManuallyEditedRef.current) {
+                    handleChange('input_qty_kg' as any, outKg);
+                  }
                 }}
               />
             </FormField>
