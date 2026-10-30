@@ -22,6 +22,7 @@
     /* Theme Surfaces (Nature Warm Sand & Cream) */
     --bg-app: #f0ece1;
     --bg-surface: #fcf9f2;
+    --bg-card: var(--bg-surface);
     --bg-subtle: #f5efe6;
     --bg-muted: #ede8df;
     --bg-elevated: #fdfaf4;
@@ -55,6 +56,7 @@
 
     --bg-app: #f8fafc;
     --bg-surface: #ffffff;
+    --bg-card: var(--bg-surface);
     --bg-subtle: #f1f5f9;
     --bg-muted: #e2e8f0;
     --bg-elevated: #ffffff;
@@ -86,6 +88,7 @@
 
     --bg-app: #0f1117;
     --bg-surface: #151d2e;
+    --bg-card: var(--bg-surface);
     --bg-subtle: #1e293b;
     --bg-muted: #293548;
     --bg-elevated: #1e293b;

@@ -738,8 +738,11 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                     </button>
 
                     {lotDropdownOpen && (
-                      <div className="absolute left-0 right-0 z-50 mt-1 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xl overflow-hidden">
-                        {selectableImports.length > 4 && (
+                      <div
+                        className="mt-1.5 rounded-xl bg-[var(--bg-surface)] border-2 border-[var(--primary-500)]/40 shadow-lg overflow-hidden"
+                        style={{ backgroundColor: 'var(--bg-surface, #fcf9f2)' }}
+                      >
+                        {selectableImports.length > 3 && (
                           <div className="p-2 border-b border-[var(--border-subtle)] bg-[var(--bg-subtle)]">
                             <div className="relative">
                               <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
@@ -748,18 +751,18 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                                 value={lotSearch}
                                 onChange={(e) => setLotSearch(e.target.value)}
                                 placeholder="Tìm nhanh NCC, ngày, loại phế..."
-                                className="w-full pl-8 pr-2.5 py-1.5 text-xs rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-emerald-500"
+                                className="w-full pl-8 pr-2.5 py-1.5 text-xs rounded-lg bg-[var(--bg-surface)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-emerald-500"
                               />
                             </div>
                           </div>
                         )}
 
-                        <div className="max-h-56 overflow-y-auto overscroll-contain divide-y divide-[var(--border-subtle)]">
+                        <div className="max-h-56 overflow-y-auto overscroll-contain divide-y divide-[var(--border-subtle)] bg-[var(--bg-surface)]">
                           <button
                             type="button"
                             onClick={() => selectLot('')}
                             className={cn(
-                              'w-full px-3 py-2 text-left flex items-center justify-between gap-2 text-xs transition-colors cursor-pointer',
+                              'w-full px-3 py-2.5 text-left flex items-center justify-between gap-2 text-xs transition-colors cursor-pointer',
                               !formState.data?.import_id
                                 ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold'
                                 : 'hover:bg-[var(--bg-subtle)] text-[var(--text-secondary)]',
@@ -786,7 +789,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                                   type="button"
                                   onClick={() => selectLot(imp.id)}
                                   className={cn(
-                                    'w-full px-3 py-2 text-left transition-colors cursor-pointer flex items-center justify-between gap-2',
+                                    'w-full px-3 py-2 text-left transition-colors cursor-pointer flex items-center justify-between gap-2 bg-[var(--bg-surface)]',
                                     isSelected
                                       ? 'bg-emerald-500/10'
                                       : 'hover:bg-[var(--bg-subtle)] active:bg-[var(--bg-subtle)]',
@@ -809,9 +812,13 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                                           <span className="shrink-0">{imp.collector_name}</span>
                                         </>
                                       )}
-                                      {imp.processing_status === 'grinding' && (
-                                        <span className="ml-auto shrink-0 px-1.5 py-0.2 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400 text-[10px] font-semibold">
+                                      {imp.processing_status === 'grinding' ? (
+                                        <span className="ml-auto shrink-0 px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-600 dark:text-blue-400 text-[10px] font-semibold">
                                           Đang xay
+                                        </span>
+                                      ) : (
+                                        <span className="ml-auto shrink-0 px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 text-[10px] font-semibold">
+                                          Chờ xay
                                         </span>
                                       )}
                                     </div>
@@ -830,7 +837,7 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                 );
               })()}
             </div>
-            {selectedLotAvailability && (
+            {selectedLotAvailability && !lotDropdownOpen && (
               <div className="mt-1.5 px-3 py-2 rounded-lg bg-[var(--bg-subtle)] border border-[var(--border-color)] flex flex-wrap items-center justify-between gap-2 text-[11px]">
                 <span className="text-[var(--text-secondary)]">
                   Tổng lô gốc:{' '}
