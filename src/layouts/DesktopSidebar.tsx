@@ -41,7 +41,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="w-10 h-10 rounded-xl p-0.5 shrink-0 overflow-hidden border border-white/20">
             <img
-              src="/vua_phe_logo2.jpg"
+              src={`${import.meta.env.BASE_URL}vua_phe_logo2.jpg`}
               alt="VUA PHẾ Logo"
               className="w-full h-full object-cover rounded-lg"
             />

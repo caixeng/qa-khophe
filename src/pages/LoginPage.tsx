@@ -72,7 +72,7 @@ export const LoginPage = () => {
           <div className="mb-8">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl mb-6 overflow-hidden border border-[var(--border-color)]">
               <img
-                src="/vua_phe_logo2.jpg"
+                src={`${import.meta.env.BASE_URL}vua_phe_logo2.jpg`}
                 alt="VUA PHẾ Logo"
                 className="w-full h-full object-cover rounded-xl"
               />
