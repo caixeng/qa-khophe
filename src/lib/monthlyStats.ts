@@ -243,3 +243,131 @@ export function aggregateMonthlyStats(params: {
 
   return months.map((m) => map.get(m)!);
 }
+
+
+/**
+ * Tạo danh sách các ngày liên tiếp từ `from` đến `to` (YYYY-MM-DD).
+ * Giới hạn tối đa 90 ngày gần nhất trong khoảng để biểu đồ luôn mượt.
+ */
+export function getDatesInRange(from: string, to: string, maxDays = 90): string[] {
+  if (!from || !to) return [];
+  const start = new Date(`${from}T00:00:00`);
+  const end = new Date(`${to}T00:00:00`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return [];
+
+  const [a, b] = start <= end ? [start, end] : [end, start];
+  const all: string[] = [];
+  const cursor = new Date(a);
+  while (cursor <= b) {
+    const y = cursor.getFullYear();
+    const m = String(cursor.getMonth() + 1).padStart(2, '0');
+    const d = String(cursor.getDate()).padStart(2, '0');
+    all.push(`${y}-${m}-${d}`);
+    cursor.setDate(cursor.getDate() + 1);
+    if (all.length > 366) break;
+  }
+  return all.length > maxDays ? all.slice(all.length - maxDays) : all;
+}
+
+export function formatDayLabel(dateStr: string, isShort = false): string {
+  if (!dateStr || dateStr.length < 10) return dateStr;
+  const [y, m, d] = dateStr.split('-');
+  if (isShort) {
+    return `${d}/${m}`;
+  }
+  return `Ngày ${d}/${m}/${y}`;
+}
+
+/**
+ * Tổng hợp dữ liệu theo từng ngày (dùng cho chế độ "Hôm nay", "7 ngày", "Từ ngày - Đến ngày")
+ */
+export function aggregateDailyStats(params: {
+  dates: string[];
+  imports: RawImport[];
+  exports: RawExport[];
+  grinding: RawGrinding[];
+  expenses: RawExpense[];
+  attendance?: RawAttendance[];
+}): MonthlyStatItem[] {
+  const { dates, imports, exports, grinding, expenses, attendance = [] } = params;
+
+  const map = new Map<string, MonthlyStatItem>();
+  for (const d of dates) {
+    map.set(d, {
+      month: d,
+      label: formatDayLabel(d, false),
+      shortLabel: formatDayLabel(d, true),
+      importKg: 0,
+      groundKg: 0,
+      exportKg: 0,
+      exportBags: 0,
+      importCost: 0,
+      revenue: 0,
+      operatingCost: 0,
+      profit: 0,
+    });
+  }
+
+  for (const item of imports) {
+    if (!item?.date) continue;
+    const d = item.date.slice(0, 10);
+    const stat = map.get(d);
+    if (stat) {
+      stat.importKg += Number(item.quantity_kg) || 0;
+      stat.importCost += Number(item.total_amount) || 0;
+    }
+  }
+
+  for (const item of exports) {
+    if (!item?.date) continue;
+    const d = item.date.slice(0, 10);
+    const stat = map.get(d);
+    if (stat) {
+      stat.exportKg += Number(item.total_kg) || 0;
+      stat.exportBags += Number(item.bags_count) || 0;
+      stat.revenue += Number(item.total_amount) || 0;
+    }
+  }
+
+  for (const item of grinding) {
+    if (!item?.date) continue;
+    const d = item.date.slice(0, 10);
+    const stat = map.get(d);
+    if (stat) {
+      stat.groundKg += Number(item.output_qty_kg) || 0;
+    }
+  }
+
+  for (const item of expenses) {
+    if (!item?.date) continue;
+    const d = item.date.slice(0, 10);
+    const stat = map.get(d);
+    if (stat) {
+      stat.operatingCost += Number(item.amount) || 0;
+    }
+  }
+
+  for (const item of attendance) {
+    if (!item?.date) continue;
+    const d = item.date.slice(0, 10);
+    const stat = map.get(d);
+    if (stat) {
+      const netPay = Number(item.net_pay) || 0;
+      const advancePay = Number(item.advance_pay) || 0;
+      stat.operatingCost +=
+        item.work_shift !== undefined && item.daily_pay !== undefined
+          ? calculateAttendancePay({
+              work_shift: item.work_shift,
+              daily_pay: item.daily_pay,
+              overtime_hours: item.overtime_hours,
+            }).gross
+          : netPay + advancePay;
+    }
+  }
+
+  for (const stat of map.values()) {
+    stat.profit = stat.revenue - stat.importCost - stat.operatingCost;
+  }
+
+  return dates.map((d) => map.get(d)!);
+}

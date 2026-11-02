@@ -287,28 +287,57 @@ export const BaoCaoPage: React.FC = () => {
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [expenses]);
 
-  // Combined daily chart data
+  // Combined daily chart data (luôn hiển thị ngày hôm nay và đầy đủ các ngày trong khoảng lọc <= 31 ngày)
   const dailyChartData = useMemo(() => {
-    const datesMap: Record<string, { importKg: number; exportKg: number }> = {};
+    const datesMap: Record<string, { importKg: number; groundKg: number; exportKg: number }> = {};
+
+    const start = new Date(`${range.from}T00:00:00`);
+    const end = new Date(`${range.to}T00:00:00`);
+    const diffDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+
+    if (!Number.isNaN(diffDays) && diffDays >= 1 && diffDays <= 31) {
+      const cur = new Date(start);
+      while (cur <= end) {
+        const dStr = toISODate(cur);
+        datesMap[dStr] = { importKg: 0, groundKg: 0, exportKg: 0 };
+        cur.setDate(cur.getDate() + 1);
+      }
+    }
+
+    const t = today();
+    if (t >= range.from && t <= range.to && !datesMap[t]) {
+      datesMap[t] = { importKg: 0, groundKg: 0, exportKg: 0 };
+    }
 
     imports.forEach((i) => {
-      if (!datesMap[i.date]) datesMap[i.date] = { importKg: 0, exportKg: 0 };
+      if (!datesMap[i.date]) datesMap[i.date] = { importKg: 0, groundKg: 0, exportKg: 0 };
       datesMap[i.date].importKg += Number(i.quantity_kg) || 0;
     });
 
+    grinding.forEach((g) => {
+      if (!datesMap[g.date]) datesMap[g.date] = { importKg: 0, groundKg: 0, exportKg: 0 };
+      datesMap[g.date].groundKg += Number(g.output_qty_kg) || 0;
+    });
+
     exports.forEach((e) => {
-      if (!datesMap[e.date]) datesMap[e.date] = { importKg: 0, exportKg: 0 };
+      if (!datesMap[e.date]) datesMap[e.date] = { importKg: 0, groundKg: 0, exportKg: 0 };
       datesMap[e.date].exportKg += Number(e.total_kg) || 0;
     });
 
     return Object.entries(datesMap)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, val]) => ({
-        date,
-        'Nhập (kg)': val.importKg,
-        'Xuất (kg)': val.exportKg,
-      }));
-  }, [imports, exports]);
+      .map(([date, val]) => {
+        const parts = date.split('-');
+        const shortDate = parts.length === 3 ? `${parts[2]}/${parts[1]}` : date;
+        return {
+          date: shortDate,
+          fullDate: date,
+          'Nhập (kg)': val.importKg,
+          'Xay (kg)': val.groundKg,
+          'Xuất (kg)': val.exportKg,
+        };
+      });
+  }, [imports, grinding, exports, range.from, range.to]);
 
   const [exporting, setExporting] = useState(false);
 
@@ -720,9 +749,11 @@ export const BaoCaoPage: React.FC = () => {
             )}
 
             <div className="card p-6 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-2xl">
-              <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4">
-                Biểu đồ so sánh sản lượng Nhập vs Xuất theo ngày
-              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <h3 className="text-sm font-bold text-[var(--text-primary)]">
+                  Biểu đồ sản lượng Nhập – Xay – Xuất theo ngày ({range.from} đến {range.to})
+                </h3>
+              </div>
               <div className="h-80 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={dailyChartData}>
@@ -732,6 +763,7 @@ export const BaoCaoPage: React.FC = () => {
                     <Tooltip formatter={(val: any) => formatKg(Number(val) || 0)} />
                     <Legend />
                     <Bar dataKey="Nhập (kg)" fill="#059669" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Xay (kg)" fill="#d97706" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="Xuất (kg)" fill="#2563eb" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>

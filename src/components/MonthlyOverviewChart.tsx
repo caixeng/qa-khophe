@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   BarChart,
   Bar,
@@ -12,16 +12,34 @@ import {
   Line,
   ComposedChart,
 } from 'recharts';
-import { BarChart3, Package, Truck, Cog, DollarSign, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
-import { cn, formatKg, formatTien } from '../lib/utils';
+import {
+  BarChart3,
+  Package,
+  Truck,
+  Cog,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  CalendarRange,
+} from 'lucide-react';
+import { cn, formatKg, formatTien, formatNgay } from '../lib/utils';
+import { today, daysAgo } from '../lib/date';
 import {
   getRecentMonths,
+  getDatesInRange,
   formatCompactWeight,
   formatCompactMoney,
   aggregateMonthlyStats,
+  aggregateDailyStats,
   computeGrowth,
   type MonthlyStatItem,
 } from '../lib/monthlyStats';
+import { importsService } from '../services/importsService';
+import { exportsService } from '../services/exportsService';
+import { grindingService } from '../services/grindingService';
+import { expensesService } from '../services/expensesService';
+import { attendanceService } from '../services/employeesService';
 import type { Import, Export, Grinding, Expense, Attendance } from '../types';
 
 export interface MonthlyOverviewChartProps {
@@ -36,7 +54,7 @@ export interface MonthlyOverviewChartProps {
 }
 
 type MetricMode = 'volume' | 'finance';
-type TimeHorizon = '6m' | '12m' | 'year';
+type TimeHorizon = 'today' | '7d' | '30d' | 'custom' | '6m' | '12m' | 'year';
 
 export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
   imports = [],
@@ -49,7 +67,84 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
   className,
 }) => {
   const [metricMode, setMetricMode] = useState<MetricMode>('volume');
-  const [timeHorizon, setTimeHorizon] = useState<TimeHorizon>('6m');
+  const [timeHorizon, setTimeHorizon] = useState<TimeHorizon>('7d');
+  const [customFrom, setCustomFrom] = useState<string>(() => daysAgo(6));
+  const [customTo, setCustomTo] = useState<string>(() => today());
+
+  const isDailyMode =
+    timeHorizon === 'today' || timeHorizon === '7d' || timeHorizon === '30d' || timeHorizon === 'custom';
+
+  const activeDateRange = useMemo(() => {
+    if (timeHorizon === 'today') {
+      const t = today();
+      return { from: t, to: t };
+    }
+    if (timeHorizon === '7d') {
+      return { from: daysAgo(6), to: today() };
+    }
+    if (timeHorizon === '30d') {
+      return { from: daysAgo(29), to: today() };
+    }
+    const f = customFrom || today();
+    const t = customTo || today();
+    return f <= t ? { from: f, to: t } : { from: t, to: f };
+  }, [timeHorizon, customFrom, customTo]);
+
+  // Tải dữ liệu chi tiết theo ngày khi ở chế độ xem theo ngày (Hôm nay / 7 ngày / 30 ngày / Từ ngày - Đến ngày)
+  const [dailyFetched, setDailyFetched] = useState<{
+    imports: Import[];
+    exports: Export[];
+    grinding: Grinding[];
+    expenses: Expense[];
+    attendance: Attendance[];
+    loading: boolean;
+  }>({
+    imports: [],
+    exports: [],
+    grinding: [],
+    expenses: [],
+    attendance: [],
+    loading: false,
+  });
+
+  const hasPassedRawLists = imports.length > 0 || exports.length > 0 || grinding.length > 0;
+
+  useEffect(() => {
+    if (!isDailyMode || hasPassedRawLists) return;
+    let cancelled = false;
+    setDailyFetched((prev) => ({ ...prev, loading: true }));
+
+    Promise.all([
+      importsService.getAll({ from: activeDateRange.from, to: activeDateRange.to, all: true }),
+      exportsService.getAll({ from: activeDateRange.from, to: activeDateRange.to, all: true }),
+      grindingService.getAll({ from: activeDateRange.from, to: activeDateRange.to, all: true }),
+      canSeeFinance
+        ? expensesService.getExpenses({ from: activeDateRange.from, to: activeDateRange.to, all: true })
+        : Promise.resolve([]),
+      canSeeFinance
+        ? attendanceService.getAttendance({ from: activeDateRange.from, to: activeDateRange.to, all: true })
+        : Promise.resolve([]),
+    ])
+      .then(([imp, exp, grd, exps, att]) => {
+        if (cancelled) return;
+        setDailyFetched({
+          imports: imp,
+          exports: exp,
+          grinding: grd,
+          expenses: exps,
+          attendance: att,
+          loading: false,
+        });
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDailyFetched((prev) => ({ ...prev, loading: false }));
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isDailyMode, hasPassedRawLists, activeDateRange.from, activeDateRange.to, canSeeFinance]);
 
   // Xác định danh sách các tháng dựa trên timeHorizon
   const targetMonths = useMemo(() => {
@@ -66,14 +161,49 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
       }
       return monthsInYear;
     }
-    // Mặc định: 6 tháng gần nhất (rất vừa vặn trên màn hình mobile)
     return getRecentMonths(6, now);
   }, [timeHorizon]);
 
-  // Tổng hợp dữ liệu các tháng
-  const monthlyData = useMemo(() => {
-    if (monthlyStats)
-      return targetMonths.map((month) => monthlyStats.find((row) => row.month === month)!).filter(Boolean);
+  // Tổng hợp dữ liệu biểu đồ (theo ngày hoặc theo tháng)
+  const chartData = useMemo(() => {
+    if (isDailyMode) {
+      const dates = getDatesInRange(activeDateRange.from, activeDateRange.to, 90);
+      const srcImports = hasPassedRawLists ? imports : dailyFetched.imports;
+      const srcExports = hasPassedRawLists ? exports : dailyFetched.exports;
+      const srcGrinding = hasPassedRawLists ? grinding : dailyFetched.grinding;
+      const srcExpenses = hasPassedRawLists ? expenses : dailyFetched.expenses;
+      const srcAttendance = hasPassedRawLists ? attendance : dailyFetched.attendance;
+
+      return aggregateDailyStats({
+        dates,
+        imports: srcImports,
+        exports: srcExports,
+        grinding: srcGrinding,
+        expenses: srcExpenses,
+        attendance: srcAttendance,
+      });
+    }
+
+    if (monthlyStats) {
+      return targetMonths
+        .map(
+          (month) =>
+            monthlyStats.find((row) => row.month === month) ?? {
+              month,
+              label: `Thg ${ parseInt(month.split('-')[1], 10) }/${month.slice(2, 4)}`,
+              shortLabel: `T${parseInt(month.split('-')[1], 10)}`,
+              importKg: 0,
+              groundKg: 0,
+              exportKg: 0,
+              exportBags: 0,
+              importCost: 0,
+              revenue: 0,
+              operatingCost: 0,
+              profit: 0,
+            },
+        )
+        .filter(Boolean);
+    }
     return aggregateMonthlyStats({
       months: targetMonths,
       imports,
@@ -82,53 +212,114 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
       expenses,
       attendance,
     });
-  }, [targetMonths, imports, exports, grinding, expenses, attendance, monthlyStats]);
+  }, [
+    isDailyMode,
+    activeDateRange.from,
+    activeDateRange.to,
+    hasPassedRawLists,
+    imports,
+    exports,
+    grinding,
+    expenses,
+    attendance,
+    dailyFetched,
+    monthlyStats,
+    targetMonths,
+  ]);
 
-  // Tháng mới nhất và tháng liền trước để tính tăng trưởng
-  const latestMonth = monthlyData[monthlyData.length - 1];
-  const previousMonth = monthlyData.length > 1 ? monthlyData[monthlyData.length - 2] : undefined;
+  // Số liệu hiển thị trên 4 thẻ tóm tắt:
+  // - Nếu xem theo ngày (Hôm nay / 7 ngày / 30 ngày / Từ ngày - Đến ngày): cộng tổng đúng khoảng ngày đó
+  // - Nếu xem theo tháng (6m / 12m / year): lấy tháng mới nhất
+  const highlightItem = useMemo<MonthlyStatItem | undefined>(() => {
+    if (!chartData.length) return undefined;
+    if (!isDailyMode) {
+      return chartData[chartData.length - 1];
+    }
+    const labelSuffix =
+      timeHorizon === 'today'
+        ? 'Hôm nay'
+        : timeHorizon === '7d'
+          ? '7 ngày'
+          : timeHorizon === '30d'
+            ? '30 ngày'
+            : 'Kỳ chọn';
+    return chartData.reduce<MonthlyStatItem>(
+      (acc, cur) => ({
+        month: activeDateRange.to,
+        label: labelSuffix,
+        shortLabel: labelSuffix,
+        importKg: acc.importKg + cur.importKg,
+        groundKg: acc.groundKg + cur.groundKg,
+        exportKg: acc.exportKg + cur.exportKg,
+        exportBags: acc.exportBags + cur.exportBags,
+        importCost: acc.importCost + cur.importCost,
+        revenue: acc.revenue + cur.revenue,
+        operatingCost: acc.operatingCost + cur.operatingCost,
+        profit: acc.profit + cur.profit,
+      }),
+      {
+        month: activeDateRange.to,
+        label: labelSuffix,
+        shortLabel: labelSuffix,
+        importKg: 0,
+        groundKg: 0,
+        exportKg: 0,
+        exportBags: 0,
+        importCost: 0,
+        revenue: 0,
+        operatingCost: 0,
+        profit: 0,
+      },
+    );
+  }, [chartData, isDailyMode, timeHorizon, activeDateRange.to]);
+
+  const previousItem = !isDailyMode && chartData.length > 1 ? chartData[chartData.length - 2] : undefined;
 
   const importGrowth = useMemo(
-    () => computeGrowth(latestMonth?.importKg || 0, previousMonth?.importKg || 0),
-    [latestMonth, previousMonth],
+    () => computeGrowth(highlightItem?.importKg || 0, previousItem?.importKg || 0),
+    [highlightItem, previousItem],
   );
 
   const exportGrowth = useMemo(
-    () => computeGrowth(latestMonth?.exportKg || 0, previousMonth?.exportKg || 0),
-    [latestMonth, previousMonth],
+    () => computeGrowth(highlightItem?.exportKg || 0, previousItem?.exportKg || 0),
+    [highlightItem, previousItem],
   );
 
   const revenueGrowth = useMemo(
-    () => computeGrowth(latestMonth?.revenue || 0, previousMonth?.revenue || 0),
-    [latestMonth, previousMonth],
+    () => computeGrowth(highlightItem?.revenue || 0, previousItem?.revenue || 0),
+    [highlightItem, previousItem],
   );
 
   const profitGrowth = useMemo(
-    () => computeGrowth(latestMonth?.profit || 0, previousMonth?.profit || 0),
-    [latestMonth, previousMonth],
+    () => computeGrowth(highlightItem?.profit || 0, previousItem?.profit || 0),
+    [highlightItem, previousItem],
   );
 
-  // Kiểm tra có dữ liệu không
+  // Kiểm tra có dữ liệu không (Ở chế độ Hôm nay hoặc Từ ngày - Đến ngày vẫn luôn vẽ trục ngày để thấy cột Hôm nay)
   const hasData = useMemo(() => {
-    return monthlyData.some(
+    if (isDailyMode) return chartData.length > 0;
+    return chartData.some(
       (m) => m.importKg > 0 || m.groundKg > 0 || m.exportKg > 0 || m.revenue > 0 || m.operatingCost > 0,
     );
-  }, [monthlyData]);
+  }, [chartData, isDailyMode]);
 
   // Custom tooltip hiển thị đẹp, rõ ràng cả trên Desktop và Mobile
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || !payload.length) return null;
 
     const currentItem: MonthlyStatItem | undefined = payload[0]?.payload;
+    const headerTitle = currentItem?.month
+      ? currentItem.month.length === 10
+        ? `Ngày ${formatNgay(currentItem.month)}`
+        : `Tháng ${currentItem.month.split('-')[1]}/${currentItem.month.split('-')[0]}`
+      : label;
 
     return (
       <div className="bg-[var(--bg-elevated)] border border-[var(--border-color)] p-3 rounded-xl shadow-lg text-xs space-y-2 min-w-[190px] sm:min-w-[220px]">
         <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-1.5">
           <span className="font-bold text-[var(--text-primary)] flex items-center gap-1.5">
             <Calendar size={13} className="text-[var(--primary-500)]" />
-            {currentItem?.month
-              ? `Tháng ${currentItem.month.split('-')[1]}/${currentItem.month.split('-')[0]}`
-              : label}
+            {headerTitle}
           </span>
           <span className="text-[10px] text-[var(--text-muted)] font-mono">
             {metricMode === 'volume' ? 'Sản lượng' : 'Tài chính'}
@@ -230,28 +421,29 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
       )}
     >
       {/* HEADER: Title & Interactive Controls */}
-      <div className="monthly-heading flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center space-x-2.5">
-          <div className="p-2 rounded-xl bg-[var(--primary-50)] text-[var(--primary-600)] dark:bg-[var(--primary-900)] dark:text-[var(--primary-300)]">
-            <BarChart3 size={18} />
+      <div className="monthly-heading flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-2 rounded-xl bg-[var(--primary-50)] text-[var(--primary-600)] dark:bg-[var(--primary-900)] dark:text-[var(--primary-300)]">
+              <BarChart3 size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-[var(--text-primary)]">
+                {isDailyMode ? 'Biểu đồ hoạt động theo ngày' : 'Biểu đồ hoạt động theo tháng'}
+              </h3>
+              <p className="text-[11px] sm:text-xs text-[var(--text-muted)]">
+                {isDailyMode
+                  ? `Kỳ: ${formatNgay(activeDateRange.from)} – ${formatNgay(activeDateRange.to)}`
+                  : metricMode === 'volume'
+                    ? 'Sản lượng nhập, xay và xuất theo tháng'
+                    : 'Giá trị bán, mua và chi phí theo tháng'}
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-[var(--text-primary)]">
-              Hoạt động theo tháng
-            </h3>
-            <p className="text-[11px] sm:text-xs text-[var(--text-muted)]">
-              {metricMode === 'volume'
-                ? 'Sản lượng nhập, xay và xuất theo tháng'
-                : 'Giá trị bán, mua và chi phí theo tháng'}
-            </p>
-          </div>
-        </div>
 
-        {/* Controls: Mode Switcher & Time Filter */}
-        <div className="monthly-controls flex flex-wrap items-center gap-2">
           {/* Tabs: Sản lượng vs Tài chính (nếu có quyền) */}
           {canSeeFinance && (
-            <div className="inline-flex p-0.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs font-semibold">
+            <div className="inline-flex self-start sm:self-auto p-0.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs font-semibold">
               <button
                 type="button"
                 onClick={() => setMetricMode('volume')}
@@ -278,51 +470,87 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
               </button>
             </div>
           )}
+        </div>
 
-          {/* Time Horizon Pills */}
-          <div className="inline-flex p-0.5 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border-color)] text-xs">
-            <button
-              type="button"
-              onClick={() => setTimeHorizon('6m')}
-              className={cn(
-                'tap-target px-2.5 py-1.5 rounded-lg transition-all text-xs font-semibold cursor-pointer',
-                timeHorizon === '6m'
-                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-2xs font-bold'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
-              )}
-            >
-              6 tháng
-            </button>
-            <button
-              type="button"
-              onClick={() => setTimeHorizon('12m')}
-              className={cn(
-                'tap-target px-2.5 py-1.5 rounded-lg transition-all text-xs font-semibold cursor-pointer',
-                timeHorizon === '12m'
-                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-2xs font-bold'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
-              )}
-            >
-              12 tháng
-            </button>
-            <button
-              type="button"
-              onClick={() => setTimeHorizon('year')}
-              className={cn(
-                'tap-target px-2.5 py-1.5 rounded-lg transition-all text-xs font-semibold cursor-pointer',
-                timeHorizon === 'year'
-                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-2xs font-bold'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
-              )}
-            >
-              Năm {new Date().getFullYear()}
-            </button>
+        {/* Hàng nút chọn nhanh kỳ xem + Bộ lọc Từ ngày - Đến ngày */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 pt-1 border-t border-[var(--border-color)]/60">
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+            {(
+              [
+                { id: 'today', label: 'Hôm nay' },
+                { id: '7d', label: '7 ngày' },
+                { id: '30d', label: '30 ngày' },
+                { id: '6m', label: '6 tháng' },
+                { id: '12m', label: '12 tháng' },
+                { id: 'year', label: `Năm ${new Date().getFullYear()}` },
+                { id: 'custom', label: 'Tùy chọn ngày' },
+              ] as const
+            ).map((tab) => {
+              const active = timeHorizon === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    setTimeHorizon(tab.id);
+                    if (tab.id === 'today') {
+                      const t = today();
+                      setCustomFrom(t);
+                      setCustomTo(t);
+                    } else if (tab.id === '7d') {
+                      setCustomFrom(daysAgo(6));
+                      setCustomTo(today());
+                    } else if (tab.id === '30d') {
+                      setCustomFrom(daysAgo(29));
+                      setCustomTo(today());
+                    }
+                  }}
+                  className={cn(
+                    'h-7 shrink-0 rounded-lg border px-2.5 text-[11px] font-bold transition-all duration-150 cursor-pointer whitespace-nowrap',
+                    active
+                      ? 'border-[var(--primary-500)] bg-[var(--primary-500)] text-white shadow-2xs'
+                      : 'border-[var(--border-color)] bg-[var(--bg-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+                  )}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Bộ lọc Từ ngày – Đến ngày hiển thị trực tiếp */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <CalendarRange size={14} className="text-[var(--primary-500)] shrink-0 hidden sm:block" />
+            <span className="text-[11px] font-semibold text-[var(--text-secondary)] shrink-0">Từ</span>
+            <input
+              type="date"
+              aria-label="Biểu đồ từ ngày"
+              value={isDailyMode ? activeDateRange.from : customFrom}
+              max={isDailyMode ? activeDateRange.to : customTo}
+              onChange={(e) => {
+                setCustomFrom(e.target.value);
+                setTimeHorizon('custom');
+              }}
+              className="input-field !min-h-7 !py-1 !px-2 !text-xs flex-1 sm:w-auto font-mono"
+            />
+            <span className="text-[11px] font-semibold text-[var(--text-secondary)] shrink-0">đến</span>
+            <input
+              type="date"
+              aria-label="Biểu đồ đến ngày"
+              value={isDailyMode ? activeDateRange.to : customTo}
+              min={isDailyMode ? activeDateRange.from : customFrom}
+              onChange={(e) => {
+                setCustomTo(e.target.value);
+                setTimeHorizon('custom');
+              }}
+              className="input-field !min-h-7 !py-1 !px-2 !text-xs flex-1 sm:w-auto font-mono"
+            />
           </div>
         </div>
       </div>
 
-      {/* MOBILE-FIRST HIGHLIGHT CARDS: Tóm tắt tháng gần nhất */}
-      {latestMonth && (
+      {/* MOBILE-FIRST HIGHLIGHT CARDS: Tóm tắt kỳ đang chọn */}
+      {highlightItem && (
         <div className="monthly-highlights grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 pt-1">
           {metricMode === 'volume' ? (
             <>
@@ -330,7 +558,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
               <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-900/50">
                 <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400 mb-0.5">
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                    <Package size={12} /> Nhập {latestMonth.shortLabel}
+                    <Package size={12} /> Nhập {highlightItem.shortLabel}
                   </span>
                   {importGrowth.pct !== null && (
                     <span
@@ -345,7 +573,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                   )}
                 </div>
                 <p className="text-sm sm:text-base font-black font-mono text-emerald-900 dark:text-emerald-200 truncate">
-                  {formatKg(latestMonth.importKg)}
+                  {formatKg(highlightItem.importKg)}
                 </p>
               </div>
 
@@ -353,11 +581,11 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
               <div className="p-2.5 sm:p-3 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50">
                 <div className="flex items-center justify-between text-amber-700 dark:text-amber-400 mb-0.5">
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                    <Cog size={12} /> Xay {latestMonth.shortLabel}
+                    <Cog size={12} /> Xay {highlightItem.shortLabel}
                   </span>
                 </div>
                 <p className="text-sm sm:text-base font-black font-mono text-amber-900 dark:text-amber-200 truncate">
-                  {formatKg(latestMonth.groundKg)}
+                  {formatKg(highlightItem.groundKg)}
                 </p>
               </div>
 
@@ -365,7 +593,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
               <div className="p-2.5 sm:p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/50">
                 <div className="flex items-center justify-between text-blue-700 dark:text-blue-400 mb-0.5">
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-                    <Truck size={12} /> Xuất {latestMonth.shortLabel}
+                    <Truck size={12} /> Xuất {highlightItem.shortLabel}
                   </span>
                   {exportGrowth.pct !== null && (
                     <span
@@ -380,7 +608,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                   )}
                 </div>
                 <p className="text-sm sm:text-base font-black font-mono text-blue-900 dark:text-blue-200 truncate">
-                  {formatKg(latestMonth.exportKg)}
+                  {formatKg(highlightItem.exportKg)}
                 </p>
               </div>
 
@@ -392,7 +620,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                   </span>
                 </div>
                 <p className="text-sm sm:text-base font-black font-mono text-[var(--text-primary)] truncate">
-                  {latestMonth.exportBags} bao
+                  {highlightItem.exportBags} bao
                 </p>
               </div>
             </>
@@ -417,7 +645,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                   )}
                 </div>
                 <p className="text-sm sm:text-base font-black font-mono text-teal-900 dark:text-teal-200 truncate">
-                  {formatTien(latestMonth.revenue)} đ
+                  {formatTien(highlightItem.revenue)} đ
                 </p>
               </div>
 
@@ -427,7 +655,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider">Mua phế</span>
                 </div>
                 <p className="text-sm sm:text-base font-black font-mono text-amber-900 dark:text-amber-200 truncate">
-                  {formatTien(latestMonth.importCost)} đ
+                  {formatTien(highlightItem.importCost)} đ
                 </p>
               </div>
 
@@ -439,7 +667,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                   </span>
                 </div>
                 <p className="text-sm sm:text-base font-black font-mono text-rose-900 dark:text-rose-200 truncate">
-                  {formatTien(latestMonth.operatingCost)} đ
+                  {formatTien(highlightItem.operatingCost)} đ
                 </p>
               </div>
 
@@ -447,7 +675,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
               <div
                 className={cn(
                   'p-2.5 sm:p-3 rounded-xl border',
-                  latestMonth.profit >= 0
+                  highlightItem.profit >= 0
                     ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-900/50'
                     : 'bg-rose-50/70 dark:bg-rose-950/30 border-rose-200/80 dark:border-rose-900/50',
                 )}
@@ -456,10 +684,10 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                   <span
                     className={cn(
                       'text-[10px] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1',
-                      latestMonth.profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700',
+                      highlightItem.profit >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700',
                     )}
                   >
-                    {latestMonth.profit >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {highlightItem.profit >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                     Chênh lệch
                   </span>
                   {profitGrowth.pct !== null && (
@@ -477,12 +705,12 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                 <p
                   className={cn(
                     'text-sm sm:text-base font-black font-mono truncate',
-                    latestMonth.profit >= 0
+                    highlightItem.profit >= 0
                       ? 'text-emerald-900 dark:text-emerald-200'
                       : 'text-rose-900 dark:text-rose-200',
                   )}
                 >
-                  {formatTien(latestMonth.profit)} đ
+                  {formatTien(highlightItem.profit)} đ
                 </p>
               </div>
             </>
@@ -505,8 +733,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
               Chưa có dữ liệu giao dịch trong khoảng thời gian này
             </p>
             <p className="text-[11px] text-[var(--text-muted)] mt-1 max-w-sm">
-              Khi phát sinh phiếu nhập, xay hoặc xuất phế, biểu đồ sẽ tự động tổng hợp xu hướng theo từng
-              tháng.
+              Khi phát sinh phiếu nhập, xay hoặc xuất phế, biểu đồ sẽ tự động tổng hợp xu hướng.
             </p>
           </div>
         ) : (
@@ -514,7 +741,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
             <ResponsiveContainer width="100%" height="100%">
               {metricMode === 'volume' ? (
                 <BarChart
-                  data={monthlyData}
+                  data={chartData}
                   margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
                   barCategoryGap="16%"
                   barGap={2}
@@ -573,7 +800,7 @@ export const MonthlyOverviewChart: React.FC<MonthlyOverviewChartProps> = ({
                 </BarChart>
               ) : (
                 <ComposedChart
-                  data={monthlyData}
+                  data={chartData}
                   margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                   barCategoryGap="16%"
                   barGap={2}

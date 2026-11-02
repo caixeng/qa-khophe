@@ -125,13 +125,9 @@ export const PeriodFilter: React.FC<{
         </button>
       </div>
 
-      {/* Ô chọn Từ ngày - Đến ngày: ẩn mặc định trên mobile (mở khi bấm nút lịch), luôn hiện trên desktop */}
-      <div
-        className={cn(
-          'items-center gap-1.5 pt-1.5 border-t border-[var(--border-color)]/60 lg:pt-0 lg:border-t-0',
-          showCustomDates ? 'flex' : 'hidden lg:flex',
-        )}
-      >
+      {/* Ô chọn Từ ngày - Đến ngày: luôn hiển thị trực quan cả trên mobile và desktop */}
+      <div className="flex items-center gap-1.5 pt-1.5 border-t border-[var(--border-color)]/60 lg:pt-0 lg:border-t-0">
+        <span className="text-[11px] font-semibold text-[var(--text-secondary)] shrink-0">Từ</span>
         <input
           type="date"
           aria-label="Từ ngày"
@@ -140,7 +136,7 @@ export const PeriodFilter: React.FC<{
           onChange={(e) => onChange(e.target.value, range.to)}
           className="input-field !min-h-8 !py-1 !px-2 !text-xs flex-1 lg:w-auto font-mono transition-colors duration-200"
         />
-        <span className="text-xs text-[var(--text-muted)] font-bold">–</span>
+        <span className="text-[11px] font-semibold text-[var(--text-secondary)] shrink-0">đến</span>
         <input
           type="date"
           aria-label="Đến ngày"
