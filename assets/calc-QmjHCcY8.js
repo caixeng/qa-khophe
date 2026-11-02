@@ -1,0 +1,1 @@
+function e(e,t){return Math.max(0,(Number(e)||0)-(Number(t)||0))}function t(t,n,r){return r===`paid`&&(!n||n<=0)?0:e(t,n)}function n(e,t){let n=e-t;return{differenceKg:n,differencePct:e>0?n/e*100:null}}export{t as n,n as t};
