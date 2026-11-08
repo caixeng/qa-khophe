@@ -156,15 +156,18 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
       const opName = item.worker || '';
+      const imp = item.import_id ? importsById[item.import_id] : undefined;
       return (
         item.date.includes(q) ||
         opName.toLowerCase().includes(q) ||
         (item.notes || '').toLowerCase().includes(q) ||
-        (item.import_id || '').toLowerCase().includes(q)
+        (item.import_id || '').toLowerCase().includes(q) ||
+        (imp?.contact_name || '').toLowerCase().includes(q) ||
+        (imp?.material_type || '').toLowerCase().includes(q)
       );
     });
     return sortByDateDesc(list);
-  }, [grindingList, searchQuery]);
+  }, [grindingList, searchQuery, importsById]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -455,9 +458,11 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                               {importsById[item.import_id]?.contact_name || 'Lô nhập'}
                             </span>
                             <span className="block font-mono text-[11px] text-[var(--primary-500)]">
-                              #{item.import_id.slice(0, 8)}
                               {importsById[item.import_id]?.date
-                                ? ` · ${formatNgay(importsById[item.import_id].date)}`
+                                ? formatNgay(importsById[item.import_id].date)
+                                : ''}
+                              {importsById[item.import_id]?.material_type
+                                ? `${importsById[item.import_id]?.date ? ' · ' : ''}${importsById[item.import_id].material_type}`
                                 : ''}
                             </span>
                           </div>
@@ -525,19 +530,25 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
 
         {/* Card view cho điện thoại */}
         <MobileCardList
-          items={pageItems.map((item) => ({
-            id: item.id,
-            title: `Xay ${formatKg(item.output_qty_kg || 0)}`,
-            subtitle: `${formatNgay(item.date)} · Thợ ${item.worker || '—'}`,
-            accentColor: (item.loss_pct || 0) > 10 ? '#f43f5e' : '#10b981',
-            onClick: () => setSelectedDetail(item),
-            fields: [
-              { label: 'Đầu vào', value: formatKg(item.input_qty_kg || 0) },
-              { label: 'Ra thành phẩm', value: formatKg(item.output_qty_kg || 0) },
-              { label: 'Hao hụt', value: formatKg(item.loss_kg || 0) },
-              { label: 'Tỷ lệ hao', value: formatPhanTram(item.loss_pct || 0) },
-            ],
-          }))}
+          items={pageItems.map((item) => {
+            const imp = item.import_id ? importsById[item.import_id] : undefined;
+            const lotText = imp
+              ? `${imp.contact_name || 'Khách lẻ'}${imp.date ? ` (${formatNgay(imp.date)})` : ''}`
+              : 'Lô vãng lai';
+            return {
+              id: item.id,
+              title: `Xay ${formatKg(item.output_qty_kg || 0)}`,
+              subtitle: `${formatNgay(item.date)} · Thợ ${item.worker || '—'} · ${lotText}`,
+              accentColor: (item.loss_pct || 0) > 10 ? '#f43f5e' : '#10b981',
+              onClick: () => setSelectedDetail(item),
+              fields: [
+                { label: 'Đầu vào', value: formatKg(item.input_qty_kg || 0) },
+                { label: 'Ra thành phẩm', value: formatKg(item.output_qty_kg || 0) },
+                { label: 'Hao hụt', value: formatKg(item.loss_kg || 0) },
+                { label: 'Tỷ lệ hao', value: formatPhanTram(item.loss_pct || 0) },
+              ],
+            };
+          })}
           emptyMessage="Chưa có phiếu xay nào trong kỳ này"
         />
 
@@ -558,6 +569,9 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
             const outputKg = Number(selectedDetail.output_qty_kg) || 0;
             const lossKg = selectedDetail.loss_kg !== undefined ? selectedDetail.loss_kg : inputKg - outputKg;
             const lossPct = selectedDetail.loss_pct ?? (inputKg > 0 ? (lossKg / inputKg) * 100 : 0);
+            const detailImp = selectedDetail.import_id
+              ? importsById[selectedDetail.import_id]
+              : undefined;
 
             return (
               <div className="space-y-4 text-xs">
@@ -572,9 +586,20 @@ export const XayPhePage: React.FC<XayPhePageProps> = ({ actionRef }) => {
                     <span className="text-[var(--text-muted)] block font-semibold uppercase">
                       LÔ PHẾ NHẬP
                     </span>
-                    <span className="font-mono font-bold text-sm text-[var(--primary-500)]">
-                      {selectedDetail.import_id || 'Lô vãng lai'}
-                    </span>
+                    {detailImp ? (
+                      <div>
+                        <span className="font-bold text-sm text-[var(--primary-500)] block leading-snug">
+                          {detailImp.contact_name || 'Khách lẻ'}
+                        </span>
+                        <span className="text-[11px] text-[var(--text-secondary)] block">
+                          {formatNgay(detailImp.date)} · {detailImp.material_type}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="font-bold text-sm text-[var(--primary-500)]">
+                        Lô vãng lai / Xay gộp
+                      </span>
+                    )}
                   </div>
                   <div>
                     <span className="text-[var(--text-muted)] block font-semibold uppercase">ĐẦU VÀO</span>
